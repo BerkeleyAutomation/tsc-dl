@@ -1,0 +1,1 @@
+GLOG_logtosterr=1 ../../build/tools/extract_image_features.bin prototxt/c3d_suturing_feature_extractor_frm.prototxt conv3d_deepnetA_sport1m_iter_1900000 -1 100 1 prototxt/output_list_prefix_suturing.txt conv5b
