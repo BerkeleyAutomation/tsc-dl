@@ -8,8 +8,10 @@ while not cap.isOpened():
     cv2.waitKey(1000)
     print "Wait for the header"
 
+num_features_tracked = 2
+
 # params for ShiTomasi corner detection
-feature_params = dict( maxCorners = 1,
+feature_params = dict( maxCorners = num_features_tracked,
                        qualityLevel = 0.3,
                        minDistance = 7,
                        blockSize = 7 )
@@ -20,7 +22,7 @@ lk_params = dict( winSize  = (15,15),
                   criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 # Create some random colors
-color = np.random.randint(0,255,(1,3))
+color = np.random.randint(0,255,(num_features_tracked,3))
 
 # Take first frame and find corners in it
 ret, old_frame = cap.read()
@@ -32,10 +34,11 @@ p0 = cv2.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
 # Create a mask image for drawing purposes
 mask = np.zeros_like(old_frame)
 
-i = 1
+j = 1
+pleaseWait = False
 
 while(1):    
-    print i
+    print j
     ret,frame = cap.read()
 
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -55,7 +58,13 @@ while(1):
         cv2.circle(frame,(a,b),5,color[i].tolist(),-1)
     img = cv2.add(frame,mask)
 
-    cv2.imshow('frame',img)
+    if pleaseWait:
+        pleaseWait = False
+        IPython.embed()
+
+    # cv2.namedWindow("frame", cv2.WND_PROP_FULLSCREEN)
+    # cv2.setWindowProperty("frame", cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+    cv2.imshow("frame",img)
     k = cv2.waitKey(30) & 0xff
     if k == 27:
         break
@@ -63,7 +72,7 @@ while(1):
     # Now update the previous frame and previous points
     old_gray = frame_gray.copy()
     p0 = good_new.reshape(-1,1,2)
-    i += 1
+    j += 1
 
 cv2.destroyAllWindows()
 cap.release()

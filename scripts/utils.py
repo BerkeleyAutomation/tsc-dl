@@ -2,7 +2,8 @@ import IPython
 import numpy as np
 import matlab.engine as mateng
 import matplotlib.pyplot as plt
-from sklearn import (manifold, datasets, decomposition, ensemble, lda, random_projection, preprocessing, covariance)
+from sklearn import (manifold, datasets, decomposition, ensemble, lda,
+	random_projection, preprocessing, covariance, cluster, neighbors)
 import argparse
 import cv2
 
@@ -10,6 +11,7 @@ CAFFE_ROOT = '/home/animesh/caffe/'
 
 color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
 
+# Extra colors added:
 # E9967A is beige/dark salmon
 # 4B0082 is Indigo
 # 800000 is Maroon 
@@ -19,11 +21,11 @@ alex_net_layers = ['input', 'conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 
 
 PATH_TO_SAVE_FIG = '/home/animesh/DeepMilestones/plots/'
 
-def pca(X):
-	print("Computing PCA embedding")
+def pca(X, PC = 2):
+	print("Computing PCA embedding, using %5d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
 	X_centered = scaler.transform(X)
-	X_pca = decomposition.TruncatedSVD(n_components=2).fit_transform(X_centered)
+	X_pca = decomposition.TruncatedSVD(n_components=PC).fit_transform(X_centered)
 	return X_pca
 
 def tsne_pca(X):
@@ -69,8 +71,15 @@ def parse_annotations_images(annotations_file, PATH_TO_DATA):
 				i += 1
 	return X, label_map, index_map
 
+def make_hypercolumns_vector(hypercolumns_layers, X):
+	X_hc = None
+	for layer in hypercolumns_layers:
+		if X_hc is None:
+			X_hc = X[layer]
+		else:
+			X_hc = np.concatenate((X_hc, X[layer]), axis = 1)
+	return X_hc
 
-# Plots 2 set of conv5b PCA vectors on same image
 def plot_annotated_joint(X_joint, num_X1_pts, label_map_1, index_map_1, label_map_2, index_map_2, figure_name, title = None):
 	x_min, x_max = np.min(X_joint, 0), np.max(X_joint, 0)
 	X_joint = (X_joint - x_min) / (x_max - x_min)
@@ -78,12 +87,12 @@ def plot_annotated_joint(X_joint, num_X1_pts, label_map_1, index_map_1, label_ma
 	for i in range(X_joint.shape[0]):
 		if i < num_X1_pts:
 			frm_num = index_map_1[i]
-			plt.text(X_joint[i, 0], X_joint[i, 1], 'x'+str(frm_num),
-				color=color_map[label_map_1[i]], fontdict={'weight': 'bold', 'size': 9})
+			plt.text(X_joint[i, 0], X_joint[i, 1], 'x',
+				color=color_map[label_map_1[i]], fontdict={'weight': 'bold', 'size': 10})
 		else:
 			frm_num = index_map_2[i - num_X1_pts]
-			plt.text(X_joint[i, 0], X_joint[i, 1], 'o'+str(frm_num),
-				color=color_map[label_map_2[i - num_X1_pts]], fontdict={'weight': 'bold', 'size': 9})
+			plt.text(X_joint[i, 0], X_joint[i, 1], 'o',
+				color=color_map[label_map_2[i - num_X1_pts]], fontdict={'weight': 'bold', 'size': 10})
 	plt.xticks([]), plt.yticks([])
 	if title is not None:
 		plt.title(title)
@@ -102,10 +111,23 @@ def plot_annotated_embedding(X, label_map, index_map, figure_name, title=None):
 		plt.title(title)
 	plt.savefig(PATH_TO_SAVE_FIG + figure_name + '.jpg')
 
-def plot_all_layers(X, label_map, index_map, figure_name):
-	for layer in alex_net_layers:
+def plot_hypercolumns(X, label_map, index_map, figure_name, hypercolumns_layers, encoding_func = None):
+	hc_string = ''
+	for layer in hypercolumns_layers:
+		hc_string += layer
+	X_pca = pca(X)
+	X_tsne_pca = tsne_pca(X)
+	plot_annotated_embedding(X_pca, label_map, index_map,
+		figure_name + '_AlexNet_' + "Hypercolumn" + hc_string + '_pca', title = 'PCA - AlexNet ' + " Hypercolumn "+ hc_string)
+	plot_annotated_embedding(X_tsne_pca, label_map, index_map,
+		figure_name + '_AlexNet_' + "Hypercolumn" + hc_string + '_tsne_pca', title = 't-SNE(PCA Input) - AlexNet ' + " Hypercolumn " + hc_string)
+
+def plot_all_layers(X, label_map, index_map, figure_name, layers = alex_net_layers, encoding_func = None):
+	for layer in layers:
 		print "----- Plotting layer " + str(layer) + " ---------"
 		X_layer = X[layer]
+		if encoding_func:
+			X_layer = encoding_func(X_layer)
 		X_pca = pca(X_layer)
 		X_tsne_pca = tsne_pca(X_layer)
 		plot_annotated_embedding(X_pca, label_map, index_map,
@@ -113,23 +135,74 @@ def plot_all_layers(X, label_map, index_map, figure_name):
 		plot_annotated_embedding(X_tsne_pca, label_map, index_map,
 			figure_name + '_AlexNet_' + layer + '_tsne_pca', title = 't-SNE(PCA Input) - AlexNet ' + layer)
 
-def plot_all_layers_joint(X1, label_map_1, index_map_1, X2, label_map_2, index_map_2, figure_name):
+def plot_all_layers_joint(X1, label_map_1, index_map_1, X2, label_map_2, index_map_2, figure_name, encoding_func = None, layers = alex_net_layers):
 
-	num_X1_pts = X1[alex_net_layers[0]].shape[0]
+	IPython.embed()
+	num_X1_pts = X1[layers[0]].shape[0]
 
-	for layer in alex_net_layers:
+	for layer in layers:
 		print "----- Plotting layer " + str(layer) + " ---------"
 		X_layer1 = X1[layer]
 		X_layer2 = X2[layer]
-
+		if encoding_func:
+			X_layer1 = encoding_func(X_layer1)
+			X_layer2 = encoding_func(X_layer2)
 		X_joint = np.concatenate((X_layer1, X_layer2), axis = 0)
 		X_pca = pca(X_joint)
-		X_tsne_pca = tsne_pca(X_joint)
+		X_tsne = tsne(X_joint)
 
+		name = figure_name + '_AlexNet_' + layer
 		plot_annotated_joint(X_pca, num_X1_pts, label_map_1, index_map_1, label_map_2, index_map_2,
-			figure_name + '_AlexNet_' + layer + '_pca', title = 'PCA - AlexNet ' + layer)
-		plot_annotated_joint(X_tsne_pca, num_X1_pts, label_map_1, index_map_1, label_map_2, index_map_2,
-			figure_name + '_AlexNet_' + layer + '_tsne_pca', title = 't-SNE(PCA Input) - AlexNet ' + layer)
+			name + '_pca', title = 'PCA - ' + name)
+		plot_annotated_joint(X_tsne, num_X1_pts, label_map_1, index_map_1, label_map_2, index_map_2,
+			name + '_tsne', title = 't-SNE' + name)
+
+def difference_vectors(X, cluster_predictions, clusters):
+	PC = X.shape[1]
+	X_vlad =  (X[0] - clusters[cluster_predictions[0]]).reshape(1, PC)
+	num_frms = X.shape[0]
+	for frm in range(1, num_frms):
+		X_diff_frm = (X[frm] - clusters[cluster_predictions[frm]]).reshape(1, PC)
+		X_vlad = np.concatenate((X_vlad, X_diff_frm), axis = 0)
+	assert X_vlad.shape[0] == X.shape[0]
+	assert X_vlad.shape[1] == X.shape[1]
+	return X_vlad
+
+def vlad_experiment(X, list_of_K, list_of_PC, label_map, index_map, figure_name, list_of_layers = alex_net_layers):
+	assert len(list_of_K) != 0
+	assert len(list_of_PC) != 0
+
+	for K in list_of_K:
+		for PC in list_of_PC:
+			for layer in list_of_layers:
+				print("[VLAD] K = %3d  PC = %3d  layer = %s " % (K, PC, layer))
+
+				X_layer = X[layer]
+				X_vlad = encode_VLAD(X_layer, K, PC)
+
+				X_vlad_pca = pca(X_vlad)
+				X_vlad_tsne = tsne(X_vlad)
+
+				name = figure_name + '_VLAD_' + 'K' + str(K) + '_PC'+ str(PC) + '_' + layer
+				plot_annotated_embedding(X_vlad_pca, label_map, index_map, name + '_pca', title = "PCA - " + name)
+				plot_annotated_embedding(X_vlad_tsne, label_map, index_map, name + '_tsne', title = "t-SNE - " + name)
+
+def encode_VLAD(X, K, PC):
+	X_pca = pca(X, PC = PC)
+
+	kmeans = cluster.KMeans(init = 'k-means++', n_clusters = K)
+	kmeans.fit(X_pca)
+	clusters = kmeans.cluster_centers_
+	assert len(clusters) == K
+
+	neigh = neighbors.KNeighborsClassifier(n_neighbors = 1)
+	Y = np.arange(K)
+	neigh.fit(clusters, Y)
+	cluster_predictions = neigh.predict(X_pca)
+	assert len(cluster_predictions) == X.shape[0]
+
+	X_vlad = difference_vectors(X_pca, cluster_predictions, clusters)
+	return X_vlad
 
 def get_frame_fig_name(frm_num):
 	if len(str(frm_num)) == 1:

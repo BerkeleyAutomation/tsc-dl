@@ -15,13 +15,16 @@ plt.rcParams['figure.figsize'] = (10, 10)
 plt.rcParams['image.interpolation'] = 'nearest'
 plt.rcParams['image.cmap'] = 'gray'
 
+def encode_cluster_normalize(X):
+	return utils.encode_VLAD(X, 1, 5)
+
 class FeatureExtractor:
 	def __init__(self):
 		self.net = None
 		self.transformer = None
 		self.init_caffe()
 
-	def forward_pass(self, PATH_TO_DATA, annotations):
+	def forward_pass(self, PATH_TO_DATA, annotations, extract_layers = utils.alex_net_layers, sampling_rate = 1):
 		i = 0
 		label_map = {}
 		index_map = {}
@@ -44,7 +47,7 @@ class FeatureExtractor:
 					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', caffe.io.load_image(image_jpeg))
 					out = self.net.forward()
 					plt.imshow(self.transformer.deprocess('data', self.net.blobs['data'].data[0]))
-					for layer in utils.alex_net_layers:
+					for layer in extract_layers:
 						if layer == 'input':
 							data = cv2.imread(image_jpeg)
 						else:
@@ -57,7 +60,7 @@ class FeatureExtractor:
 							X_layer = X[layer]
 							X_layer = np.concatenate((X_layer, data), axis = 0)
 							X[layer] = X_layer
-					frm_num += 2
+					frm_num += sampling_rate
 					i += 1
 		return X, label_map, index_map
 
@@ -80,18 +83,41 @@ if __name__ == "__main__":
 	parser.add_argument("annotations", help = "Annotated frames")
 	parser.add_argument("--PATH_TO_DATA_2", help="Please specify the path to second set of images", default = None)
 	parser.add_argument("--annotations_2", help = "Annotated frames for second set of images", default = None)
+	parser.add_argument("--hypercolumns", help = "Hypercolumns for conv 3 and conv 4", default = False)
+	parser.add_argument("--vlad", help = "VLAD experiments", default = False)
 	args = parser.parse_args()
 	fe = FeatureExtractor()
 	if args.PATH_TO_DATA_2 or args.annotations_2:
 		if args.PATH_TO_DATA_2 and args.annotations_2:
+			list_of_layers = ['conv2','conv3', 'conv4', 'conv5', 'pool5', 'fc6', 'fc7']
 			print "--------- Forward Pass #1 ---------"
-			X1, label_map_1, index_map_1 = fe.forward_pass(args.PATH_TO_DATA, args.annotations)
+			r = 100
+			X1, label_map_1, index_map_1 = fe.forward_pass(args.PATH_TO_DATA, args.annotations, extract_layers = list_of_layers, sampling_rate = 1)
 			print "--------- Forward Pass #2 ---------"
-			X2, label_map_2, index_map_2 = fe.forward_pass(args.PATH_TO_DATA_2, args.annotations_2)
-			utils.plot_all_layers_joint(X1, label_map_1, index_map_1, X2, label_map_2, index_map_2, args.figure_name)
+			X2, label_map_2, index_map_2 = fe.forward_pass(args.PATH_TO_DATA_2, args.annotations_2, extract_layers = list_of_layers, sampling_rate = 1)
+
+			utils.plot_all_layers_joint(X1, label_map_1, index_map_1, X2, label_map_2, index_map_2, args.figure_name, encoding_func = encode_cluster_normalize, layers = list_of_layers)
 		else:
 			print "ERROR: Please provide both annotations and the path for second set of images"
 			sys.exit()
+	elif args.hypercolumns:
+		print "Processing Hypercolumns"
+		hypercolumns_layers = ['conv3', 'conv4']
+		X, label_map, index_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, hypercolumns_layers)
+		X_hc = utils.make_hypercolumns_vector(hypercolumns_layers, X)
+		utils.plot_hypercolumns(X_hc, label_map, index_map, args.figure_name, hypercolumns_layers)
+
+		hypercolumns_layers = ['conv2','conv3', 'conv4']
+		X, label_map, index_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, hypercolumns_layers)
+		X_hc = utils.make_hypercolumns_vector(hypercolumns_layers, X)
+		utils.plot_hypercolumns(X_hc, label_map, index_map, args.figure_name, hypercolumns_layers)
+	elif args.vlad:
+		layers = ['conv4', 'conv3']
+		k_values = [1, 5, 10]
+		pc_values = [5, 100, 200]
+		X, label_map, index_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, extract_layers = layers, sampling_rate = 1)
+		utils.vlad_experiment(X, k_values, pc_values, label_map, index_map, args.figure_name, list_of_layers = layers)
+
 	else:
 		X, label_map, index_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations)
 		utils.plot_all_layers(X, label_map, index_map, args.figure_name)
