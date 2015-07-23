@@ -13,5 +13,3 @@ def LCD(data):
 	assert lcd.shape[0] == a * a
 	assert lcd.shape[1] == M
 	return lcd
-
-	

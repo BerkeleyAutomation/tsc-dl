@@ -9,6 +9,7 @@ import utils
 import cv2
 import utils
 import encoding
+import lcd
 
 sys.path.insert(0, utils.CAFFE_ROOT + 'python')
 
@@ -22,12 +23,13 @@ class FeatureExtractor:
 		self.transformer = None
 		self.init_caffe()
 
-	def forward_pass(self, PATH_TO_DATA, annotations, list_of_layers = utils.alex_net_layers, sampling_rate = 1, batch_size = -1):
+	def forward_pass(self, PATH_TO_DATA, annotations, list_of_layers = utils.alex_net_layers,
+		sampling_rate = 1, batch_size = -1, LCD = False):
 		if batch_size == -1:
-			return self.process_individual_frames(PATH_TO_DATA, annotations, list_of_layers, sampling_rate) 
-		return self.process_batch(PATH_TO_DATA, annotations, list_of_layers, sampling_rate, batch_size)
+			return self.process_individual_frames(PATH_TO_DATA, annotations, list_of_layers, sampling_rate, LCD)
+		return self.process_batch(PATH_TO_DATA, annotations, list_of_layers, sampling_rate, batch_size, LCD)
 
-	def process_batch(self, PATH_TO_DATA, annotations, list_of_layers, sampling_rate, batch_size):
+	def process_batch(self, PATH_TO_DATA, annotations, list_of_layers, sampling_rate, batch_size, LCD):
 		i = 0
 		label_map = {}
 		frm_map = {}
@@ -45,47 +47,44 @@ class FeatureExtractor:
 				b = 1 #Running count of num frames in batch
 				batch_data = {}
 				while frm_num <= (seg[1] + batch_size):
+					# Initialize Batch
 					if b == 1:
 						label_map[i] = index
 						frm_map[i] = frm_num
 
 					# Process frames and build up features in batches
-					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', caffe.io.load_image(get_full_image_path(PATH_TO_DATA, frm_num)))
+					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num)))
 					out = self.net.forward()
 					for layer in list_of_layers:
-						if layer == 'input':
-							data = cv2.imread(full_image_path)
-						else:
+						if LCD:
+							if layer == 'input':
+								print "ERROR: Cannot do LCD on input layer"
+								sys.exit()
 							data = self.net.blobs[layer].data[0]
-						data = data.flatten()
-						data = data.reshape(1, data.shape[0])
-						if layer not in batch_data:
-							batch_data[layer] = data
+							data = lcd.LCD(data)
+							utils.dict_insert(layer, data, batch_data, axis = 0)
 						else:
-							X_layer = batch_data[layer]
-							X_layer = np.concatenate((X_layer, data), axis = 1)
-							batch_data[layer] = X_layer
-
+							if layer == 'input':
+								data = cv2.imread(full_image_path)
+							else:
+								data = self.net.blobs[layer].data[0]
+							data = utils.flatten(data)
+							utils.dict_insert(layer, data, batch_data, axis = 1)
 					if b == batch_size:
+						print("Batch %3d" % i)
 						b = 0
 						i += 1
-
-						# Time to concatenate with main data dictionary
+						# Concatenate with main data dictionary
 						for layer in list_of_layers:
-							if layer not in X:
-								X[layer] = batch_data[layer]
-							else:
-								X_layer = X[layer]
-								X_layer = np.concatenate((X_layer, batch_data[layer]), axis = 0)
-								X[layer] = X_layer
+							data = encoding.encode_VLAD(batch_data[layer] , 10)
+							utils.dict_insert(layer, data, X)
 						batch_data = {}
 
-					# IPython.embed()
 					b += 1
 					frm_num += sampling_rate
 		return X, label_map, frm_map
 
-	def process_individual_frames(self, PATH_TO_DATA, annotations, list_of_layers, sampling_rate):
+	def process_individual_frames(self, PATH_TO_DATA, annotations, list_of_layers, sampling_rate, LCD):
 		i = 0
 		label_map = {}
 		frm_map = {}
@@ -104,21 +103,15 @@ class FeatureExtractor:
 					print frm_num
 					frm_map[i] = frm_num
 					label_map[i] = index
-					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', caffe.io.load_image(get_full_image_path(PATH_TO_DATA, frm_num)))
+					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num)))
 					out = self.net.forward()
 					for layer in list_of_layers:
 						if layer == 'input':
 							data = cv2.imread(full_image_path)
 						else:
 							data = self.net.blobs[layer].data[0]
-						data = data.flatten()
-						data = data.reshape(1, data.shape[0])
-						if layer not in X:
-							X[layer] = data
-						else:
-							X_layer = X[layer]
-							X_layer = np.concatenate((X_layer, data), axis = 0)
-							X[layer] = X_layer
+						data = utils.flatten(data)
+						utils.dict_insert(layer, data, X)
 					frm_num += sampling_rate
 					i += 1
 		return X, label_map, frm_map
@@ -145,6 +138,7 @@ if __name__ == "__main__":
 	parser.add_argument("--hypercolumns", help = "Hypercolumns for conv 3 and conv 4", default = False)
 	parser.add_argument("--vlad", help = "VLAD experiments", default = False)
 	parser.add_argument("--batch_size", help = "Batch size for temporal batches", default = -1)
+	parser.add_argument("--LCD", help = "Batch size for temporal batches", default = -1)
 	args = parser.parse_args()
 	fe = FeatureExtractor()
 	if args.PATH_TO_DATA_2 or args.annotations_2:
@@ -180,10 +174,17 @@ if __name__ == "__main__":
 		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 1)
 		utils.vlad_experiment(X, k_values, pc_values, label_map, frm_map, args.figure_name, list_of_layers = layers)
 
-	elif args.batch_size:
+	elif args.batch_size and not args.LCD:
 		layers = ['conv3', 'conv4', 'conv5', 'pool5']
 		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations,list_of_layers = layers, sampling_rate = 1, batch_size = int(args.batch_size))
-		IPython.embed()
+		utils.plot_all_layers(X, label_map, frm_map, args.figure_name, list_of_layers = layers)
+
+	elif args.LCD:
+		if not args.batch_size:
+			print "ERROR: Please provide both batch size and LCD"
+			sys.exit()
+		layers = ['conv5', 'pool5']
+		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations,list_of_layers = layers, sampling_rate = 1, batch_size = int(args.batch_size), LCD = True)
 		utils.plot_all_layers(X, label_map, frm_map, args.figure_name, list_of_layers = layers)
 
 	else:

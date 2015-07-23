@@ -21,7 +21,7 @@ alex_net_layers = ['input', 'conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 
 PATH_TO_SAVE_FIG = '/home/animesh/DeepMilestones/plots/'
 
 def pca(X, PC = 2):
-	print("Computing PCA embedding, using %5d principal components" % PC)
+	print("Computing PCA embedding, using %3d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
 	X_centered = scaler.transform(X)
 	X_pca = decomposition.TruncatedSVD(n_components=PC).fit_transform(X_centered)
@@ -187,3 +187,15 @@ def get_frame_fig_name(frm_num):
 		return "00" + str(frm_num) + ".jpg"
 	else:
 		pass
+
+def flatten(data):
+	data = data.flatten()
+	return data.reshape(1, data.shape[0])
+
+def dict_insert(key, value, data_dict, axis = 0):
+	if key not in data_dict:
+		data_dict[key] = value
+	else:
+		curr_value = data_dict[key]
+		curr_value = np.concatenate((curr_value, value), axis = axis)
+		data_dict[key] = curr_value
