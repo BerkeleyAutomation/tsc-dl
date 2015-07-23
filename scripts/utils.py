@@ -18,7 +18,15 @@ color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '
 
 alex_net_layers = ['input', 'conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'fc6', 'fc7']
 
+vgg_sos_net_layers = ['conv1_1', 'conv1_2', 'conv2_1', 'conv2_2', 'conv3_1', 'conv3_2', 'conv3_3', 'conv4_1', 'conv4_2', 'conv4_3','conv5_1', 'conv5_2', 'conv5_3', 'pool5']
+
 PATH_TO_SAVE_FIG = '/home/animesh/DeepMilestones/plots/'
+
+# VGG_MEAN = np.array([123.68, 116.779, 103.939])   RGB 0-255 scale
+VGG_MEAN = np.array([ 0.48501961,  0.45795686,  0.40760392])
+
+NET_PARAMS = {"AlexNet": [CAFFE_ROOT + 'models/bvlc_reference_caffenet/deploy.prototxt', CAFFE_ROOT + 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'],
+"VGG_SOS": [CAFFE_ROOT + 'models/vgg_sos/deploy.prototxt', CAFFE_ROOT + 'models/vgg_sos/VGG16_SalObjSub.caffemodel']}
 
 def pca(X, PC = 2):
 	print("Computing PCA embedding, using %3d principal components" % PC)
@@ -110,18 +118,18 @@ def plot_annotated_embedding(X, label_map, frm_map, figure_name, title=None):
 		plt.title(title)
 	plt.savefig(PATH_TO_SAVE_FIG + figure_name + '.jpg')
 
-def plot_hypercolumns(X, label_map, frm_map, figure_name, hypercolumns_layers, encoding_func = None):
+def plot_hypercolumns(X, net, label_map, frm_map, figure_name, hypercolumns_layers, encoding_func = None):
 	hc_string = ''
 	for layer in hypercolumns_layers:
 		hc_string += layer
 	X_pca = pca(X)
 	X_tsne_pca = tsne_pca(X)
 	plot_annotated_embedding(X_pca, label_map, frm_map,
-		figure_name + '_AlexNet_' + "Hypercolumn" + hc_string + '_pca', title = 'PCA - AlexNet ' + " Hypercolumn "+ hc_string)
+		figure_name + '_'+ net +'_' + "Hypercolumn" + hc_string + '_pca', title = 'PCA - '+ net +' ' + " Hypercolumn "+ hc_string)
 	plot_annotated_embedding(X_tsne_pca, label_map, frm_map,
-		figure_name + '_AlexNet_' + "Hypercolumn" + hc_string + '_tsne_pca', title = 't-SNE(PCA Input) - AlexNet ' + " Hypercolumn " + hc_string)
+		figure_name + '_'+ net +'_' + "Hypercolumn" + hc_string + '_tsne_pca', title = 't-SNE(PCA Input) - '+ net +' ' + " Hypercolumn " + hc_string)
 
-def plot_all_layers(X, label_map, frm_map, figure_name, list_of_layers = alex_net_layers, encoding_func = None):
+def plot_all_layers(X, net, label_map, frm_map, figure_name, list_of_layers = alex_net_layers, encoding_func = None):
 	for layer in list_of_layers:
 		print "----- Plotting layer " + str(layer) + " ---------"
 		X_layer = X[layer]
@@ -130,11 +138,11 @@ def plot_all_layers(X, label_map, frm_map, figure_name, list_of_layers = alex_ne
 		X_pca = pca(X_layer)
 		X_tsne_pca = tsne_pca(X_layer)
 		plot_annotated_embedding(X_pca, label_map, frm_map,
-			figure_name + '_AlexNet_' + layer + '_pca', title = 'PCA - AlexNet ' + layer)
+			figure_name + '_'+ net +'_' + layer + '_pca', title = 'PCA - '+ net +' ' + layer)
 		plot_annotated_embedding(X_tsne_pca, label_map, frm_map,
-			figure_name + '_AlexNet_' + layer + '_tsne_pca', title = 't-SNE(PCA Input) - AlexNet ' + layer)
+			figure_name + '_'+ net +'_' + layer + '_tsne_pca', title = 't-SNE(PCA Input) - '+ net +' ' + layer)
 
-def plot_all_layers_joint(X1, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, figure_name, encoding_func = None, layers = alex_net_layers):
+def plot_all_layers_joint(X1, net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, figure_name, encoding_func = None, layers = alex_net_layers):
 	num_X1_pts = X1[layers[0]].shape[0]
 
 	for layer in layers:
@@ -148,7 +156,7 @@ def plot_all_layers_joint(X1, label_map_1, frm_map_1, X2, label_map_2, frm_map_2
 		X_pca = pca(X_joint)
 		X_tsne = tsne(X_joint)
 
-		name = figure_name + '_AlexNet_' + layer
+		name = figure_name + '_'+ net +'_' + layer
 		plot_annotated_joint(X_pca, num_X1_pts, label_map_1, frm_map_1, label_map_2, frm_map_2,
 			name + '_pca', title = 'PCA - ' + name)
 		plot_annotated_joint(X_tsne, num_X1_pts, label_map_1, frm_map_1, label_map_2, frm_map_2,

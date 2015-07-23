@@ -26,6 +26,7 @@ do
 
 	#Plot PCA of features
 	cd script
+	
 	python tsne.py sutE5_cap2 $LAYER data/experiment1/$LAYER/ --a data/Suturing_E005_capture2/Suturing_E005_capture2.p
 	COUNT=COUNT+1
 done

@@ -6,7 +6,7 @@ from sklearn import (manifold, datasets, decomposition, ensemble, lda,
 import utils
 
 def encode_cluster_normalize(X):
-	return encode_VLAD(X, 1, 5)
+	return encode_VLAD(X, 5)
 
 def difference_vectors(X, cluster_predictions, clusters_centers):
 	PC = X.shape[1]
