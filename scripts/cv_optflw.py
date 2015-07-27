@@ -2,13 +2,13 @@ import numpy as np
 import cv2
 import IPython
 
-cap = cv2.VideoCapture("/home/animesh/jigsaws/Suturing_video/video/Suturing_E005_capture2.avi")
+cap = cv2.VideoCapture("/home/animesh/DeepMilestones/jigsaws/Suturing_video/frames/Suturing_E003_capture1/cropped_scaled.avi")
 while not cap.isOpened():
-    cap = cv2.VideoCapture("/home/animesh/jigsaws/Suturing_video/video/Suturing_E005_capture2.avi")
+    cap = cv2.VideoCapture("/home/animesh/DeepMilestones/jigsaws/Suturing_video/frames/Suturing_E003_capture1/cropped_scaled.avi")
     cv2.waitKey(1000)
     print "Wait for the header"
 
-num_features_tracked = 2
+num_features_tracked = 10
 
 # params for ShiTomasi corner detection
 feature_params = dict( maxCorners = num_features_tracked,

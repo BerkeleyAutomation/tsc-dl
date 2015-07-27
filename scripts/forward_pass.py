@@ -38,8 +38,6 @@ class FeatureExtractor:
 		X = {}
 		map_index_data = pickle.load(open(annotations, "rb"))
 
-		self.net.blobs['data'].reshape(1,3,224,224)
-
 		for index in map_index_data:
 			segments = map_index_data[index]
 			print "Processing images for label " + str(index)
@@ -78,7 +76,7 @@ class FeatureExtractor:
 						i += 1
 						# Concatenate with main data dictionary
 						for layer in list_of_layers:
-							data = encoding.encode_VLAD(batch_data[layer] , 10)
+							data = encoding.encode_VLAD(batch_data[layer] , 5)
 							utils.dict_insert(layer, data, X)
 						batch_data = {}
 
@@ -92,8 +90,6 @@ class FeatureExtractor:
 		frm_map = {}
 		X = {}
 		map_index_data = pickle.load(open(annotations, "rb"))
-
-		self.net.blobs['data'].reshape(1,3,224, 224)
 
 		for index in map_index_data:
 			segments = map_index_data[index]
@@ -128,6 +124,10 @@ class FeatureExtractor:
 		# self.transformer.set_mean('data', np.load(utils.CAFFE_ROOT + 'python/caffe/imagenet/ilsvrc_2012_mean.npy').mean(1).mean(1)) # mean pixel
 		self.transformer.set_raw_scale('data', 255)  # the reference model operates on images in [0,255] range instead of [0,1]
 		self.transformer.set_channel_swap('data', (2,1,0))  # the reference model has channels in BGR order instead of RGB
+		if net_name == "AlexNet":
+			self.net.blobs['data'].reshape(1,3,227,227)
+		else:
+			self.net.blobs['data'].reshape(1,3,224,224)
 
 
 if __name__ == "__main__":
@@ -144,19 +144,19 @@ if __name__ == "__main__":
 	parser.add_argument("--LCD", help = "Batch size for temporal batches")
 	args = parser.parse_args()
 	fe = FeatureExtractor(args.net)
+	layers = utils.NET_PARAMS[args.net][2]
 	if args.PATH_TO_DATA_2 or args.annotations_2:
 		if args.PATH_TO_DATA_2 and args.annotations_2:
 
-			# list_of_layers = ['conv2','conv3', 'conv4', 'conv5', 'pool5', 'fc6', 'fc7']
-			list_of_layers = utils.vgg_sos_net_layers[11:]
+			layers = utils.vgg_sos_net_layers[11:]
 			batch_size = int(args.batch_size) if args.batch_size else -1
 			encoding_func = encoding.encode_cluster_normalize if args.vlad else None
 			print "--------- Forward Pass #1 ---------"
-			X1, label_map_1, frm_map_1 = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = list_of_layers, sampling_rate = 1, batch_size = batch_size)
+			X1, label_map_1, frm_map_1 = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 1, batch_size = batch_size)
 			print "--------- Forward Pass #2 ---------"
-			X2, label_map_2, frm_map_2 = fe.forward_pass(args.PATH_TO_DATA_2, args.annotations_2, list_of_layers = list_of_layers, sampling_rate = 4, batch_size = batch_size)
+			X2, label_map_2, frm_map_2 = fe.forward_pass(args.PATH_TO_DATA_2, args.annotations_2, list_of_layers = layers, sampling_rate = 4, batch_size = batch_size)
 
-			utils.plot_all_layers_joint(X1, args.net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, args.figure_name, encoding_func = encoding_func, layers = list_of_layers)
+			utils.plot_all_layers_joint(X1, args.net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, args.figure_name, encoding_func = encoding_func, layers = layers)
 		else:
 			print "ERROR: Please provide both annotations and the path for second set of images"
 			sys.exit()
@@ -178,7 +178,7 @@ if __name__ == "__main__":
 		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 1)
 		utils.vlad_experiment(X, k_values, pc_values, label_map, frm_map, args.figure_name, list_of_layers = layers)
 
-	elif args.batch_size and not args.LCD:
+	elif args.batch_size != -1 and not args.LCD:
 		layers = ['conv3', 'conv4', 'conv5', 'pool5']
 		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations,list_of_layers = layers, sampling_rate = 1, batch_size = int(args.batch_size))
 		utils.plot_all_layers(X, args.net, label_map, frm_map, args.figure_name, list_of_layers = layers)
@@ -188,12 +188,11 @@ if __name__ == "__main__":
 			print "ERROR: Please provide both batch size and LCD"
 			sys.exit()
 		layers = ['conv5_1', 'conv5_2', 'conv5_3' ]
-		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations,list_of_layers = layers, sampling_rate = 1, batch_size = int(args.batch_size), LCD = True)
+		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 1, batch_size = int(args.batch_size), LCD = True)
 		utils.plot_all_layers(X, args.net, label_map, frm_map, args.figure_name, list_of_layers = layers)
 
 	else:
 		print "Plotting Individual frames"
-		layers = utils.vgg_sos_net_layers[8:]
 		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers)
 		utils.plot_all_layers(X, args.net, label_map, frm_map, args.figure_name, list_of_layers = layers)
 

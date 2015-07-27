@@ -24,14 +24,18 @@ def difference_vectors(X, cluster_predictions, clusters_centers):
 			sum_k += diff
 			u_k[frm_NN_cluster] = sum_k
 	vlad = u_k[0]
+	vlad = vlad.reshape(1, vlad.shape[0])
 	for k in range(1, K):
-		vlad = np.concatenate((vlad, u_k[0]), axis = 1)
+		K_cluster = u_k[k]
+		K_cluster = K_cluster.reshape(1, K_cluster.shape[0])
+		K_cluster = preprocessing.normalize(K_cluster, norm = 'l2')
+		vlad = np.concatenate((vlad, K_cluster), axis = 1)
 	vlad = preprocessing.normalize(vlad, norm = 'l2')
-	# return vlad.reshape(1, vlad.shape[0])
 	return vlad
 
 def encode_VLAD(X, K):
-	# X_pca = pca(X, PC = PC)
+
+	X = utils.pca(X, PC = 256)
 
 	kmeans = cluster.KMeans(init = 'k-means++', n_clusters = K)
 	kmeans.fit(X)
