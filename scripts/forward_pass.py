@@ -7,25 +7,26 @@ import sys
 import pickle
 import caffe
 import argparse
-import utils
 import cv2
+
 import utils
 import encoding
+import constants
 import lcd
 
-sys.path.insert(0, utils.CAFFE_ROOT + 'python')
+sys.path.insert(0, constants.CAFFE_ROOT + 'python')
 
 plt.rcParams['figure.figsize'] = (10, 10)
 plt.rcParams['image.interpolation'] = 'nearest'
 plt.rcParams['image.cmap'] = 'gray'
 
-class FeatureExtractor:
+class CNNFeatureExtractor:
 	def __init__(self, net_name = "AlexNet"):
 		self.net = None
 		self.transformer = None
 		self.init_caffe(net_name)
 
-	def forward_pass(self, PATH_TO_DATA, annotations, list_of_layers = utils.alex_net_layers,
+	def forward_pass(self, PATH_TO_DATA, annotations, list_of_layers = constants.alex_net_layers,
 		sampling_rate = 1, batch_size = -1, LCD = False):
 		if batch_size == -1:
 			return self.process_individual_frames(PATH_TO_DATA, annotations,
@@ -42,9 +43,9 @@ class FeatureExtractor:
 
 		for index in map_index_data:
 			segments = map_index_data[index]
-			print "Processing images for label " + str(index)
+			# print "Processing images for label " + str(index)
 			for seg in segments:
-				print str(seg)
+				# print str(seg)
 				frm_num = seg[0]
 				b = 1 #Running count of num frames in batch
 				batch_data = {}
@@ -145,7 +146,7 @@ if __name__ == "__main__":
 	parser.add_argument("--batch_size", help = "Batch size for temporal batches", default = -1)
 	parser.add_argument("--LCD", help = "Batch size for temporal batches")
 	args = parser.parse_args()
-	fe = FeatureExtractor(args.net)
+	fe = CNNFeatureExtractor(args.net)
 	layers = constants.NET_PARAMS[args.net][2]
 	if args.PATH_TO_DATA_2 or args.annotations_2:
 		if args.PATH_TO_DATA_2 and args.annotations_2:

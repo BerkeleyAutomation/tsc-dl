@@ -179,8 +179,18 @@ def get_frame_fig_name(frm_num):
 		pass
 
 def flatten(data):
-	data = data.flatten()
+	return reshape(data.flatten())
+
+def reshape(data):
 	return data.reshape(1, data.shape[0])
+
+def dict_insert_list(key, value, dict):
+	if key not in dict:
+		dict[key] = [value,]
+	else:
+		curr_list = dict[key]
+		curr_list.append(value)
+		dict[key] = curr_list
 
 def dict_insert(key, value, data_dict, axis = 0):
 	if key not in data_dict:
