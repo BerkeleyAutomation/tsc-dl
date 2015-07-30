@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from sklearn import (manifold, datasets, decomposition, ensemble, lda,
 	random_projection, preprocessing, covariance, cluster, neighbors)
 import cv2
+import random
+import os
+
 import encoding
 import constants
 
@@ -178,6 +181,9 @@ def get_frame_fig_name(frm_num):
 	else:
 		pass
 
+def hashcode():
+	return str(random.randrange(1000, 10000))
+
 def flatten(data):
 	return reshape(data.flatten())
 
@@ -191,6 +197,11 @@ def dict_insert_list(key, value, dict):
 		curr_list = dict[key]
 		curr_list.append(value)
 		dict[key] = curr_list
+
+def sys_copy(from_path, to_path):
+	command = "cp " + from_path + " " + to_path
+	print command
+	os.system(command)
 
 def dict_insert(key, value, data_dict, axis = 0):
 	if key not in data_dict:

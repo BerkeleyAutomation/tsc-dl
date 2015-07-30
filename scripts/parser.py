@@ -11,7 +11,10 @@ from forward_pass import CNNFeatureExtractor
 def forward_pass_entire_dataset():
 	net = CNNFeatureExtractor("AlexNet")
 	# list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
-	list_of_videos = ['Suturing_E001', 'Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+	# list_of_videos = ['Suturing_E001', 'Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+	list_of_videos = ['Suturing_H002', 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+	'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+	
 	total = len(list_of_videos) * 2
 	i = 1
 	for video in list_of_videos:
@@ -47,7 +50,31 @@ def generate_list_of_videos(config_file_name, include_camera = False):
 					list_of_videos.append(params[0])					
 	return list_of_videos
 
-def convert_trabscription_to_annotation(PATH_TO_TRANSCRIPTION, PATH_TO_ANNOTATION, demonstration):
+def frame2surgeme_map_demonstration(PATH_TO_TRANSCRIPTION, demonstration):
+	map_frame2surgeme = {}
+	with open(PATH_TO_TRANSCRIPTION + demonstration + ".txt", "rb") as f:
+		for line in f:
+			line = line.split()
+			start = int(line[0])
+			end = int(line[1])
+			surgeme = int(constants.map_surgeme_label[line[2]])
+			i = start
+			while i <= end:
+				map_frame2surgeme[i] = surgeme
+				i += 1
+	return map_frame2surgeme
+
+def get_all_frame2surgeme_maps(list_of_videos):
+	map_frame2surgeme = {}
+
+	for demonstration in list_of_videos:
+
+		map_frame2surgeme[demonstration] = frame2surgeme_map_demonstration(constants.PATH_TO_SUTURING_DATA +
+			constants.TRANSCRIPTIONS_FOLDER, demonstration)
+
+	return map_frame2surgeme
+
+def convert_transcription_to_annotation(PATH_TO_TRANSCRIPTION, PATH_TO_ANNOTATION, demonstration):
 	segments = {}
 	with open(PATH_TO_TRANSCRIPTION + demonstration + ".txt", "rb") as f:
 		for line in f:
@@ -70,7 +97,7 @@ def parse_annotations():
 	list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
 	# Note that left and right cameres have same transcriptions/annotations
 	for video in list_of_videos:
-		convert_trabscription_to_annotation(constants.PATH_TO_SUTURING_DATA + constants.TRANSCRIPTIONS_FOLDER,
+		convert_transcription_to_annotation(constants.PATH_TO_SUTURING_DATA + constants.TRANSCRIPTIONS_FOLDER,
 			constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER, video)
 
 def get_start_end_annotations(PATH_TO_ANNOTATION):
@@ -143,7 +170,7 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname, samplin
 		# 		else:
 		# 			X = slave.reshape(1, slave.shape[0])
 		# 	i += 1
-	return X
+	return X.astype(np.float)
 
 
 if __name__ == "__main__":
