@@ -11,6 +11,7 @@ import parser
 import utils
 
 from sklearn import (mixture, preprocessing, neighbors)
+from decimal import Decimal
 
 class MilestonesClustering():
 	def __init__(self):
@@ -23,23 +24,27 @@ class MilestonesClustering():
 		self.change_pts_Z = None
 		self.change_pts_W = None
 
+		self.list_of_cp = []
 		self.map_cp2frm = {}
 		self.map_cp2demonstrations = {}
 		self.map_cp_level1 = {}
 		self.map_cp_level2 = {}
 		self.map_level1_cp = {}
 		self.map_level2_cp = {}
-		self.map_cp_milestone = {}
+		self.map_cp2milestone = {}
 		self.l2_cluster_matrices = {}
 		self.map_frm2surgeme = parser.get_all_frame2surgeme_maps(self.list_of_demonstrations)
 		self.trial = utils.hashcode()
+
+		self.pruned_L1_clusters = []
+		self.pruned_L2_clusters = []
 
 	def get_kinematic_features(self, demonstration, sampling_rate = 1):
 		return parser.parse_kinematics(constants.PATH_TO_SUTURING_KINEMATICS, constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p",
 			demonstration + ".txt", sampling_rate = sampling_rate)
 
 	def get_visual_features(self, demonstration, PC = 100):
-		layer = 'pool5'
+		layer = 'conv4'
 
 		Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + constants.ALEXNET_FEATURES_FOLDER + layer
 			+ "_alexnet_" + demonstration + "_capture2.p", "rb"))
@@ -80,19 +85,25 @@ class MilestonesClustering():
 		cp_index = 0
 
 		for demonstration in self.list_of_demonstrations:
+
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
-			# Fit a Dirichlet process mixture of Gaussians using five components
+
 			gmm = mixture.GMM(n_components = 10, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
+
 			map_cp2frm = {}
 			for i in range(len(Y) - 1):
+
 				if Y[i] != Y[i + 1]:
+
 					change_pt = N[i][N.shape[1]/2:]
 					self.append_cp_array(change_pt)
 					self.map_cp2frm[cp_index] = i + 1
 					self.map_cp2demonstrations[cp_index] = demonstration
+					self.list_of_cp.append(cp_index)
+
 					cp_index += 1
 
 	def append_cp_array(self, cp):
@@ -172,7 +183,7 @@ class MilestonesClustering():
 			if self.check_pruning_condition(list_of_cp):
 				continue
 
-			n_components = 5
+			n_components = 3
 			gmm = mixture.GMM(n_components = n_components, covariance_type='full')
 
 			try:
@@ -180,6 +191,7 @@ class MilestonesClustering():
 
 			except ValueError as e:
 
+				self.pruned_L1_clusters.append(key)
 				print "Unable to fit GMM!"
 				continue
 
@@ -195,9 +207,8 @@ class MilestonesClustering():
 				frm = self.map_cp2frm[cp]
 				surgeme = self.map_frm2surgeme[demonstration][frm]
 
-				self.map_cp_milestone[cp] = milestone
+				self.map_cp2milestone[cp] = milestone
 
-				print("%s             %3d         %s   %3d   %3d    %3d" % (l1_cluster, l2_cluster, demonstration, frm, cp, surgeme))
 				file.write("%s             %3d         %s   %3d   %3d    %3d\n" % (l1_cluster, l2_cluster, demonstration, frm, cp, surgeme))
 
 				self.copy_frames(demonstration, frm, str(l1_cluster), str(l2_cluster), surgeme)
@@ -209,7 +220,7 @@ class MilestonesClustering():
 		neigh.fit(matrix, list_of_cp)
 		milestone_closest_cp = neigh.predict(gmm.means_)
 
-		assert len(milestone_closest_cp) == 5
+		assert len(milestone_closest_cp) == 3
 
 		for cp in milestone_closest_cp:
 			demonstration = self.map_cp2demonstrations[cp]
@@ -218,7 +229,7 @@ class MilestonesClustering():
 
 			from_path = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + frm
 
-			to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/milestones/" + self.map_cp_milestone[cp] + "_" + str(surgeme) + "_" + demonstration + "_" + frm
+			to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/milestones/" + self.map_cp2milestone[cp] + "_" + str(surgeme) + "_" + demonstration + "_" + frm
 
 			utils.sys_copy(from_path, to_path)		
 
@@ -233,6 +244,54 @@ class MilestonesClustering():
 
 		utils.sys_copy(from_path, to_path)
 
+	def cluster_evaluation(self):
+
+		all_surgemes = []
+		for cp in self.list_of_cp:
+			all_surgemes.append(self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]])
+		all_surgemes = set(all_surgemes)
+
+		# Initialize data structures
+		table = {}
+		for L1_cluster in self.map_level1_cp.keys():
+			new_dict = {}
+			for surgeme in all_surgemes:
+				new_dict[surgeme] = 0
+			table[L1_cluster] = new_dict
+
+		surgeme_count = {}
+		for surgeme in all_surgemes:
+			surgeme_count[surgeme] = 0
+
+		for L1_cluster in self.map_level1_cp.keys():
+			list_of_cp = self.map_level1_cp[L1_cluster]
+			for cp in list_of_cp:
+				surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
+				surgeme_count[surgeme] += 1
+
+				curr_dict = table[L1_cluster]
+				curr_dict[surgeme] += 1
+				table[L1_cluster] = curr_dict
+
+		final_clusters = list(set(self.map_level1_cp.keys()) - set(self.pruned_L1_clusters))
+		print self.pruned_L1_clusters
+
+		print surgeme_count
+
+		result = "   "
+		for surgeme in all_surgemes:
+			result = result + str(surgeme) + "     "
+		print result
+		result = ""
+		for L1_cluster in final_clusters:
+			result = result + L1_cluster + "   "
+			for surgeme in all_surgemes:
+				# result += str(float("{0:.2f}".format(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])))) + "   "
+				result += str(round(Decimal(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])), 2)) + "   "
+			result += '\n'
+
+		print result
+
 	def do_everything(self):
 
 		self.construct_features()
@@ -244,6 +303,8 @@ class MilestonesClustering():
 		self.cluster_changepoints_level1()
 
 		self.cluster_changepoints_level2()
+
+		self.cluster_evaluation()
 
 if __name__ == "__main__":
 	mc = MilestonesClustering()

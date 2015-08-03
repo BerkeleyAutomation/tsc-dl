@@ -200,7 +200,6 @@ def dict_insert_list(key, value, dict):
 
 def sys_copy(from_path, to_path):
 	command = "cp " + from_path + " " + to_path
-	print command
 	os.system(command)
 
 def dict_insert(key, value, data_dict, axis = 0):
