@@ -151,15 +151,15 @@ if __name__ == "__main__":
 	if args.PATH_TO_DATA_2 or args.annotations_2:
 		if args.PATH_TO_DATA_2 and args.annotations_2:
 
-			layers = constants.vgg_sos_net_layers[11:]
-			batch_size = int(args.batch_size) if args.batch_size else -1
-			encoding_func = encoding.encode_cluster_normalize if args.vlad else None
+			# layers = constants.vgg_sos_net_layers[11:]
+			# batch_size = int(args.batch_size) if args.batch_size else -1
+			# encoding_func = encoding.encode_cluster_normalize if args.vlad else None
 			print "--------- Forward Pass #1 ---------"
-			X1, label_map_1, frm_map_1 = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 1, batch_size = batch_size)
+			X1, label_map_1, frm_map_1 = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers)
 			print "--------- Forward Pass #2 ---------"
-			X2, label_map_2, frm_map_2 = fe.forward_pass(args.PATH_TO_DATA_2, args.annotations_2, list_of_layers = layers, sampling_rate = 4, batch_size = batch_size)
+			X2, label_map_2, frm_map_2 = fe.forward_pass(args.PATH_TO_DATA_2, args.annotations_2, list_of_layers = layers)
 
-			utils.plot_all_layers_joint(X1, args.net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, args.figure_name, encoding_func = encoding_func, layers = layers)
+			utils.plot_all_layers_joint(X1, args.net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, args.figure_name, layers = layers)
 		else:
 			print "ERROR: Please provide both annotations and the path for second set of images"
 			sys.exit()

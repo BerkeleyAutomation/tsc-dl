@@ -38,6 +38,8 @@ VIDEO_FOLDER = "video/"
 
 NEW_FRAMES_FOLDER = "frames/"
 
+NEW_BGSUB_FOLDER = "bgsubframes/"
+
 TRANSCRIPTIONS_FOLDER = "transcriptions/"
 
 ANNOTATIONS_FOLDER = "annotations/"

@@ -127,14 +127,14 @@ def plot_all_layers(X, net, label_map, frm_map, figure_name, list_of_layers = co
 		plot_annotated_embedding(X_tsne_pca, label_map, frm_map,
 			figure_name + '_'+ net +'_' + layer + '_tsne_pca', title = 't-SNE(PCA Input) - '+ net +' ' + layer)
 
-def plot_all_layers_joint(X1, net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, figure_name, encoding_func = None, layers = constants.alex_net_layers):
+def plot_all_layers_joint(X1, net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, figure_name, layers = constants.alex_net_layers,  encoding_func = None):
 	num_X1_pts = X1[layers[0]].shape[0]
 
 	for layer in layers:
 		print "----- Plotting layer " + str(layer) + " ---------"
 		X_layer1 = X1[layer]
 		X_layer2 = X2[layer]
-		if encoding_func:
+		if encoding_func is not None:
 			X_layer1 = encoding_func(X_layer1)
 			X_layer2 = encoding_func(X_layer2)
 		X_joint = np.concatenate((X_layer1, X_layer2), axis = 0)
@@ -209,3 +209,6 @@ def dict_insert(key, value, data_dict, axis = 0):
 		curr_value = data_dict[key]
 		curr_value = np.concatenate((curr_value, value), axis = axis)
 		data_dict[key] = curr_value
+
+def sample_matrix(matrix, sampling_rate = 1):
+	return matrix[::sampling_rate]
