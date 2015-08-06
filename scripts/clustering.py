@@ -6,6 +6,11 @@ import numpy as np
 import random
 import os
 import argparse
+import sys
+
+#Cluster Validity Indices
+sys.path.insert(0, "/home/animesh/DeepMilestones/scripts/jqm_cvi")
+import cvi
 
 import constants
 import parser
@@ -14,7 +19,7 @@ import utils
 from sklearn import (mixture, preprocessing, neighbors, metrics, cross_decomposition)
 from decimal import Decimal
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
-mutual_info_score, homogeneity_score, completeness_score)
+mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 from sklearn.cross_decomposition import (CCA, PLSCanonical)
 
 class MilestonesClustering():
@@ -53,17 +58,24 @@ class MilestonesClustering():
 		self.pruned_L2_clusters = []
 
 		self.silhouette_scores = {}
+		self.dunn_scores = {}
+		self.davisbouldin_socres = {}
+
+		self.gmm_objects = {}
+
+		self.sr = 3
 
 	def get_kinematic_features(self, demonstration, sampling_rate = 1):
 		return utils.sample_matrix(parser.parse_kinematics(constants.PATH_TO_SUTURING_KINEMATICS, constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p",
 			demonstration + ".txt"), sampling_rate = sampling_rate)
 
-	def get_visual_features(self, demonstration, C = 100):
+	def get_visual_features(self, demonstration, C = 100, sampling_rate = 1):
 
 		Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + constants.ALEXNET_FEATURES_FOLDER + self.layer
 			+ "_alexnet_" + demonstration + "_capture2.p", "rb"))
 
-		return utils.pca(Z.astype(np.float), C)
+		# return utils.pca(Z.astype(np.float), C)
+		return utils.sample_matrix(Z.astype(np.float), sampling_rate = sampling_rate)
 
 	def get_correlated_visual_features(self, demonstration, W, C = 100, sampling_rate = 1):
 
@@ -75,8 +87,6 @@ class MilestonesClustering():
 
 		W1 = utils.sample_matrix(W, 3)
 		Z1 = utils.sample_matrix(Z, 3)
-
-		IPython.embed()
 
 		# cca = CCA(n_components = n_components)
 		# print "Fitting CCA on Visual Features"
@@ -98,13 +108,44 @@ class MilestonesClustering():
 
 	def construct_features(self):
 
+		# Initialization of data structs
+		# demonstration_size = {}
+		# init_demonstration = self.list_of_demonstrations[0]
+		# print "Loading Visual Features for ", init_demonstration
+		# big_Z = self.get_visual_features(init_demonstration, sampling_rate = sr)
+		# demonstration_size[init_demonstration] = big_Z.shape[0]
+		
+		# for demonstration in self.list_of_demonstrations[1:]:
+		# 	print "Loading Visual Features for ", demonstration
+		# 	Z = self.get_visual_features(demonstration, sampling_rate = sr)
+		# 	big_Z = np.concatenate((big_Z, Z), axis = 0)
+		# 	demonstration_size[demonstration] = Z.shape[0]
+
+
+		# misc = [X_ipca, X_rpca, X_tsvd, demonstration_size, self.list_of_demonstrations]
+		
+		print "Loading PCA files..."
+		data = pickle.load(open("/home/animesh/DeepMilestones/data/pca/sut_E12345_pca.p", "rb"))
+		big_Z_pca = data[0]
+		demonstration_size = data[3]
+
+		# IPython.embed()
+
+		# big_Z_pca = utils.pca(big_Z, 100)
+
+		start = 0
+		end = 0
 		for demonstration in self.list_of_demonstrations:
 			print "Parsing Kinematics " + demonstration
-			W = self.get_kinematic_features(demonstration, sampling_rate = 1)
+			W = self.get_kinematic_features(demonstration, sampling_rate = self.sr)
 
-			print "Parsing visual features " + demonstration
-			# Z = self.get_visual_features(demonstration, C = 100)
-			Z = self.get_correlated_visual_features(demonstration, W, sampling_rate = 1)
+			size = demonstration_size[demonstration]
+			print size
+			end = start + size
+			Z = big_Z_pca[start:end]
+			start += size
+
+
 			X = np.concatenate((W, Z), axis = 1)
 			self.data_X[demonstration] = X
 
@@ -136,8 +177,10 @@ class MilestonesClustering():
 			gmm = mixture.GMM(n_components = 10, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
+			self.gmm_objects["changepoints"] = gmm
 
 			self.silhouette_scores['changepoints'] = metrics.silhouette_score(N, Y, metric='euclidean')
+			self.dunn_scores['changepoints'] = cvi.dunn_fast(N, Y)
 
 			map_cp2frm = {}
 			for i in range(len(Y) - 1):
@@ -146,7 +189,7 @@ class MilestonesClustering():
 
 					change_pt = N[i][N.shape[1]/2:]
 					self.append_cp_array(change_pt)
-					self.map_cp2frm[cp_index] = i + 1
+					self.map_cp2frm[cp_index] = i * self.sr
 					self.map_cp2demonstrations[cp_index] = demonstration
 					self.list_of_cp.append(cp_index)
 
@@ -173,7 +216,10 @@ class MilestonesClustering():
 
 		Y = gmm.predict(self.change_pts_Z)
 
+		self.gmm_objects['level1'] = gmm
+
 		self.silhouette_scores['level1'] = metrics.silhouette_score(self.change_pts_Z, Y, metric='euclidean')
+		self.dunn_scores['level1'] = cvi.dunn_fast(self.change_pts_Z, Y)
 
 		for i in range(len(Y)):
 			label = constants.alphabet_map[Y[i] + 1]
@@ -184,7 +230,7 @@ class MilestonesClustering():
 
 	def generate_l2_cluster_matrices(self):
 
-		for key in self.map_level1_cp.keys():
+		for key in sorted(self.map_level1_cp.keys()):
 
 			list_of_cp = self.map_level1_cp[key]
 			matrix = None
@@ -214,7 +260,7 @@ class MilestonesClustering():
 		line = "L1 Cluster   L2 Cluster   Demonstration   Frame#  CP#   Surgeme\n"
 		self.file.write(line)
 
-		for key in self.map_level1_cp.keys():
+		for key in sorted(self.map_level1_cp.keys()):
 			mkdir_l1_cluster = mkdir_path + "/" + key
 
 			list_of_cp_key = self.map_level1_cp[key]
@@ -224,7 +270,7 @@ class MilestonesClustering():
 
 			os.mkdir(mkdir_l1_cluster)
 
-		for key in self.map_level1_cp.keys():
+		for key in sorted(self.map_level1_cp.keys()):
 			matrix = self.l2_cluster_matrices[key]
 			list_of_cp_key = self.map_level1_cp[key]
 
@@ -241,13 +287,18 @@ class MilestonesClustering():
 
 			try:
 				gmm.fit(matrix)
-
+				self.gmm_objects[key] = gmm
 			except ValueError as e:
 				continue
 
 			Y = gmm.predict(matrix)
 
-			self.silhouette_scores[key] = metrics.silhouette_score(matrix, Y, metric='euclidean')
+			try:
+				self.silhouette_scores[key] = metrics.silhouette_score(matrix, Y, metric='euclidean')
+				self.dunn_scores[key] = cvi.dunn_fast(matrix, Y)
+			except ValueError as e:
+				print e
+				pass
 
 			for i in range(len(Y)):
 
@@ -283,10 +334,19 @@ class MilestonesClustering():
 
 			to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/milestones/" + self.map_cp2milestones[cp] + "_" + str(surgeme) + "_" + demonstration + "_" + frm
 
-			utils.sys_copy(from_path, to_path)		
+			utils.sys_copy(from_path, to_path)
 
+	# Prune clusters which represent less than 20% of the total demonstration data
 	def check_pruning_condition(self, list_of_cp_key):
-		return len(list_of_cp_key) <= 5
+		demonstrations_in_cluster = [self.map_cp2demonstrations[cp] for cp in list_of_cp_key]
+
+		num_demonstrations = len(set(demonstrations_in_cluster))
+		num_total_demonstrations = len(self.list_of_demonstrations)
+		data_representation = num_demonstrations / float(num_total_demonstrations)
+
+		print data_representation
+
+		return data_representation < 0.8
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
@@ -371,6 +431,7 @@ class MilestonesClustering():
 		metric_funcs = [adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score, 
 		mutual_info_score, homogeneity_score, completeness_score]
 
+		# ------ Label-based metrics ------
 		print("\n\nMetric       Pred = L2 Milestones       Pred= L1 Labels\n\n")
 		self.file.write("\n\nMetric       Pred = L2 Milestones       Pred= L1 Labels\n\n")
 
@@ -380,9 +441,48 @@ class MilestonesClustering():
 			print("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1)),2),
 				round(Decimal(metric(labels_true, labels_pred_2)),2), repr(metric).split()[1]))
 
+		# ------ Precision & Recall ------
+		# for metric in [recall_score, precision_score]:
+		# 	for val in ['micro', 'macro', 'weighted']:
+		# 		IPython.embed()
+		# 		self.file.write("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1, average = val)), 2),
+		# 			round(Decimal(metric(labels_true, labels_pred_2, average = val)),2), repr(metric).split()[1] + val))
+		# 		print("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1, average = val)),2),
+		# 			round(Decimal(metric(labels_true, labels_pred_2, average = val)),2), repr(metric).split()[1] + val))
+
+		self.file.write("\nSilhouette Scores\n")
+		print("\nSilhoutte scores\n")
+
+		# ------ Silhouette Scores ------
 		for layer, score in self.silhouette_scores.items():
 			self.file.write("%3f        %s\n" % (round(Decimal(score), 2), layer))
 			print("%3f        %s\n" % (round(Decimal(score), 2), layer))
+
+		self.file.write("\nDunn Scores\n")
+		print("\nDunn scores\n")
+
+		# ------ Dunn Scores ------
+		for layer, score in self.dunn_scores.items():
+			self.file.write("%3f        %s\n" % (round(Decimal(score), 2), layer))
+			print("%3f        %s\n" % (round(Decimal(score), 2), layer))
+
+		# ------ Davis-Bouldin Scores ------
+
+		k_list = []
+		k_centers = []
+		for cluster in sorted(self.map_level1_cp.keys()):
+			k_list.append(self.l2_cluster_matrices[cluster])
+
+		means = self.gmm_objects['level1'].means_
+		for i in range(len(means)):
+			if constants.alphabet_map[i + 1] not in self.pruned_L1_clusters:
+				k_centers.append(means[i])
+
+
+		score = cvi.davisbouldin(k_list, k_centers)
+
+		self.file.write("%3f        %s\n" % (round(Decimal(score), 2), 'level1 - Davis-Bouldin'))
+		print("%3f        %s\n" % (round(Decimal(score), 2), 'level1 - Davis-Bouldin'))
 
 
 	def clean_up(self):
