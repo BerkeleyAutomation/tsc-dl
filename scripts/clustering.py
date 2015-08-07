@@ -26,6 +26,8 @@ class MilestonesClustering():
 	def __init__(self, debug_mode):
 		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
 
+		self.featurization_map = {1: self.featurization_1, 2: self.featurization_2}
+
 		if debug_mode:
 			self.list_of_demonstrations = ['Suturing_E001', 'Suturing_E002'] 
 			self.layer = 'pool5'
@@ -106,7 +108,7 @@ class MilestonesClustering():
 
 		return Z_c
 
-	def construct_features(self):
+	def featurization_1(self):
 
 		# Initialization of data structs
 		# demonstration_size = {}
@@ -129,12 +131,9 @@ class MilestonesClustering():
 		big_Z_pca = data[0]
 		demonstration_size = data[3]
 
-		# IPython.embed()
-
-		# big_Z_pca = utils.pca(big_Z, 100)
-
 		start = 0
 		end = 0
+
 		for demonstration in self.list_of_demonstrations:
 			print "Parsing Kinematics " + demonstration
 			W = self.get_kinematic_features(demonstration, sampling_rate = self.sr)
@@ -145,6 +144,34 @@ class MilestonesClustering():
 			Z = big_Z_pca[start:end]
 			start += size
 
+
+			X = np.concatenate((W, Z), axis = 1)
+			self.data_X[demonstration] = X
+
+	# Canonical Correlation Analysis - projecting Z(t) onto W(t)
+	def featurization_2(self):
+
+		import matlab
+		import matlab.engine as mateng
+
+		eng = mateng.start_matlab()
+
+		for demonstration in self.list_of_demonstrations:
+			print "Parsing Kinematics " + demonstration
+			W = self.get_kinematic_features(demonstration, sampling_rate = self.sr)
+			Z = self.get_visual_features(demonstration, sampling_rate = self.sr)
+
+			print "Converting np array -> matlab array"
+			W_mat = matlab.double(W.tolist())
+			Z_mat = matlab.double(Z.tolist())
+
+			print "Matlab CCA"
+			[A, B, r, U, V, stats] = eng.canoncorr(W_mat, Z_mat, nargout = 6)
+
+			Z = np.array(V)
+
+			data = [A, B, r, U, V, stats]
+			pickle.dump(data, open(demonstration + "_matcca.p",'wb'))
 
 			X = np.concatenate((W, Z), axis = 1)
 			self.data_X[demonstration] = X
@@ -219,7 +246,7 @@ class MilestonesClustering():
 		self.gmm_objects['level1'] = gmm
 
 		self.silhouette_scores['level1'] = metrics.silhouette_score(self.change_pts_Z, Y, metric='euclidean')
-		self.dunn_scores['level1'] = cvi.dunn_fast(self.change_pts_Z, Y)
+		# self.dunn_scores['level1'] = cvi.dunn_fast(self.change_pts_Z, Y)
 
 		for i in range(len(Y)):
 			label = constants.alphabet_map[Y[i] + 1]
@@ -479,7 +506,7 @@ class MilestonesClustering():
 				k_centers.append(means[i])
 
 
-		score = cvi.davisbouldin(k_list, k_centers)
+		# score = cvi.davisbouldin(k_list, k_centers)
 
 		self.file.write("%3f        %s\n" % (round(Decimal(score), 2), 'level1 - Davis-Bouldin'))
 		print("%3f        %s\n" % (round(Decimal(score), 2), 'level1 - Davis-Bouldin'))
@@ -488,9 +515,12 @@ class MilestonesClustering():
 	def clean_up(self):
 		self.file.close()
 
-	def do_everything(self):
+	def construct_features(self, mode = 1):
+		self.featurization_map[mode]()
 
-		self.construct_features()
+	def do_everything(self, mode):
+
+		self.construct_features(mode)
 
 		self.generate_transition_features()
 
@@ -509,6 +539,7 @@ class MilestonesClustering():
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
+	argparser.add_argument("--f", help = "Featurization Mode", default = 1)
 	args = argparser.parse_args()
 
 	DEBUG = False
@@ -516,4 +547,4 @@ if __name__ == "__main__":
 		DEBUG = True
 
 	mc = MilestonesClustering(DEBUG)
-	mc.do_everything()
+	mc.do_everything(int(args.f))
