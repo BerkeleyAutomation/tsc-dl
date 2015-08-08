@@ -30,12 +30,16 @@ def difference_vectors(X, cluster_predictions, clusters_centers):
 	for k in range(1, K):
 		K_cluster = u_k[k]
 		K_cluster = K_cluster.reshape(1, K_cluster.shape[0])
+
+		# Intra Normalization
 		K_cluster = preprocessing.normalize(K_cluster, norm = 'l2')
 		vlad = np.concatenate((vlad, K_cluster), axis = 1)
+
+	# L2 Normalization
 	vlad = preprocessing.normalize(vlad, norm = 'l2')
 	return vlad
 
-def encode_VLAD(X, K):
+def encode_VLAD(X, K = 5):
 
 	X = utils.pca(X, PC = 256)
 
@@ -44,11 +48,13 @@ def encode_VLAD(X, K):
 	clusters_centers = kmeans.cluster_centers_
 	assert len(clusters_centers) == K
 
-	neigh = neighbors.KNeighborsClassifier(n_neighbors = 1)
-	Y = np.arange(K)
-	neigh.fit(clusters_centers, Y)
-	cluster_predictions = neigh.predict(X)
-	assert len(cluster_predictions) == X.shape[0]
+	# neigh = neighbors.KNeighborsClassifier(n_neighbors = 1)
+	# Y = np.arange(K)
+	# neigh.fit(clusters_centers, Y)
+	# cluster_predictions = neigh.predict(X)
+	# assert len(cluster_predictions) == X.shape[0]
+
+	cluster_predictions = kmeans.predict(X)
 
 	return difference_vectors(X, cluster_predictions, clusters_centers)
 

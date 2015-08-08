@@ -20,18 +20,10 @@ def pca(X, PC = 2):
 	return X_pca
 
 def pca_incremental(X, PC = 2):
-	print("Computing PCA embedding, using %3d principal components" % PC)
+	print("Incremental PCA, using %3d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
 	X_centered = scaler.transform(X)
-	X_pca = decomposition.TruncatedSVD(n_components=PC).fit_transform(X_centered)
-	return X_pca
-
-
-def pca_randomized(X, PC = 2):
-	print("Computing PCA embedding, using %3d principal components" % PC)
-	scaler = preprocessing.StandardScaler().fit(X)
-	X_centered = scaler.transform(X)
-	X_pca = decomposition.TruncatedSVD(n_components=PC).fit_transform(X_centered)
+	X_pca = decomposition.IncrementalPCA(n_components=PC).fit_transform(X_centered)
 	return X_pca
 
 def tsne_pca(X):
