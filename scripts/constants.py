@@ -46,6 +46,8 @@ ANNOTATIONS_FOLDER = "annotations/"
 
 ALEXNET_FEATURES_FOLDER = "alexnetfeatures/"
 
+VGG_FEATURES_FOLDER = "vggfeatures/"
+
 CROP_PARAMS = {"capture2": "\"crop=330:260:150:150\"", "capture1": "\"crop=330:260:200:170\""}
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,

@@ -414,7 +414,7 @@ class MilestonesClustering():
 
 		final_clusters = list(set(self.map_level1_cp.keys()) - set(self.pruned_L1_clusters))
 
-		confusion_matrix = "   "
+		confusion_matrix = "    "
 		for surgeme in self.cp_surgemes:
 			confusion_matrix = confusion_matrix + str(surgeme) + "     "
 
@@ -424,7 +424,7 @@ class MilestonesClustering():
 
 		confusion_matrix = ""
 		for L1_cluster in final_clusters:
-			confusion_matrix = confusion_matrix + L1_cluster + "   "
+			confusion_matrix = confusion_matrix + "\n" + L1_cluster + "   "
 			for surgeme in self.cp_surgemes:
 				# confusion_matrix += str(float("{0:.2f}".format(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])))) + "   "
 				confusion_matrix += str(round(Decimal(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])), 2)) + "   "
