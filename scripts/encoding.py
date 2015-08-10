@@ -41,7 +41,7 @@ def difference_vectors(X, cluster_predictions, clusters_centers):
 
 def encode_VLAD(X, K = 5):
 
-	X = utils.pca(X, PC = 256)
+	# X = utils.pca(X, PC = 256)
 
 	kmeans = cluster.KMeans(init = 'k-means++', n_clusters = K)
 	kmeans.fit(X)

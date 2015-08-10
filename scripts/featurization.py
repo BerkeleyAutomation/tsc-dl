@@ -9,6 +9,8 @@ import argparse
 import constants
 import parser
 import utils
+import lcd
+import encoding
 
 from sklearn.decomposition import PCA, IncrementalPCA
 
@@ -27,16 +29,16 @@ from sklearn.decomposition import PCA, IncrementalPCA
 
 PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + "features/"
 
-def load_cnn_features(demonstration, layer, folder):
+def load_cnn_features(demonstration, layer, folder, net):
 	Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + folder + layer
-		+ "_alexnet_" + demonstration + "_capture2.p", "rb"))
+		+ "_" + net + "_" + demonstration + "_capture2.p", "rb"))
 	return Z.astype(np.float)
 
 def get_kinematic_features(demonstration):
 	return parser.parse_kinematics(constants.PATH_TO_SUTURING_KINEMATICS, constants.PATH_TO_SUTURING_DATA
 		+ constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p", demonstration + ".txt")
 
-def featurize(DEBUG = False):
+def main(DEBUG = False):
 	if DEBUG:
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
@@ -58,31 +60,76 @@ def featurize(DEBUG = False):
 
 # Featurize - AlexNet conv4
 def featurize_2(list_of_demonstrations, kinematics):
-	featurize_cnn_features(list_of_demonstrations, kinematics, "conv4", constants.ALEXNET_FEATURES_FOLDER, 4)
+	featurize_cnn_features(list_of_demonstrations, kinematics, "conv4",
+		constants.ALEXNET_FEATURES_FOLDER, 2, "alexnet")
 
 # Featurize - AlexNet conv3
 def featurize_3(list_of_demonstrations, kinematics):
-	featurize_cnn_features(list_of_demonstrations, kinematics, "conv3", constants.ALEXNET_FEATURES_FOLDER, 4)
+	featurize_cnn_features(list_of_demonstrations, kinematics, "conv3",
+		constants.ALEXNET_FEATURES_FOLDER, 3, "alexnet")
 
 # Featurize - AlexNet pool5
 def featurize_4(list_of_demonstrations, kinematics):
-	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5", constants.ALEXNET_FEATURES_FOLDER, 4)
+	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
+		constants.ALEXNET_FEATURES_FOLDER, 4, "alexnet")
 
 # Featurize - VGG conv5-1
 def featurize_5(list_of_demonstrations, kinematics):
-	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5", constants.ALEXNET_FEATURES_FOLDER, 4)
+	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
+		constants.ALEXNET_FEATURES_FOLDER, 5, "vgg")
 
 # Featurize - VGG conv5-3
 def featurize_6(list_of_demonstrations, kinematics):
-	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5", constants.ALEXNET_FEATURES_FOLDER, 4)
+	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
+		constants.ALEXNET_FEATURES_FOLDER, 6, "vgg")
 
 # Featurize - VGG + LCD + VLAD
 def featurize_7(list_of_demonstrations, kinematics):
+	a = 13 # Need to find the original values!!
+	M = 9
+	BATCH_SIZE = 15
+	data_X = {}
 	for demonstration in list_of_demonstrations:
 		W = kinematics[demonstration]
-		Z = load_cnn_features(demonstration, "conv5-1", constants.VGG_FEATURES_FOLDER)
+		Z = load_cnn_features(demonstration, "conv5_3", constants.VGG_FEATURES_FOLDER, "vgg")
+		W_new = utils.sample_matrix(sampling_rate = BATCH_SIZE)
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index):
+		Z_new = None
+		j = 1
+
+		Z_batch = None
+
+		for i in range(len(Z)):
+
+			vector = Z[i]
+			vector = vector.reshape(M, a, a)
+			vector = lcd.LCD(vector)
+			if Z_batch is None:
+				Z_batch = vector
+			else:
+				Z_batch = np.concatenate((Z_batch, vector), axis = 0)
+
+			if (j == BATCH_SIZE):
+
+				Z_batch_VLAD = encoding.VLAD(Z_batch)
+				if Z_new is None:
+					Z_new = Z_batch_VLAD
+				else:
+					Z_new = Z_new.concatenate((Z_new, Z_batch_VLAD), axis = 0)
+
+				# Re-initialize batch variables
+				j = 0
+				Z_batch = None
+
+			j += 1
+
+		assert W_new.shape[0] == Z_new.shape[0]
+		X = np.concatenate((W_new, Z_new), axis = 0)
+		data_X[demonstration] = X
+
+	pickle.dump(data_X, open(PATH_TO_FEATURES + str(7) + "_.p", "wb"))
+
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net):
 
 	data_X_PCA = {}
 	data_X_CCA = {}
@@ -92,12 +139,12 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 	# Initialization of data structs
 	demonstration_size = {}
 	init_demonstration = list_of_demonstrations[0]
-	big_Z = load_cnn_features(init_demonstration, layer, folder)
+	big_Z = load_cnn_features(init_demonstration, layer, folder, net)
 	demonstration_size[init_demonstration] = big_Z.shape[0]
 	
 	for demonstration in list_of_demonstrations[1:]:
 		print "Loading Visual Features for ", demonstration
-		Z = load_cnn_features(demonstration, sampling_rate = sr)
+		Z = load_cnn_features(demonstration, layer, folder, net)
 		big_Z = np.concatenate((big_Z, Z), axis = 0)
 		demonstration_size[demonstration] = Z.shape[0]
 
@@ -134,8 +181,8 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 		X = np.concatenate((W, Z), axis = 1)
 		data_X_CCA[demonstration] = X
 
-	pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + feature_index + "_PCA.p", "wb"))
-	pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + feature_index + "_CCA.p", "wb"))
+	pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(feature_index) + "_PCA.p", "wb"))
+	pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(feature_index) + "_CCA.p", "wb"))
 
 
 if __name__ == "__main__":
@@ -146,4 +193,4 @@ if __name__ == "__main__":
 	DEBUG = False
 	if args.debug == 'y':
 		DEBUG = True
-	featurize(DEBUG)
+	main(DEBUG)
