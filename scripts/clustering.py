@@ -22,11 +22,11 @@ from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, no
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 from sklearn.cross_decomposition import (CCA, PLSCanonical)
 
+PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
+
 class MilestonesClustering():
 	def __init__(self, debug_mode):
 		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
-
-		self.featurization_map = {1: self.featurization_1, 2: self.featurization_2}
 
 		if debug_mode:
 			self.list_of_demonstrations = ['Suturing_E001', 'Suturing_E002'] 
@@ -67,114 +67,12 @@ class MilestonesClustering():
 
 		self.sr = 3
 
-	def get_kinematic_features(self, demonstration, sampling_rate = 1):
-		return utils.sample_matrix(parser.parse_kinematics(constants.PATH_TO_SUTURING_KINEMATICS, constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p",
-			demonstration + ".txt"), sampling_rate = sampling_rate)
-
-	def get_visual_features(self, demonstration, C = 100, sampling_rate = 1):
-
-		Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + constants.ALEXNET_FEATURES_FOLDER + self.layer
-			+ "_alexnet_" + demonstration + "_capture2.p", "rb"))
-
-		# return utils.pca(Z.astype(np.float), C)
-		return utils.sample_matrix(Z.astype(np.float), sampling_rate = sampling_rate)
-
-	def get_correlated_visual_features(self, demonstration, W, C = 100, sampling_rate = 1):
-
-		n_components = 20
-		Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + constants.ALEXNET_FEATURES_FOLDER + self.layer
-			+ "_alexnet_" + demonstration + "_capture2.p", "rb"))
-
-		Z = utils.sample_matrix(Z, sampling_rate = sampling_rate)
-
-		W1 = utils.sample_matrix(W, 3)
-		Z1 = utils.sample_matrix(Z, 3)
-
-		# cca = CCA(n_components = n_components)
-		# print "Fitting CCA on Visual Features"
-		# cca.fit(W, Z)
-
-		# W_c, Z_c = cca.transform(W, Z)
-
-		# print "Done fitting CCA"
-
-		# plsca = PLSCanonical(n_components = n_components)
-		# print "Fitting PLSCA on Visual Features"
-		# plsca.fit(W, Z)
-
-		# W_c, Z_c = plsca.transform(W, Z)
-
-		# print "Done fitting PLSCA"
-
-		return Z_c
-
-	def featurization_1(self):
-
-		# Initialization of data structs
-		# demonstration_size = {}
-		# init_demonstration = self.list_of_demonstrations[0]
-		# print "Loading Visual Features for ", init_demonstration
-		# big_Z = self.get_visual_features(init_demonstration, sampling_rate = sr)
-		# demonstration_size[init_demonstration] = big_Z.shape[0]
-		
-		# for demonstration in self.list_of_demonstrations[1:]:
-		# 	print "Loading Visual Features for ", demonstration
-		# 	Z = self.get_visual_features(demonstration, sampling_rate = sr)
-		# 	big_Z = np.concatenate((big_Z, Z), axis = 0)
-		# 	demonstration_size[demonstration] = Z.shape[0]
-
-
-		# misc = [X_ipca, X_rpca, X_tsvd, demonstration_size, self.list_of_demonstrations]
-		
-		print "Loading PCA files..."
-		data = pickle.load(open("/home/animesh/DeepMilestones/data/pca/sut_E12345_pca.p", "rb"))
-		big_Z_pca = data[0]
-		demonstration_size = data[3]
-
-		start = 0
-		end = 0
-
+	def construct_features(self, mode = 4):
+		self.data_X = pickle.load(PATH_TO_FEATURES + str(mode) + ".p")
 		for demonstration in self.list_of_demonstrations:
-			print "Parsing Kinematics " + demonstration
-			W = self.get_kinematic_features(demonstration, sampling_rate = self.sr)
-
-			size = demonstration_size[demonstration]
-			print size
-			end = start + size
-			Z = big_Z_pca[start:end]
-			start += size
-
-
-			X = np.concatenate((W, Z), axis = 1)
-			self.data_X[demonstration] = X
-
-	# Canonical Correlation Analysis - projecting Z(t) onto W(t)
-	def featurization_2(self):
-
-		import matlab
-		import matlab.engine as mateng
-
-		eng = mateng.start_matlab()
-
-		for demonstration in self.list_of_demonstrations:
-			print "Parsing Kinematics " + demonstration
-			W = self.get_kinematic_features(demonstration, sampling_rate = self.sr)
-			Z = self.get_visual_features(demonstration, sampling_rate = self.sr)
-
-			print "Converting np array -> matlab array"
-			W_mat = matlab.double(W.tolist())
-			Z_mat = matlab.double(Z.tolist())
-
-			print "Matlab CCA"
-			[A, B, r, U, V, stats] = eng.canoncorr(W_mat, Z_mat, nargout = 6)
-
-			Z = np.array(V)
-
-			data = [A, B, r, U, V, stats]
-			pickle.dump(data, open(demonstration + "_matcca.p",'wb'))
-
-			X = np.concatenate((W, Z), axis = 1)
-			self.data_X[demonstration] = X
+			if demonstration not in self.data_X.keys():
+				print "[ERROR] Missing demonstrations"
+				sys.exit()
 
 	def generate_transition_features(self):
 		print "Generating Transition Features"
@@ -515,9 +413,6 @@ class MilestonesClustering():
 	def clean_up(self):
 		self.file.close()
 
-	def construct_features(self, mode = 1):
-		self.featurization_map[mode]()
-
 	def do_everything(self, mode):
 
 		self.construct_features(mode)
@@ -539,7 +434,7 @@ class MilestonesClustering():
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
-	argparser.add_argument("--f", help = "Featurization Mode", default = 1)
+	argparser.add_argument("--f", help = "Featurization Mode, choose from 1 - 10", default = 4)
 	args = argparser.parse_args()
 
 	DEBUG = False

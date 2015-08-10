@@ -16,18 +16,20 @@ from sklearn.decomposition import PCA, IncrementalPCA
 
 # Table of features:
 
-# 1 - HOG-SIFT
+# 1 - SIFT
 # 2 - conv4 AlexNet
 # 3 - conv3 AlexNet
 # 4 - pool5 AlexNet
-# 5 - conv X VGG
-# 6 - conv Y VGG
-# 7 - VGG conv5-1 + LCD + VLAD-k (each batch is 30 frames)
+# 5 - conv5_1 VGG
+# 6 - conv5_3 VGG
+# 7 - VGG conv5_1 + LCD + VLAD-k (each batch is 30 frames)
 # 8 - Hypercolumns (AlexNet conv 3,4,5)
 # 9 - Background Subtraction (conv4 AlexNet)
-# 10 - Background Subtraction (conv X VGG)
+# 10 - Background Subtraction (conv5_3 VGG)
+# 11 - HOG
+# 12 - SIFT v2
 
-PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + "features/"
+PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
 
 def load_cnn_features(demonstration, layer, folder, net):
 	Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + folder + layer
@@ -73,12 +75,12 @@ def featurize_4(list_of_demonstrations, kinematics):
 	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
 		constants.ALEXNET_FEATURES_FOLDER, 4, "alexnet")
 
-# Featurize - VGG conv5-1
+# Featurize - VGG conv5_1
 def featurize_5(list_of_demonstrations, kinematics):
 	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
 		constants.ALEXNET_FEATURES_FOLDER, 5, "vgg")
 
-# Featurize - VGG conv5-3
+# Featurize - VGG conv5_3
 def featurize_6(list_of_demonstrations, kinematics):
 	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
 		constants.ALEXNET_FEATURES_FOLDER, 6, "vgg")
@@ -95,27 +97,20 @@ def featurize_7(list_of_demonstrations, kinematics):
 		W_new = utils.sample_matrix(sampling_rate = BATCH_SIZE)
 
 		Z_new = None
-		j = 1
-
 		Z_batch = None
+		j = 1
 
 		for i in range(len(Z)):
 
 			vector = Z[i]
 			vector = vector.reshape(M, a, a)
 			vector = lcd.LCD(vector)
-			if Z_batch is None:
-				Z_batch = vector
-			else:
-				Z_batch = np.concatenate((Z_batch, vector), axis = 0)
+			Z_batch = utils.safe_concatenate(Z_batch, vector)
 
 			if (j == BATCH_SIZE):
 
 				Z_batch_VLAD = encoding.VLAD(Z_batch)
-				if Z_new is None:
-					Z_new = Z_batch_VLAD
-				else:
-					Z_new = Z_new.concatenate((Z_new, Z_batch_VLAD), axis = 0)
+				Z_new = utils.safe_concatenate(Z_new, Z_batch_VLAD)
 
 				# Re-initialize batch variables
 				j = 0

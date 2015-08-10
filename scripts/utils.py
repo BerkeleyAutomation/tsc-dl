@@ -217,5 +217,12 @@ def dict_insert(key, value, data_dict, axis = 0):
 		curr_value = np.concatenate((curr_value, value), axis = axis)
 		data_dict[key] = curr_value
 
+def safe_concatenate(X, W, axis = 0):
+	if X is None:
+		return W
+	else:
+		IPython.embed()
+		return np.concatenate((X, W), axis = axis)
+
 def sample_matrix(matrix, sampling_rate = 1):
 	return matrix[::sampling_rate]
