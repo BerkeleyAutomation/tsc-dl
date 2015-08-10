@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import IPython
 
-img = cv2.imread('sample2.JPG')
+img = cv2.imread('mum.JPG')
 gray= cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
 sift = cv2.SIFT()
