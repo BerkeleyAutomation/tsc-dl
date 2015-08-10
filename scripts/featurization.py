@@ -101,7 +101,7 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 		big_Z = np.concatenate((big_Z, Z), axis = 0)
 		demonstration_size[demonstration] = Z.shape[0]
 
-
+	print "PCA....."
 	big_Z_pca = utils.pca_incremental(big_Z, PC = 100)
 	start = 0
 	end = 0
