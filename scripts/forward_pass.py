@@ -27,7 +27,10 @@ class CNNFeatureExtractor:
 		self.init_caffe(net_name)
 
 	def forward_pass(self, PATH_TO_DATA, annotations, list_of_layers = constants.alex_net_layers,
-		sampling_rate = 1, batch_size = -1, LCD = False):
+		sampling_rate = 1, batch_size = -1, LCD = False, no_plot_mode = False):
+		if no_plot_mode:
+			return self.process_individual_frames_2(PATH_TO_DATA, annotations,
+				list_of_layers, sampling_rate)
 		if batch_size == -1:
 			return self.process_individual_frames(PATH_TO_DATA, annotations,
 				list_of_layers, sampling_rate, LCD)
@@ -94,6 +97,8 @@ class CNNFeatureExtractor:
 		X = {}
 		map_index_data = pickle.load(open(annotations, "rb"))
 
+		IPython.embed()
+
 		for index in map_index_data:
 			segments = map_index_data[index]
 			print "Processing images for label " + str(index)
@@ -107,6 +112,7 @@ class CNNFeatureExtractor:
 					im = caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num))
 					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', im)
 					out = self.net.forward()
+					IPython.embed()
 					for layer in list_of_layers:
 						if layer == 'input':
 							data = cv2.imread(full_image_path)
@@ -117,6 +123,30 @@ class CNNFeatureExtractor:
 					frm_num += sampling_rate
 					i += 1
 		return X, label_map, frm_map
+
+	def process_individual_frames_2(self, PATH_TO_DATA, annotations, list_of_layers, sampling_rate):
+		X = {}
+		map_index_data = pickle.load(open(annotations, "rb"))
+
+		segments = utils.get_chronological_sequences(map_index_data)
+		for seg in segments:
+			print str(seg)
+			frm_num = seg[0]
+			while frm_num <= seg[1]:
+				print frm_num
+				im = caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num))
+				self.net.blobs['data'].data[...] = self.transformer.preprocess('data', im)
+				out = self.net.forward()
+				for layer in list_of_layers:
+					if layer == 'input':
+						data = cv2.imread(full_image_path)
+					else:
+						data = self.net.blobs[layer].data[0]
+					data = utils.flatten(data)
+					utils.dict_insert(layer, data, X)
+				frm_num += sampling_rate
+		return X
+
 
 	def init_caffe(self, net_name):
 		caffe.set_mode_gpu()

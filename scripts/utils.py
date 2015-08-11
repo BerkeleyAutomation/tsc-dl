@@ -12,6 +12,24 @@ import os
 import encoding
 import constants
 
+def cca(W, Z):
+	print "CCA....."
+	import matlab
+	import matlab.engine as mateng
+
+	eng = mateng.start_matlab()	
+
+	W_mat = matlab.double(W.tolist())
+	Z_mat = matlab.double(Z.tolist())
+
+	[A, B, r, U, V, stats] = eng.canoncorr(W_mat, Z_mat, nargout = 6)
+
+	Z = np.array(V)
+
+	eng.quit()
+
+	return Z
+
 def pca(X, PC = 2):
 	print("Computing PCA embedding, using %3d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
@@ -188,6 +206,15 @@ def get_frame_fig_name(frm_num):
 	else:
 		pass
 
+def get_chronological_sequences(annotations_file):
+	sequences = []
+	for elem1 in annotations_file.values():
+		for elem2 in elem1:
+			sequences.append(elem2)
+
+	sequences.sort(key = lambda x: x[0])
+	return sequences
+
 def hashcode():
 	return str(random.randrange(1000, 10000))
 
@@ -221,7 +248,6 @@ def safe_concatenate(X, W, axis = 0):
 	if X is None:
 		return W
 	else:
-		IPython.embed()
 		return np.concatenate((X, W), axis = axis)
 
 def sample_matrix(matrix, sampling_rate = 1):

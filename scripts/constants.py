@@ -44,11 +44,11 @@ TRANSCRIPTIONS_FOLDER = "transcriptions/"
 
 ANNOTATIONS_FOLDER = "annotations/"
 
-ALEXNET_FEATURES_FOLDER = "alexnetfeatures/"
+ALEXNET_FEATURES_FOLDER = "alexnetfeatures_2/"
 
-VGG_FEATURES_FOLDER = "vggfeatures/"
+VGG_FEATURES_FOLDER = "vggfeatures_2/"
 
-PROC_FEATURES_FOLDER = "features/"
+PROC_FEATURES_FOLDER = "features_2/"
 
 CROP_PARAMS = {"capture2": "\"crop=330:260:150:150\"", "capture1": "\"crop=330:260:200:170\""}
 
