@@ -15,6 +15,7 @@ import cvi
 import constants
 import parser
 import utils
+import cluster_evaluation
 
 from sklearn import (mixture, preprocessing, neighbors, metrics, cross_decomposition)
 from decimal import Decimal
@@ -25,19 +26,16 @@ from sklearn.cross_decomposition import (CCA, PLSCanonical)
 PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
 
 class MilestonesClustering():
-	def __init__(self, debug_mode):
+	def __init__(self, list_of_demonstrations, featfile):
 		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
-
-		if debug_mode:
-			self.list_of_demonstrations = ['Suturing_E001', 'Suturing_E002'] 
-			self.layer = 'pool5'
-		else:
-			self.list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-			self.layer = 'conv4'
+	
+		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
 		self.data_N = {}
 
 		self.file = None
+		self.featfile = featfile
+		self.metrics_picklefile = None
 
 		self.change_pts = None
 		self.change_pts_Z = None
@@ -60,15 +58,18 @@ class MilestonesClustering():
 		self.pruned_L2_clusters = []
 
 		self.silhouette_scores = {}
-		self.dunn_scores = {}
-		self.davisbouldin_socres = {}
+		self.dunn_scores_1 = {}
+		self.dunn_scores_2 = {}
+		self.dunn_scores_3 = {}
+		self.label_based_scores_1 = {}
+		self.label_based_scores_2 = {}
 
 		self.gmm_objects = {}
 
 		self.sr = 3
 
-	def construct_features(self, mode = 4):
-		self.data_X = pickle.load(PATH_TO_FEATURES + str(mode) + ".p")
+	def construct_features(self):
+		self.data_X = pickle.load(PATH_TO_FEATURES + str(self.featfile) + ".p")
 		for demonstration in self.list_of_demonstrations:
 			if demonstration not in self.data_X.keys():
 				print "[ERROR] Missing demonstrations"
@@ -102,10 +103,8 @@ class MilestonesClustering():
 			gmm = mixture.GMM(n_components = 10, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
-			self.gmm_objects["changepoints"] = gmm
-
-			self.silhouette_scores['changepoints'] = metrics.silhouette_score(N, Y, metric='euclidean')
-			self.dunn_scores['changepoints'] = cvi.dunn_fast(N, Y)
+	
+			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
 			map_cp2frm = {}
 			for i in range(len(Y) - 1):
@@ -132,6 +131,19 @@ class MilestonesClustering():
 			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:38])), axis = 0)
 			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[38:])), axis = 0)
 
+
+	def save_cluster_metrics(self, points, predictions, means, key, model):
+
+		self.gmm_objects[key] = model
+
+		self.silhouette_scores[key] = metrics.silhouette_score(points, predictions, metric='euclidean')
+
+		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+
+		self.dunn_scores_1[key] = dunn_scores[0]
+		self.dunn_scores_2[key] = dunn_scores[1]
+		self.dunn_scores_3[key] = dunn_scores[2]
+
 	def cluster_changepoints_level1(self):
 
 		print "Level1 : Clustering changepoints in Z(t)"
@@ -141,10 +153,7 @@ class MilestonesClustering():
 
 		Y = gmm.predict(self.change_pts_Z)
 
-		self.gmm_objects['level1'] = gmm
-
-		self.silhouette_scores['level1'] = metrics.silhouette_score(self.change_pts_Z, Y, metric='euclidean')
-		# self.dunn_scores['level1'] = cvi.dunn_fast(self.change_pts_Z, Y)
+		self.save_cluster_metrics(self.change_pts_Z, Y, gmm.means_, 'level1', gmm)
 
 		for i in range(len(Y)):
 			label = constants.alphabet_map[Y[i] + 1]
@@ -182,6 +191,7 @@ class MilestonesClustering():
 		os.mkdir(mkdir_path + "/" + "milestones")
 
 		self.file = open(mkdir_path + "/" + self.trial + "clustering.txt", "wb")
+		self.metrics_picklefile = mkdir_path + "/" + self.trial + "metrics.p"
 		line = "L1 Cluster   L2 Cluster   Demonstration   Frame#  CP#   Surgeme\n"
 		self.file.write(line)
 
@@ -217,13 +227,7 @@ class MilestonesClustering():
 				continue
 
 			Y = gmm.predict(matrix)
-
-			try:
-				self.silhouette_scores[key] = metrics.silhouette_score(matrix, Y, metric='euclidean')
-				self.dunn_scores[key] = cvi.dunn_fast(matrix, Y)
-			except ValueError as e:
-				print e
-				pass
+			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm)
 
 			for i in range(len(Y)):
 
@@ -361,19 +365,15 @@ class MilestonesClustering():
 		self.file.write("\n\nMetric       Pred = L2 Milestones       Pred= L1 Labels\n\n")
 
 		for metric in metric_funcs:
-			self.file.write("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1)), 2),
-				round(Decimal(metric(labels_true, labels_pred_2)),2), repr(metric).split()[1]))
-			print("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1)),2),
-				round(Decimal(metric(labels_true, labels_pred_2)),2), repr(metric).split()[1]))
 
-		# ------ Precision & Recall ------
-		# for metric in [recall_score, precision_score]:
-		# 	for val in ['micro', 'macro', 'weighted']:
-		# 		IPython.embed()
-		# 		self.file.write("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1, average = val)), 2),
-		# 			round(Decimal(metric(labels_true, labels_pred_2, average = val)),2), repr(metric).split()[1] + val))
-		# 		print("%3f        %3f        %s\n" % (round(Decimal(metric(labels_true, labels_pred_1, average = val)),2),
-		# 			round(Decimal(metric(labels_true, labels_pred_2, average = val)),2), repr(metric).split()[1] + val))
+			score_1 = round(Decimal(metric(labels_true, labels_pred_1)), 2)
+			score_2 = round(Decimal(metric(labels_true, labels_pred_2)), 2)
+			key =  repr(metric).split()[1]
+			self.label_based_scores_1[key] = score_1
+			self.label_based_scores_2[key] = score_2
+
+			self.file.write("%3f        %3f        %s\n" % (score_1, score_2, key))
+			print("%3f        %3f        %s\n" % (score_1, score_2, key))
 
 		self.file.write("\nSilhouette Scores\n")
 		print("\nSilhoutte scores\n")
@@ -383,39 +383,41 @@ class MilestonesClustering():
 			self.file.write("%3f        %s\n" % (round(Decimal(score), 2), layer))
 			print("%3f        %s\n" % (round(Decimal(score), 2), layer))
 
-		self.file.write("\nDunn Scores\n")
-		print("\nDunn scores\n")
+		self.file.write("\nDunn Scores1\n")
+		print("\nDunn scores1\n")
 
 		# ------ Dunn Scores ------
-		for layer, score in self.dunn_scores.items():
+		for layer, score in self.dunn_scores_1.items():
 			self.file.write("%3f        %s\n" % (round(Decimal(score), 2), layer))
 			print("%3f        %s\n" % (round(Decimal(score), 2), layer))
 
-		# ------ Davis-Bouldin Scores ------
+		self.file.write("\nDunn Scores2\n")
+		print("\nDunn scores2\n")
 
-		k_list = []
-		k_centers = []
-		for cluster in sorted(self.map_level1_cp.keys()):
-			k_list.append(self.l2_cluster_matrices[cluster])
+		# ------ Dunn Scores ------
+		for layer, score in self.dunn_scores_2.items():
+			self.file.write("%3f        %s\n" % (round(Decimal(score), 2), layer))
+			print("%3f        %s\n" % (round(Decimal(score), 2), layer))
 
-		means = self.gmm_objects['level1'].means_
-		for i in range(len(means)):
-			if constants.alphabet_map[i + 1] not in self.pruned_L1_clusters:
-				k_centers.append(means[i])
+		self.file.write("\nDunn Scores3\n")
+		print("\nDunn scores3\n")
 
+		# ------ Dunn Scores ------
+		for layer, score in self.dunn_scores_3.items():
+			self.file.write("%3f        %s\n" % (round(Decimal(score), 2), layer))
+			print("%3f        %s\n" % (round(Decimal(score), 2), layer))
 
-		# score = cvi.davisbouldin(k_list, k_centers)
+		data = [self.label_based_scores_1, self.label_based_scores_2, self.silhouette_scores,
+		self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3]
 
-		self.file.write("%3f        %s\n" % (round(Decimal(score), 2), 'level1 - Davis-Bouldin'))
-		print("%3f        %s\n" % (round(Decimal(score), 2), 'level1 - Davis-Bouldin'))
-
+		pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
 	def clean_up(self):
 		self.file.close()
 
-	def do_everything(self, mode):
+	def do_everything(self):
 
-		self.construct_features(mode)
+		self.construct_features()
 
 		self.generate_transition_features()
 
@@ -432,14 +434,15 @@ class MilestonesClustering():
 		self.clean_up()
 
 if __name__ == "__main__":
+	list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
-	argparser.add_argument("--f", help = "Featurization Mode, choose from 1 - 10", default = 4)
+	argparser.add_argument("--featfile", help = "Pickle file of visual features", default = 4)
 	args = argparser.parse_args()
 
 	DEBUG = False
 	if args.debug == 'y':
 		DEBUG = True
 
-	mc = MilestonesClustering(DEBUG)
-	mc.do_everything(int(args.f))
+	mc = MilestonesClustering(DEBUG, list_of_demonstrations, args.featfile)
+	mc.do_everything()
