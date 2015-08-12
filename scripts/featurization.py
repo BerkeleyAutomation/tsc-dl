@@ -54,9 +54,9 @@ def main(DEBUG = False):
 		kinematics[demonstration] = W
 
 	# featurize_2(list_of_demonstrations, kinematics)
-	# featurize_3(list_of_demonstrations, kinematics)
+	featurize_3(list_of_demonstrations, kinematics)
 	# featurize_4(list_of_demonstrations, kinematics)
-	featurize_5(list_of_demonstrations, kinematics)
+	# featurize_5(list_of_demonstrations, kinematics)
 	# featurize_6(list_of_demonstrations, kinematics)
 	featurize_7(list_of_demonstrations, kinematics)
 
@@ -140,7 +140,9 @@ def featurize_7(list_of_demonstrations, kinematics):
 		Z_new = utils.safe_concatenate(Z_new, Z_batch_VLAD)
 
 		Z_new_pca = utils.pca(Z_new, PC = 100)
+		print Z_new_pca
 		Z_new_cca = utils.cca(W_new, Z_new)
+		print Z_new_cca
 
 		assert W_new.shape[0] == Z_new_pca.shape[0]
 		assert W_new.shape[0] == Z_new_cca.shape[0]
@@ -150,8 +152,8 @@ def featurize_7(list_of_demonstrations, kinematics):
 		data_X_PCA[demonstration] = X_PCA
 		data_X_CCA[demonstration] = X_CCA
 
-	pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(7) + "_pca_" + "_.p", "wb"))
-	pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(7) + "_cca_" + "_.p", "wb"))
+	pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(7) + "_PCA" + ".p", "wb"))
+	pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(7) + "_CCA" + ".p", "wb"))
 
 def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3):
 

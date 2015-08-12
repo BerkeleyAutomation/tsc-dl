@@ -252,3 +252,8 @@ def safe_concatenate(X, W, axis = 0):
 
 def sample_matrix(matrix, sampling_rate = 1):
 	return matrix[::sampling_rate]
+
+def nsf(num, n=1):
+    """n-Significant Figures"""
+    numstr = ("{0:.%ie}" % (n-1)).format(num)
+    return float(numstr)

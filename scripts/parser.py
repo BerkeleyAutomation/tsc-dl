@@ -11,7 +11,7 @@ from forward_pass import CNNFeatureExtractor
 def forward_pass_entire_dataset():
 	net = CNNFeatureExtractor("AlexNet")
 	# list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
-	list_of_videos = ['Suturing_E001', 'Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+	list_of_videos = ['Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005']
 	# list_of_videos = ['Suturing_H002', 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
 	# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
 	

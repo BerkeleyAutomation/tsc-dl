@@ -24,15 +24,22 @@ def dunn_index(points, predictions, means):
 
 	# Wikipedia Definition No. 1 for Delta - maximum distance between all point-pairs in cluster
 	for cluster in points_in_clusters.keys():
-		delta_list_1.append(max(distance.pdist(points_in_clusters[cluster], 'euclidean')))
+		if len(points_in_clusters[cluster]) > 1:
+			try:
+				delta_list_1.append(max(distance.pdist(points_in_clusters[cluster], 'euclidean')))
+			except ValueError as e:
+				print e
+				IPython.embed()
 
 	# Wikipedia Definition No. 2 for Delta - mean distance between all point-pairs in cluster
 	for cluster in points_in_clusters.keys():
-		delta_list_2.append(np.mean(distance.pdist(points_in_clusters[cluster], 'euclidean')))
+		if len(points_in_clusters[cluster]) > 1:
+			delta_list_2.append(np.mean(distance.pdist(points_in_clusters[cluster], 'euclidean')))
 
 	# Wikipedia Definition No. 3 for Delta - distance of all points from mean
 	for cluster in points_in_clusters.keys():
-		delta_list_3.append(np.mean(distance.cdist(points_in_clusters[cluster], utils.reshape(means[cluster]), 'euclidean')))
+		if len(points_in_clusters[cluster]) > 1:
+			delta_list_3.append(np.mean(distance.cdist(points_in_clusters[cluster], utils.reshape(means[cluster]), 'euclidean')))
 
 	del_list = distance.pdist(means, 'euclidean')
 
@@ -42,12 +49,14 @@ def dunn_index(points, predictions, means):
 
 	return [dunn_index_1, dunn_index_2, dunn_index_3]
 
-points = np.arange(4000).reshape(10, 400)
+if __name__ == "__main__":
+	points = np.arange(4000).reshape(10, 400)
 
-g = mixture.GMM(n_components=4)
-g.fit(points)
+	g = mixture.GMM(n_components=4)
+	g.fit(points)
 
-predictions = g.predict(points)
-means = g.means_
+	predictions = g.predict(points)
+	means = g.means_
 
-IPython.embed()
+	IPython.embed()
+
