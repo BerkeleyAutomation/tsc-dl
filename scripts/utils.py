@@ -257,3 +257,11 @@ def nsf(num, n=1):
     """n-Significant Figures"""
     numstr = ("{0:.%ie}" % (n-1)).format(num)
     return float(numstr)
+
+def print_and_write(content, file):
+	print content
+	file.write(content)
+
+def print_and_write_2(metric, mean, std, file):
+	print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
+	file.write("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))

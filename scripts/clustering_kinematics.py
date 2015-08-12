@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 import IPython
 import itertools
+from decimal import Decimal
 
 import constants
 import parser
@@ -19,11 +20,12 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
 
 class KinematicsClustering():
-	def __init__(self, DEBUG, list_of_demonstrations, fname):
+	def __init__(self, DEBUG, list_of_demonstrations, fname, log):
 		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
 		self.data_X_size = {}
 		self.data_N = {}
+		self.log = log
 
 		self.file = None
 		self.metrics_picklefile = constants.PATH_TO_CLUSTERING_RESULTS + fname + ".p"
@@ -54,10 +56,12 @@ class KinematicsClustering():
 
 		self.sr = 3
 
+		utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
+
 	def construct_features(self):
 
 		for demonstration in self.list_of_demonstrations:
-			self.data_X[demonstration] = featurization.get_kinematic_features[demonstration]
+			self.data_X[demonstration] = featurization.get_kinematic_features(demonstration)
 
 	def generate_transition_features(self):
 		print "Generating Transition Features"
@@ -88,6 +92,9 @@ class KinematicsClustering():
 			gmm = mixture.GMM(n_components = 10, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
+
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_SUTURING_DATA +
+				constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p")
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
@@ -95,15 +102,13 @@ class KinematicsClustering():
 
 				if Y[i] != Y[i + 1]:
 
-					change_pt = N[i][size_of_X:]
-					print N.shape, change_pt.shape
+					change_pt = N[i][38:]
 					self.append_cp_array(utils.reshape(change_pt))
-					self.map_cp2frm[cp_index] = i
+					self.map_cp2frm[cp_index] = start + i
 					self.map_cp2demonstrations[cp_index] = demonstration
 					self.list_of_cp.append(cp_index)
 
 					cp_index += 1
-
 
 	def append_cp_array(self, cp):
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
@@ -122,7 +127,7 @@ class KinematicsClustering():
 
 	def cluster_changepoints(self):
 
-		print "Level1 : Clustering changepoints in Z(t)"
+		print "Clustering changepoints..."
 
 		gmm = mixture.GMM(n_components = 10, covariance_type='full')
 		gmm.fit(self.changepoints)
@@ -132,14 +137,17 @@ class KinematicsClustering():
 		self.save_cluster_metrics(self.changepoints, predictions, gmm.means_, 'level1', gmm)
 
 		for i in range(len(predictions)):
-			label = constants.alphabet_map[Y[i] + 1]
+			label = constants.alphabet_map[predictions[i] + 1]
 			self.map_cp2cluster[i] = label
 			utils.dict_insert_list(label, i, self.map_level1_cp)
 			demonstration = self.map_cp2demonstrations[i]
 			frm = self.map_cp2frm[i]
-			surgeme = self.map_frm2surgeme[demonstration][frm]
+			try:
+				surgeme = self.map_frm2surgeme[demonstration][frm]
+			except KeyError as e:
+				IPython.embed()
 
-			print("%3d   %s   %s   %3d   %3d\n" % (cp, label, demonstration, frm, surgeme))
+			utils.print_and_write(("%3d   %s   %s   %3d   %3d\n" % (i, label, demonstration, frm, surgeme)), self.log)
 
 	def check_pruning_condition(self, list_of_cp_key):
 		"""
@@ -191,8 +199,8 @@ class KinematicsClustering():
 		for surgeme in self.cp_surgemes:
 			confusion_matrix = confusion_matrix + str(surgeme) + "     "
 
-		print('\n\n ---Confusion Matrix--- \n\n')
-		print(confusion_matrix)
+		utils.print_and_write('\n\n ---Confusion Matrix--- \n\n', self.log)
+		utils.print_and_write(confusion_matrix, self.log)
 
 		confusion_matrix = ""
 		for L1_cluster in final_clusters:
@@ -202,11 +210,10 @@ class KinematicsClustering():
 				confusion_matrix += str(round(Decimal(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])), 2)) + "   "
 			confusion_matrix += '\n'
 
-		print confusion_matrix
-		print(confusion_matrix)
-		print("\n\n ---Surgeme Count--- \n\n")
-		print(repr(surgeme_count))
-		print("\n\n")
+		utils.print_and_write(confusion_matrix, self.log)
+		utils.print_and_write("\n\n ---Surgeme Count--- \n\n", self.log)
+		utils.print_and_write(repr(surgeme_count), self.log)
+		utils.print_and_write("\n\n", self.log)
 
 	def prepare_labels(self):
 		labels_pred = []
@@ -227,7 +234,7 @@ class KinematicsClustering():
 		mutual_info_score, homogeneity_score, completeness_score]
 
 		# ------ Label-based metrics ------
-		print("\n\nPred= L1 Labels     Metric\n\n")
+		utils.print_and_write("\n\nPred= L1 Labels     Metric\n\n", self.log)
 
 		for metric in metric_funcs:
 
@@ -235,35 +242,35 @@ class KinematicsClustering():
 			key =  repr(metric).split()[1]
 			self.label_based_scores_1[key] = score_1
 
-			print("%3.3f        %s\n" % (score_1, key))
+			utils.print_and_write(("%3.3f        %s\n" % (score_1, key)), self.log)
 
-		print("\nSilhoutte scores\n")
+		utils.print_and_write("\nSilhoutte scores\n", self.log)
 
 		# ------ Silhouette Scores ------
 		for layer in sorted(self.silhouette_scores):
 			score = self.silhouette_scores[layer]
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score), 2), layer), self.log)
 
-		print("\nDunn Scores1\n")
+		utils.print_and_write("\nDunn Scores1\n", self.log)
 
 		# ------ Dunn Scores # 1------
 		for layer in sorted(self.dunn_scores_1):
 			score = self.dunn_scores_1[layer]
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score), 2), layer), self.log)
 
-		print("\nDunn Scores2\n")
+		utils.print_and_write("\nDunn Scores2\n", self.log)
 
 		# ------ Dunn Scores # 2------
 		for layer in sorted(self.dunn_scores_2):
 			score = self.dunn_scores_2[layer]
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score), 2), layer), self.log)
 
-		print("\nDunn Scores3\n")
+		utils.print_and_write("\nDunn Scores3\n", self.log)
 
 		# ------ Dunn Scores #3 ------
 		for layer in sorted(self.dunn_scores_3):
 			score = self.dunn_scores_3[layer]
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score), 2), layer), self.log)
 
 		data = [self.label_based_scores_1, self.silhouette_scores, self.dunn_scores_1,
 		self.dunn_scores_2, self.dunn_scores_3]
@@ -288,10 +295,6 @@ class KinematicsClustering():
 
 		return data
 
-def print_and_write(metric, mean, std, file):
-	print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
-	file.write("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
-
 def get_list_of_demo_combinations(list_of_demonstrations):
 	iterator = itertools.combinations(list_of_demonstrations, len(list_of_demonstrations) - 1)
 	demo_combinations = []
@@ -304,32 +307,34 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def parse_metrics(metrics, fname):
+def parse_metrics(metrics, file):
 
-	mutual_information_1 = homogeneity_1 = []
+	mutual_information_1 = []
+	homogeneity_1 = []
 
-	silhoutte_level_1 = dunn1_level_1 = dunn2_level_1 = dunn3_level_1 = []
+	silhoutte_level_1 = []
+	dunn1_level_1 = []
+	dunn2_level_1 = []
+	dunn3_level_1 = []
 
 	for elem in metrics:
+		IPython.embed()
+
 		mutual_information_1.append(elem[0]["mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 
-		silhoutte_level_1.append(elem[2]["level1"])
-		dunn1_level_1.append(elem[3]["level1"])
-		dunn2_level_1.append(elem[4]["level1"])
-		dunn3_level_1.append(elem[5]["level1"])
+		silhoutte_level_1.append(elem[1]["level1"])
+		dunn1_level_1.append(elem[2]["level1"])
+		dunn2_level_1.append(elem[3]["level1"])
+		dunn3_level_1.append(elem[4]["level1"])
 
-	file = open(constants.PATH_TO_CLUSTERING_RESULTS + fname + ".txt", "wb")
+	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
+	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
+	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
 
-	print_and_write("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
-	print_and_write("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
-	print_and_write("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
-
-	print_and_write("dunn1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
-	print_and_write("dunn2", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
-	print_and_write("dunn3", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
-
-	file.close()
+	utils.print_and_write_2("dunn1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
+	utils.print_and_write_2("dunn2", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
+	utils.print_and_write_2("dunn3", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -347,9 +352,15 @@ if __name__ == "__main__":
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 
 	all_metrics = []
-	for elem in combinations:	
-		mc = KinematicsClustering(DEBUG, list(elem), args.fname)
+	log = open(constants.PATH_TO_CLUSTERING_RESULTS + args.fname + ".txt", "wb")
+
+	for i in range(len(combinations)):
+		utils.print_and_write("\n----------- Combination #" + str(i) + " -------------\n", log)
+
+		mc = KinematicsClustering(DEBUG, list(combinations[i]), args.fname + str(i), log)
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
-	parse_metrics(all_metrics, args.fname)
+	parse_metrics(all_metrics, log)
+
+	log.close()

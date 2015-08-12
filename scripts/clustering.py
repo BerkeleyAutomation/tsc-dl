@@ -492,10 +492,6 @@ class MilestonesClustering():
 
 		return data
 
-def print_and_write(metric, mean, std, file):
-	print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
-	file.write("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
-
 def get_list_of_demo_combinations(list_of_demonstrations):
 	iterator = itertools.combinations(list_of_demonstrations, len(list_of_demonstrations) - 1)
 	demo_combinations = []
@@ -510,12 +506,20 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 def parse_metrics(metrics, filename):
 
-	mutual_information_1 = homogeneity_1 = []
-	mutual_information_2 = homogeneity_2 = []
+	mutual_information_1 = []
+	homogeneity_1 = []
+	mutual_information_2 = []
+	homogeneity_2 = []
 
-	silhoutte_level_1 = dunn1_level_1 = dunn2_level_1 = dunn3_level_1 = []
+	silhoutte_level_1 = []
+	dunn1_level_1 = []
+	dunn2_level_1 = []
+	dunn3_level_1 = []
 
-	silhoutte_level_2 = dunn1_level_2 = dunn2_level_2 = dunn3_level_2 = []
+	silhoutte_level_2 = []
+	dunn1_level_2 = []
+	dunn2_level_2 = []
+	dunn3_level_2 = []
 
 	for elem in metrics:
 		mutual_information_1.append(elem[0]["mutual_info_score"])
@@ -535,21 +539,21 @@ def parse_metrics(metrics, filename):
 
 	file = open(constants.PATH_TO_CLUSTERING_RESULTS + filename + ".txt", "wb")
 
-	print_and_write("mutual_info_1", np.mean(mutual_information_1), np.std(mutual_information_1), file)
-	print_and_write("mutual_info_2", np.mean(mutual_information_2), np.std(mutual_information_2), file)
-	print_and_write("homogeneity_1", np.mean(homogeneity_1), np.std(homogeneity_1), file)
-	print_and_write("homogeneity_2", np.mean(homogeneity_2), np.std(homogeneity_2), file)
+	utils.print_and_write_2("mutual_info_1", np.mean(mutual_information_1), np.std(mutual_information_1), file)
+	utils.print_and_write_2("mutual_info_2", np.mean(mutual_information_2), np.std(mutual_information_2), file)
+	utils.print_and_write_2("homogeneity_1", np.mean(homogeneity_1), np.std(homogeneity_1), file)
+	utils.print_and_write_2("homogeneity_2", np.mean(homogeneity_2), np.std(homogeneity_2), file)
 
-	print_and_write("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
-	print_and_write("silhoutte_level_2", np.mean(silhoutte_level_2), np.std(silhoutte_level_2), file)
+	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
+	utils.print_and_write_2("silhoutte_level_2", np.mean(silhoutte_level_2), np.std(silhoutte_level_2), file)
 
-	print_and_write("dunn1_level1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
-	print_and_write("dunn2_level1", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
-	print_and_write("dunn3_level1", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
+	utils.print_and_write_2("dunn1_level1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
+	utils.print_and_write_2("dunn2_level1", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
+	utils.print_and_write_2("dunn3_level1", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
 
-	print_and_write("dunn1_level2", np.mean(dunn1_level_2), np.std(dunn1_level_2), file)
-	print_and_write("dunn2_level2", np.mean(dunn2_level_2), np.std(dunn2_level_2), file)
-	print_and_write("dunn3_level2", np.mean(dunn3_level_2), np.std(dunn3_level_2), file)
+	utils.print_and_write_2("dunn1_level2", np.mean(dunn1_level_2), np.std(dunn1_level_2), file)
+	utils.print_and_write_2("dunn2_level2", np.mean(dunn2_level_2), np.std(dunn2_level_2), file)
+	utils.print_and_write_2("dunn3_level2", np.mean(dunn3_level_2), np.std(dunn3_level_2), file)
 
 	file.close()
 

@@ -12,8 +12,8 @@ def forward_pass_entire_dataset():
 	net = CNNFeatureExtractor("VGG_SOS")
 	# list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
 
-	list_of_videos = ['Suturing_D001', 'Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-	'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005']
+	list_of_videos = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+	'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 	
 	total = len(list_of_videos) 
 	i = 1
