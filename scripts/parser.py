@@ -9,11 +9,11 @@ from forward_pass import CNNFeatureExtractor
 
 
 def forward_pass_entire_dataset():
-	net = CNNFeatureExtractor("AlexNet")
+	net = CNNFeatureExtractor("VGG_SOS")
 	# list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
-	list_of_videos = ['Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005']
-	# list_of_videos = ['Suturing_H002', 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
-	# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+
+	list_of_videos = ['Suturing_D001', 'Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+	'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005']
 	
 	total = len(list_of_videos) 
 	i = 1
@@ -32,10 +32,10 @@ def forward_pass_entire_dataset():
 def get_cnn_features_pickle_dump(net, fname, PATH_TO_DATA, annotations):
 	# Note - Only storing features for conv1-5 and pool5
 
-	list_of_layers = ['conv4', 'conv3', 'pool5']
+	list_of_layers = ['conv5_1', 'conv5_3']
 	Z = net.forward_pass(PATH_TO_DATA, annotations, list_of_layers = list_of_layers, sampling_rate = 1, no_plot_mode = True)
 	for key in Z.keys():
-		pickle.dump(Z[key], open(constants.PATH_TO_SUTURING_DATA + constants.ALEXNET_FEATURES_FOLDER + key + "_alexnet_" + fname + ".p", "wb"))
+		pickle.dump(Z[key], open(constants.PATH_TO_SUTURING_DATA + constants.VGG_FEATURES_FOLDER + key + "_vgg_" + fname + ".p", "wb"))
 
 def generate_list_of_videos(config_file_name, include_camera = False):
 	list_of_videos = []
