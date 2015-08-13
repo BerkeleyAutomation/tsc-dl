@@ -75,7 +75,7 @@ class MilestonesClustering():
 
 		self.gmm_objects = {}
 
-		self.sr = 3
+		self.sr = 10
 
 	def construct_features(self):
 
@@ -86,7 +86,7 @@ class MilestonesClustering():
 				sys.exit()
 
 	def generate_transition_features(self):
-		print "Generating Transition Features"
+		# print "Generating Transition Features"
 
 		for demonstration in self.list_of_demonstrations:
 
@@ -108,13 +108,13 @@ class MilestonesClustering():
 
 		for demonstration in self.list_of_demonstrations:
 
-			print "Changepoints for " + demonstration
+			# print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
-			print N[0].shape
+			# print N[0].shape
 
 		for demonstration in self.list_of_demonstrations:
 
-			print "Changepoints for " + demonstration
+			# print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
 			gmm = mixture.GMM(n_components = 10, covariance_type='full')
@@ -133,7 +133,7 @@ class MilestonesClustering():
 				if Y[i] != Y[i + 1]:
 
 					change_pt = N[i][size_of_X:]
-					print N.shape, change_pt.shape
+					# print N.shape, change_pt.shape
 					self.append_cp_array(change_pt)
 					self.map_cp2frm[cp_index] = start + i * self.sr
 					self.map_cp2demonstrations[cp_index] = demonstration
@@ -153,7 +153,8 @@ class MilestonesClustering():
 				self.change_pts = np.concatenate((self.change_pts, utils.reshape(cp)), axis = 0)
 			except ValueError as e:
 				print e
-				IPython.embed()
+				sys.exit()
+				# IPython.embed()
 			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:38])), axis = 0)
 			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[38:])), axis = 0)
 
@@ -162,7 +163,7 @@ class MilestonesClustering():
 
 		self.gmm_objects[key] = model
 
-		print key, level2_mode
+		# print key, level2_mode
 
 		try:
 			silhoutte = metrics.silhouette_score(points, predictions, metric='euclidean')
@@ -186,7 +187,7 @@ class MilestonesClustering():
 
 	def cluster_changepoints_level1(self):
 
-		print "Level1 : Clustering changepoints in Z(t)"
+		# print "Level1 : Clustering changepoints in Z(t)"
 
 		gmm = mixture.GMM(n_components = 10, covariance_type='full')
 		gmm.fit(self.change_pts_Z)
@@ -222,7 +223,7 @@ class MilestonesClustering():
 
 	def cluster_changepoints_level2(self):
 
-		print "Level2 : Clustering changepoints in W(t)"
+		# print "Level2 : Clustering changepoints in W(t)"
 
 		mkdir_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial
 		os.mkdir(mkdir_path)
@@ -284,8 +285,9 @@ class MilestonesClustering():
 					frm = self.map_cp2frm[cp]
 					surgeme = self.map_frm2surgeme[demonstration][frm]
 				except KeyError as e:
-					IPython.embed()
-
+					print e
+					sys.exit()
+					# IPython.embed()
 
 				self.map_cp2milestones[cp] = milestone
 
@@ -321,9 +323,9 @@ class MilestonesClustering():
 		num_total_demonstrations = len(self.list_of_demonstrations)
 		data_representation = num_demonstrations / float(num_total_demonstrations)
 
-		print data_representation
+		print data_representation, len(list_of_cp_key)
 
-		return data_representation < 0.8
+		return data_representation <= 0.3
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
@@ -368,7 +370,7 @@ class MilestonesClustering():
 		for surgeme in self.cp_surgemes:
 			confusion_matrix = confusion_matrix + str(surgeme) + "     "
 
-		print confusion_matrix
+		# print confusion_matrix
 		self.file.write('\n\n ---Confusion Matrix--- \n\n')
 		self.file.write(confusion_matrix)
 
@@ -380,7 +382,7 @@ class MilestonesClustering():
 				confusion_matrix += str(round(Decimal(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])), 2)) + "   "
 			confusion_matrix += '\n'
 
-		print confusion_matrix
+		# print confusion_matrix
 		self.file.write(confusion_matrix)
 		self.file.write("\n\n ---Surgeme Count--- \n\n")
 		self.file.write(repr(surgeme_count))
@@ -409,55 +411,61 @@ class MilestonesClustering():
 		mutual_info_score, homogeneity_score, completeness_score]
 
 		# ------ Label-based metrics ------
-		print("\n\nPred = L2 Milestones       Pred= L1 Labels      Metric\n\n")
+		# print("\n\nPred = L2 Milestones       Pred= L1 Labels      Metric\n\n")
 		self.file.write("\n\nPred = L2 Milestones       Pred= L1 Labels     Metric\n\n")
 
 		for metric in metric_funcs:
 
-			score_1 = round(Decimal(metric(labels_true, labels_pred_1)), 2)
-			score_2 = round(Decimal(metric(labels_true, labels_pred_2)), 2)
+			try:
+				score_1 = round(Decimal(metric(labels_true, labels_pred_1)), 2)
+				score_2 = round(Decimal(metric(labels_true, labels_pred_2)), 2)
+
+			except ValueError as e:
+				print e
+				print "Pruning error"
+				sys.exit()
 			key =  repr(metric).split()[1]
 			self.label_based_scores_1[key] = score_1
 			self.label_based_scores_2[key] = score_2
 
 			self.file.write("%3.3f        %3.3f        %s\n" % (score_1, score_2, key))
-			print("%3.3f        %3.3f        %s\n" % (score_1, score_2, key))
+			# print("%3.3f        %3.3f        %s\n" % (score_1, score_2, key))
 
 		self.file.write("\nSilhouette Scores\n")
-		print("\nSilhoutte scores\n")
+		# print("\nSilhoutte scores\n")
 
 		# ------ Silhouette Scores ------
 		for layer in sorted(self.silhouette_scores):
 			score = self.silhouette_scores[layer]
 			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			# print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
 
 		self.file.write("\nDunn Scores1\n")
-		print("\nDunn scores1\n")
+		# print("\nDunn scores1\n")
 
 		# ------ Dunn Scores ------
 		for layer in sorted(self.dunn_scores_1):
 			score = self.dunn_scores_1[layer]
 			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			# print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
 
 		self.file.write("\nDunn Scores2\n")
-		print("\nDunn scores2\n")
+		# print("\nDunn scores2\n")
 
 		# ------ Dunn Scores ------
 		for layer in sorted(self.dunn_scores_2):
 			score = self.dunn_scores_2[layer]
 			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			# print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
 
 		self.file.write("\nDunn Scores3\n")
-		print("\nDunn scores3\n")
+		# print("\nDunn scores3\n")
 
 		# ------ Dunn Scores ------
 		for layer in sorted(self.dunn_scores_3):
 			score = self.dunn_scores_3[layer]
 			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
-			print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+			# print("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
 
 		data = [self.label_based_scores_1, self.label_based_scores_2,
 		self.silhouette_scores, self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3,
@@ -567,14 +575,20 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-	
+		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 
+	i = 1
 	all_metrics = []
 	for elem in combinations:	
+		print "---- "+ str(i) + " ----"
 		mc = MilestonesClustering(DEBUG, list(elem), args.feat_fname, args.metric_fname)
 		all_metrics.append(mc.do_everything())
-
-	print "----------- CALCULATING THE ODDS ------------"
+		i += 1
+	# print "----------- CALCULATING THE ODDS ------------"
 	parse_metrics(all_metrics, args.metric_fname)

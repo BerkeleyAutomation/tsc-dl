@@ -270,9 +270,9 @@ def nsf(num, n=1):
     return float(numstr)
 
 def print_and_write(content, file):
-	print content
+	# print content
 	file.write(content)
 
 def print_and_write_2(metric, mean, std, file):
-	print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
+	# print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
 	file.write("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))

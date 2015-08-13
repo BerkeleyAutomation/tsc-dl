@@ -44,11 +44,11 @@ def main(DEBUG = False):
 	if DEBUG:
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 	# Parse Kinematic Features
 	print "Parsing Kinematic Features"
@@ -60,7 +60,7 @@ def main(DEBUG = False):
 	# featurize_2(list_of_demonstrations, kinematics)
 	# featurize_3(list_of_demonstrations, kinematics)
 	# featurize_4(list_of_demonstrations, kinematics)
-	# featurize_5(list_of_demonstrations, kinematics)
+	featurize_5(list_of_demonstrations, kinematics)
 	# featurize_6(list_of_demonstrations, kinematics)
 	featurize_7(list_of_demonstrations, kinematics)
 
@@ -97,7 +97,7 @@ def featurize_6(list_of_demonstrations, kinematics):
 		constants.VGG_FEATURES_FOLDER, 6, "vgg")
 
 # Featurize - VGG conv5_3 + LCD + VLAD
-def featurize_7(list_of_demonstrations, kinematics, config = [True, False, False]):
+def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True]):
 	print "FEATURIZATION 7"
 	a = 14 # Need to find the original values!!
 	M = 512
@@ -150,7 +150,6 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, False, False
 		if config[0]:
 			Z_new_pca = utils.pca_incremental(Z_new, PC = PC)
 			print Z_new_pca.shape
-			if Z_new_pca.shape[1] != 100:
 			assert W_new.shape[0] == Z_new_pca.shape[0]
 			X_PCA = np.concatenate((W_new, Z_new_pca), axis = 1)
 			data_X_PCA[demonstration] = X_PCA
@@ -176,7 +175,7 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, False, False
 	if config[2]:
 		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(7) + "_GRP" + ".p", "wb"))
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [False, False, True]):
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 10, config = [True, True, True]):
 
 	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
 
@@ -205,13 +204,15 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 
 		kinematics_sampled[demonstration] = utils.sample_matrix(kinematics[demonstration], sampling_rate = sr)
 
+	PC = min(100, min(demonstration_size.values()))
+
 	# Quick check to see if kinematics and visual features are aligned
 	for demonstration in list_of_demonstrations:
 		print demonstration_size[demonstration], kinematics_sampled[demonstration].shape[0]
 		assert demonstration_size[demonstration] == kinematics_sampled[demonstration].shape[0]
 
 	if config[0]:
-		big_Z_pca = utils.pca_incremental(big_Z, PC = 100)
+		big_Z_pca = utils.pca_incremental(big_Z, PC = PC)
 
 	if config[2]:
 		big_Z_grp = utils.grp(big_Z)
