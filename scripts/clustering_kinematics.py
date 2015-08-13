@@ -20,9 +20,17 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
 
 class KinematicsClustering():
-	def __init__(self, DEBUG, list_of_demonstrations, fname, log):
+	def __init__(self, DEBUG, list_of_demonstrations, fname, log, vision_mode = False, feat_fname = None):
 		self.list_of_demonstrations = list_of_demonstrations
+
+		if vision_mode and feat_fname is None:
+			print "[Error] Please provide file with visual features"
+			sys.exit()
+
+		self.vision_mode = vision_mode
+		self.feat_fname = feat_fname
 		self.data_X = {}
+		self.X_dimension = 0
 		self.data_X_size = {}
 		self.data_N = {}
 		self.log = log
@@ -58,13 +66,31 @@ class KinematicsClustering():
 
 		utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
 
-	def construct_features(self):
+	def construct_features_visual(self):
+
+		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
+		for demonstration in self.list_of_demonstrations:
+			if demonstration not in self.data_X.keys():
+				print "[ERROR] Missing demonstrations"
+				sys.exit()
+			X = self.data_X[demonstration]
+			X_visual = None
+			for i in range(len(X)):
+				utils.safe_concatenate(X_visual, utils.reshape(X[i][38:]))
+			assert X_visual.shape[0] == X.shape[0]
+
+			self.data_X[demonstration] = X_visual
+
+	def construct_features_kinematics(self):
 
 		for demonstration in self.list_of_demonstrations:
 			self.data_X[demonstration] = utils.sample_matrix(featurization.get_kinematic_features(demonstration), sampling_rate = self.sr)
 
 	def generate_transition_features(self):
 		print "Generating Transition Features"
+
+		self.X_dimension = self.data_X[self.list_of_demonstrations[0]].shape[1]
+		print "X dimension", str(self.X_dimension)
 
 		for demonstration in self.list_of_demonstrations:
 
@@ -102,7 +128,7 @@ class KinematicsClustering():
 
 				if Y[i] != Y[i + 1]:
 
-					change_pt = N[i][38:]
+					change_pt = N[i][self.X_dimension:]
 					self.append_cp_array(utils.reshape(change_pt))
 					self.map_cp2frm[cp_index] = start + i * self.sr
 					self.map_cp2demonstrations[cp_index] = demonstration
@@ -283,7 +309,10 @@ class KinematicsClustering():
 
 	def do_everything(self):
 
-		self.construct_features()
+		if self.vision_mode:
+			self.construct_features_visual()
+		else:
+			self.construct_features_kinematics()
 
 		self.generate_transition_features()
 
@@ -340,6 +369,7 @@ def parse_metrics(metrics, file):
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
+	argparser.add_argument("--visual", help = "Debug mode?[y/n]", default = False)
 	argparser.add_argument("fname", help = "Pickle file of visual features", default = 4)
 	args = argparser.parse_args()
 
@@ -355,6 +385,11 @@ if __name__ == "__main__":
 		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 
+	vision_mode = False
+	if args.visual:
+		vision_mode = True
+		feat_fname = args.visual
+
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 
 	all_metrics = []
@@ -363,7 +398,7 @@ if __name__ == "__main__":
 	for i in range(len(combinations)):
 		utils.print_and_write("\n----------- Combination #" + str(i) + " -------------\n", log)
 
-		mc = KinematicsClustering(DEBUG, list(combinations[i]), args.fname + str(i), log)
+		mc = KinematicsClustering(DEBUG, list(combinations[i]), args.fname + str(i), log, vision_mode, feat_fname)
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
