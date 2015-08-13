@@ -61,7 +61,7 @@ class KinematicsClustering():
 	def construct_features(self):
 
 		for demonstration in self.list_of_demonstrations:
-			self.data_X[demonstration] = featurization.get_kinematic_features(demonstration)
+			self.data_X[demonstration] = utils.sample_matrix(featurization.get_kinematic_features(demonstration), sampling_rate = self.sr)
 
 	def generate_transition_features(self):
 		print "Generating Transition Features"
@@ -73,7 +73,7 @@ class KinematicsClustering():
 			T = X.shape[0]
 			N = utils.reshape(np.concatenate((X[0], X[1]), axis = 1))
 
-			for t in range(1, T - 1):
+			for t in range(T - 1):
 
 				n_t = utils.reshape(np.concatenate((X[t], X[t + 1]), axis = 1))
 				N = np.concatenate((N, n_t), axis = 0)
@@ -104,7 +104,7 @@ class KinematicsClustering():
 
 					change_pt = N[i][38:]
 					self.append_cp_array(utils.reshape(change_pt))
-					self.map_cp2frm[cp_index] = start + i
+					self.map_cp2frm[cp_index] = start + i * self.sr
 					self.map_cp2demonstrations[cp_index] = demonstration
 					self.list_of_cp.append(cp_index)
 
@@ -318,7 +318,6 @@ def parse_metrics(metrics, file):
 	dunn3_level_1 = []
 
 	for elem in metrics:
-		IPython.embed()
 
 		mutual_information_1.append(elem[0]["mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
@@ -349,6 +348,13 @@ if __name__ == "__main__":
 		DEBUG = False
 		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 	
+
+	# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+	# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+	# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+	# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 
 	all_metrics = []

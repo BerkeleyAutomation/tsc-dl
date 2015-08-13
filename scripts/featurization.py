@@ -45,6 +45,10 @@ def main(DEBUG = False):
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 	# Parse Kinematic Features
 	print "Parsing Kinematic Features"
@@ -54,7 +58,7 @@ def main(DEBUG = False):
 		kinematics[demonstration] = W
 
 	# featurize_2(list_of_demonstrations, kinematics)
-	featurize_3(list_of_demonstrations, kinematics)
+	# featurize_3(list_of_demonstrations, kinematics)
 	# featurize_4(list_of_demonstrations, kinematics)
 	# featurize_5(list_of_demonstrations, kinematics)
 	# featurize_6(list_of_demonstrations, kinematics)
@@ -93,13 +97,17 @@ def featurize_6(list_of_demonstrations, kinematics):
 		constants.VGG_FEATURES_FOLDER, 6, "vgg")
 
 # Featurize - VGG conv5_3 + LCD + VLAD
-def featurize_7(list_of_demonstrations, kinematics):
+def featurize_7(list_of_demonstrations, kinematics, config = [True, False, False]):
 	print "FEATURIZATION 7"
 	a = 14 # Need to find the original values!!
 	M = 512
 	BATCH_SIZE = 30
 	data_X_PCA = {}
 	data_X_CCA = {}
+	data_X_GRP = {}
+
+	size_sampled_matrices = [utils.sample_matrix(kinematics[demo], sampling_rate = BATCH_SIZE).shape[0] for demo in list_of_demonstrations]
+	PC = min(100, min(size_sampled_matrices))
 
 	for demonstration in list_of_demonstrations:
 		W = kinematics[demonstration]
@@ -139,26 +147,42 @@ def featurize_7(list_of_demonstrations, kinematics):
 		Z_batch_VLAD = encoding.encode_VLAD(Z_batch)
 		Z_new = utils.safe_concatenate(Z_new, Z_batch_VLAD)
 
-		Z_new_pca = utils.pca(Z_new, PC = 100)
-		print Z_new_pca
-		Z_new_cca = utils.cca(W_new, Z_new)
-		print Z_new_cca
+		if config[0]:
+			Z_new_pca = utils.pca_incremental(Z_new, PC = PC)
+			print Z_new_pca.shape
+			if Z_new_pca.shape[1] != 100:
+			assert W_new.shape[0] == Z_new_pca.shape[0]
+			X_PCA = np.concatenate((W_new, Z_new_pca), axis = 1)
+			data_X_PCA[demonstration] = X_PCA
 
-		assert W_new.shape[0] == Z_new_pca.shape[0]
-		assert W_new.shape[0] == Z_new_cca.shape[0]
-		X_PCA = np.concatenate((W_new, Z_new_pca), axis = 1)
-		X_CCA = np.concatenate((W_new, Z_new_cca), axis = 1)
+		if config[1]:
+			Z_new_cca = utils.cca(W_new, Z_new)
+			print Z_new_cca.shape
+			assert W_new.shape[0] == Z_new_cca.shape[0]
+			X_CCA = np.concatenate((W_new, Z_new_cca), axis = 1)
+			data_X_CCA[demonstration] = X_CCA
 
-		data_X_PCA[demonstration] = X_PCA
-		data_X_CCA[demonstration] = X_CCA
+		if config[2]:
+			Z_new_grp = utils.grp(Z_new)
+			print Z_new_grp.shape
+			assert W_new.shape[0] == Z_new_grp.shape[0]
+			X_GRP = np.concatenate((W_new, Z_new_grp), axis = 1)
+			data_X_GRP[demonstration] = X_GRP
 
-	pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(7) + "_PCA" + ".p", "wb"))
-	pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(7) + "_CCA" + ".p", "wb"))
+	if config[0]:
+		pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(7) + "_PCA" + ".p", "wb"))
+	if config[1]:
+		pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(7) + "_CCA" + ".p", "wb"))
+	if config[2]:
+		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(7) + "_GRP" + ".p", "wb"))
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3):
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [False, False, True]):
+
+	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
 
 	data_X_PCA = {}
 	data_X_CCA = {}
+	data_X_GRP = {}
 
 	big_Z = None
 
@@ -180,8 +204,18 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 		demonstration_size[demonstration] = Z_sampled.shape[0]
 
 		kinematics_sampled[demonstration] = utils.sample_matrix(kinematics[demonstration], sampling_rate = sr)
-	print "PCA....."
-	big_Z_pca = utils.pca_incremental(big_Z, PC = 100)
+
+	# Quick check to see if kinematics and visual features are aligned
+	for demonstration in list_of_demonstrations:
+		print demonstration_size[demonstration], kinematics_sampled[demonstration].shape[0]
+		assert demonstration_size[demonstration] == kinematics_sampled[demonstration].shape[0]
+
+	if config[0]:
+		big_Z_pca = utils.pca_incremental(big_Z, PC = 100)
+
+	if config[2]:
+		big_Z_grp = utils.grp(big_Z)
+
 	start = 0
 	end = 0
 
@@ -192,25 +226,42 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 
 	for demonstration in list_of_demonstrations:
 
-		# ------------- PCA ------------- 
 		W = kinematics_sampled[demonstration]
 
 		size = demonstration_size[demonstration]
 		end = start + size
-		Z = big_Z_pca[start:end]
-		start += size
 
-		X = np.concatenate((W, Z), axis = 1)
-		data_X_PCA[demonstration] = X
+		# ------------- PCA ------------- 
+		if config[0]:
+			Z = big_Z_pca[start:end]
+			X = np.concatenate((W, Z), axis = 1)
+			data_X_PCA[demonstration] = X
 
 		# ------------- CCA ------------- 
-		Z = utils.cca(W, Z)
-		X = np.concatenate((W, Z), axis = 1)
-		data_X_CCA[demonstration] = X
+		if config[1]:
+			Z = big_Z[start:end]
+			Z = utils.cca(W, Z)
+			X = np.concatenate((W, Z), axis = 1)
+			data_X_CCA[demonstration] = X
 
-	pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(feature_index) + "_PCA.p", "wb"))
-	pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(feature_index) + "_CCA.p", "wb"))
+		# ------------- GRP -------------
+		if config[2]:
+			Z = big_Z_grp[start:end]
+			X = np.concatenate((W, Z), axis = 1)
+			data_X_GRP[demonstration] = X
+		
+		start += size
 
+
+
+	if config[0]:
+		pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(feature_index) + "_PCA.p", "wb"))
+
+	if config[1]:
+		pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(feature_index) + "_CCA.p", "wb"))
+
+	if config[2]:
+		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(feature_index) + "_GRP.p", "wb"))
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()

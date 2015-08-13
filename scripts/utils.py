@@ -30,7 +30,17 @@ def cca(W, Z):
 
 	return Z
 
+def grp(X, C = 100):
+	print "GRP..."
+	print X.shape
+	print("Computing GaussianRandomProjection, using %3d components" % C)
+	transformer = random_projection.GaussianRandomProjection(n_components = C)
+	X_grp = transformer.fit_transform(X)
+	print X_grp.shape
+	return X_grp
+
 def pca(X, PC = 2):
+	print "PCA....."
 	print("Computing PCA embedding, using %3d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
 	X_centered = scaler.transform(X)
@@ -38,6 +48,7 @@ def pca(X, PC = 2):
 	return X_pca
 
 def pca_incremental(X, PC = 2):
+	print "PCA....."
 	print("Incremental PCA, using %3d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
 	X_centered = scaler.transform(X)

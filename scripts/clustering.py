@@ -95,7 +95,7 @@ class MilestonesClustering():
 			T = X.shape[0]
 			N = utils.reshape(np.concatenate((X[0], X[1]), axis = 1))
 
-			for t in range(1, T - 1):
+			for t in range(T - 1):
 
 				n_t = utils.reshape(np.concatenate((X[t], X[t + 1]), axis = 1))
 				N = np.concatenate((N, n_t), axis = 0)
@@ -111,8 +111,6 @@ class MilestonesClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 			print N[0].shape
-
-		IPython.embed()
 
 		for demonstration in self.list_of_demonstrations:
 
