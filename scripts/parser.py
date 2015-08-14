@@ -112,6 +112,15 @@ def get_start_end_annotations(PATH_TO_ANNOTATION):
 	end = max(list_of_end_start_pts)
 	return start, end
 
+def get_annotation_segments(PATH_TO_ANNOTATION):
+	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
+	list_of_end_start_pts = []
+	for key in segments:
+		list_of_keys = segments[key]
+		for elem in list_of_keys:
+			list_of_end_start_pts.append(elem)
+	return list_of_end_start_pts
+
 def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname, sampling_rate = 1):
 	# 39-41  (3) : Slave left tooltip xyz
 	# 42-50  (9) : Slave left tooltip R

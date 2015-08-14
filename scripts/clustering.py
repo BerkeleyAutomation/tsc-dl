@@ -52,6 +52,7 @@ class MilestonesClustering():
 		self.map_level2_cp = {}
 		self.map_cp2milestones = {}
 		self.map_cp2surgemes = {}
+		self.map_cp2surgemetransitions = {}
 		self.l2_cluster_matrices = {}
 		self.map_frm2surgeme = parser.get_all_frame2surgeme_maps(self.list_of_demonstrations)
 		self.trial = utils.hashcode() + trialname
@@ -338,9 +339,36 @@ class MilestonesClustering():
 	def cluster_evaluation(self):
 
 		for cp in self.list_of_cp:
-			surgeme_label = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
-			self.map_cp2surgemes[cp] = surgeme_label
+
+			demonstration = self.map_cp2demonstrations[cp]
+			frm = self.map_cp2frm[cp]
+
+			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
+			self.map_cp2surgemes[cp] = curr_surgeme
+
+			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
+				+ demonstration + "_capture2.p"))
+
+			bin = utils.binary_search(ranges, frm)
+
+			map_frm2surgeme_demonstration = self.map_frm2surgeme[demonstration]
+
+			prev_end = bin[0] - 1
+			next_start = bin[1] + 1
+			prev_surgeme = map_frm2surgeme_demonstration[prev_end] if prev_end in map_frm2surgeme_demonstration else "start"
+			next_surgeme = map_frm2surgeme_demonstration[next_start] if next_start in map_frm2surgeme_demonstration else "end"
+
+			surgemetransition = None
+
+			if abs(frm - (bin[0] - 1)) < abs(bin[1] + 1 - frm):
+				surgemetransition = str(prev_surgeme) + "->" + str(curr_surgeme)
+			else:
+				surgemetransition = str(curr_surgeme) + "->" + str(prev_surgeme)
+
+			self.map_cp2surgemetransitions[cp] = surgemetransition
+
 		self.cp_surgemes = set(self.map_cp2surgemes.values())
+
 
 		# Initialize data structures
 		table = {}
@@ -394,7 +422,7 @@ class MilestonesClustering():
 		labels_true = []
 
 		for cp in self.list_of_cp:
-			labels_true.append(self.map_cp2surgemes[cp])
+			labels_true.append(self.map_cp2surgemetransitions[cp])
 
 			milestone_label = self.map_cp2milestones[cp]
 			labels_pred_1.append(milestone_label)

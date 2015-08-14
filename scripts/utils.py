@@ -276,3 +276,25 @@ def print_and_write(content, file):
 def print_and_write_2(metric, mean, std, file):
 	# print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
 	file.write("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
+
+
+def binary_search(ranges, val):
+	if len(ranges) == 1:
+		return ranges[0]
+
+	middle_index = len(ranges)/2
+	middle = ranges[middle_index]
+
+	left_ranges = ranges[:middle_index]
+
+	right_ranges = ranges[middle_index + 1:]
+
+
+	if middle[0] <= val <= middle[1]:
+		return middle
+
+	elif val < middle[0]:
+		return binary_search(left_ranges, val)
+
+	else:
+		return binary_search(right_ranges, val)
