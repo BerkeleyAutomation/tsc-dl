@@ -4,14 +4,14 @@ CAFFE_ROOT = '/home/animesh/caffe/'
 
 PATH_TO_SUTURING_DATA = "/home/animesh/DeepMilestones/jigsaws/Suturing_video/"
 
-PATH_TO_CLUSTERING_RESULTS = "/home/animesh/DeepMilestones/clustering_sk/"
+PATH_TO_CLUSTERING_RESULTS = "/home/animesh/DeepMilestones/clustering_FCED/"
 
 PATH_TO_SUTURING_KINEMATICS = "/home/animesh/DeepMilestones/jigsaws/Suturing_kinematics/kinematics/AllGestures/"
 
 color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
 
 alphabet_map = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H", 9:"I", 10: "J",
-11: "K", 12: "L", 13: "M", 14: "N", 15: "O", 16: "P", 17: "Q", 18 : "R", 19: "S", 20: "T"}
+11: "K", 12: "L", 13: "M", 14: "N", 15: "O", 16: "P"}
 
 # Extra colors added:
 # E9967A is beige/dark salmon
@@ -38,11 +38,17 @@ VIDEO_FOLDER = "video/"
 
 NEW_FRAMES_FOLDER = "frames/"
 
+NEW_BGSUB_FOLDER = "bgsubframes/"
+
 TRANSCRIPTIONS_FOLDER = "transcriptions/"
 
 ANNOTATIONS_FOLDER = "annotations/"
 
-ALEXNET_FEATURES_FOLDER = "alexnetfeatures/"
+ALEXNET_FEATURES_FOLDER = "alexnetfeatures_2/"
+
+VGG_FEATURES_FOLDER = "vggfeatures_2/"
+
+PROC_FEATURES_FOLDER = "features_FCED/"
 
 CROP_PARAMS = {"capture2": "\"crop=330:260:150:150\"", "capture1": "\"crop=330:260:200:170\""}
 

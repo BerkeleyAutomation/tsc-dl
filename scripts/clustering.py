@@ -326,7 +326,7 @@ class MilestonesClustering():
 
 		print data_representation, len(list_of_cp_key)
 
-		return data_representation <= 0.3
+		return data_representation <= 0.4
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
@@ -541,8 +541,13 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 def parse_metrics(metrics, filename):
 
 	mutual_information_1 = []
+	normalized_mutual_information_1 = []
+	adjusted_mutual_information_1 = []
 	homogeneity_1 = []
+
 	mutual_information_2 = []
+	normalized_mutual_information_2 = []
+	adjusted_mutual_information_2 = []
 	homogeneity_2 = []
 
 	silhoutte_level_1 = []
@@ -558,6 +563,13 @@ def parse_metrics(metrics, filename):
 	for elem in metrics:
 		mutual_information_1.append(elem[0]["mutual_info_score"])
 		mutual_information_2.append(elem[1]["mutual_info_score"])
+
+		normalized_mutual_information_1.append(elem[0]["normalized_mutual_info_score"])
+		normalized_mutual_information_2.append(elem[1]["normalized_mutual_info_score"])
+
+		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
+		adjusted_mutual_information_2.append(elem[1]["adjusted_mutual_info_score"])
+
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 		homogeneity_2.append(elem[1]["homogeneity_score"])
 
@@ -575,6 +587,13 @@ def parse_metrics(metrics, filename):
 
 	utils.print_and_write_2("mutual_info_1", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("mutual_info_2", np.mean(mutual_information_2), np.std(mutual_information_2), file)
+
+	utils.print_and_write_2("normalized_mutual_info_1", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
+	utils.print_and_write_2("normalized_mutual_info_2", np.mean(normalized_mutual_information_2), np.std(normalized_mutual_information_2), file)
+
+	utils.print_and_write_2("adjusted_mutual_info_1", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
+	utils.print_and_write_2("adjusted_mutual_info_2", np.mean(adjusted_mutual_information_2), np.std(adjusted_mutual_information_2), file)
+
 	utils.print_and_write_2("homogeneity_1", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 	utils.print_and_write_2("homogeneity_2", np.mean(homogeneity_2), np.std(homogeneity_2), file)
 

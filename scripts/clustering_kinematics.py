@@ -77,7 +77,7 @@ class KinematicsClustering():
 			X = self.data_X[demonstration]
 			X_visual = None
 			for i in range(len(X)):
-				utils.safe_concatenate(X_visual, utils.reshape(X[i][38:]))
+				X_visual = utils.safe_concatenate(X_visual, utils.reshape(X[i][38:]))
 			assert X_visual.shape[0] == X.shape[0]
 
 			self.data_X[demonstration] = X_visual
@@ -225,8 +225,6 @@ class KinematicsClustering():
 
 		self.cp_surgemes = set(self.map_cp2surgemes.values())
 
-		IPython.embed()
-
 		# Initialize data structures
 		table = {}
 		for L1_cluster in self.map_level1_cp.keys():
@@ -369,6 +367,8 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 def parse_metrics(metrics, file):
 
 	mutual_information_1 = []
+	normalized_mutual_information_1 = []
+	adjusted_mutual_information_1 = []
 	homogeneity_1 = []
 
 	silhoutte_level_1 = []
@@ -379,6 +379,8 @@ def parse_metrics(metrics, file):
 	for elem in metrics:
 
 		mutual_information_1.append(elem[0]["mutual_info_score"])
+		normalized_mutual_information_1.append(elem[0]["normalized_mutual_info_score"])
+		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 
 		silhoutte_level_1.append(elem[1]["level1"])
@@ -387,6 +389,9 @@ def parse_metrics(metrics, file):
 		dunn3_level_1.append(elem[4]["level1"])
 
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
+	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
+	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
+
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
 
@@ -414,6 +419,7 @@ if __name__ == "__main__":
 
 
 	vision_mode = False
+	feat_fname = None
 	if args.visual:
 		vision_mode = True
 		feat_fname = args.visual

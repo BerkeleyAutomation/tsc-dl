@@ -1,12 +1,15 @@
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-import IPython
+import os, sys
 
+# SIFT and SURF are only available for OpenCV 2.4.9
+os.chdir(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/'))
+sys.path.append(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/python2.7/dist-packages'))
+
+import cv2
+import numpy as np
 import utils
 
 def min_kp_SIFT(PATH_TO_DATA):
-	print "Calculating #of features for video: ", PATH_TO_DATA
+	print("Calculating #of features for video: " + PATH_TO_DATA)
 	cap = cv2.VideoCapture(PATH_TO_DATA)
 	sift = cv2.SIFT(nfeatures = 10)
 	result = []
@@ -16,7 +19,7 @@ def min_kp_SIFT(PATH_TO_DATA):
 		if not ret:
 			break;
 		kp, des = sift.detectAndCompute(frame, None)
-		print i
+		print(i)
 		result.append(len(kp))
 		i += 1
 
@@ -24,7 +27,7 @@ def min_kp_SIFT(PATH_TO_DATA):
 	return min(result)
 
 def run_sift(PATH_TO_DATA):
-	print "SIFT for video: ", PATH_TO_DATA
+	print("SIFT for video: " + PATH_TO_DATA)
 	# n_features = min_kp_SIFT(PATH_TO_DATA)
 	n_features = 10
 	cap = cv2.VideoCapture(PATH_TO_DATA)
@@ -33,12 +36,15 @@ def run_sift(PATH_TO_DATA):
 	X1 = None
 	X2 = None
 	while(1):
-		print i
+		print(i)
 		ret, frame = cap.read()
 		if not ret:
 			break;
 		kp, des = sift.detectAndCompute(frame, None)
 
+		img = cv2.drawKeypoints(frame,kp)
+
+		cv2.imshow('sift',img)
 		vector1 = []
 		kp.sort(key = lambda x: x.response, reverse = True)
 		for kp_elem in kp:
@@ -46,16 +52,12 @@ def run_sift(PATH_TO_DATA):
 
 		vector2 = utils.reshape(des.flatten())
 
-		print len(vector1)
-		print vector2.shape
-		IPython.embed()
 		X1 = utils.safe_concatenate(X1, utils.reshape(np.array(vector1)))
 		X2 = utils.safe_concatenate(X2, vector2)
 		i += 1
 
-	IPython.embed()
 	cap.release()
 	cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-	run_sift('../images/cropped_scaled.mp4')
+	run_sift('/home/animesh/DeepMilestones/jigsaws/Suturing_video/frames/Suturing_E005_capture2/cropped_scaled.avi')

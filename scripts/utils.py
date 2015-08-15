@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import (manifold, datasets, decomposition, ensemble, lda,
 	random_projection, preprocessing, covariance, cluster, neighbors)
-import cv2
 import random
 import os
 
@@ -71,32 +70,6 @@ def tsne(X):
 	tsne = manifold.TSNE(n_components=2, init='pca', random_state=0)
 	X_tsne = tsne.fit_transform(X_centered)
 	return X_tsne
-
-def parse_annotations_images(annotations_file, PATH_TO_DATA):
-	frm_map = {}
-	label_map = {}
-	X = None
-	i = 0
-	map_index_data = pickle.load(open(annotations_file, "rb"))
-	for index in map_index_data:
-		print "Parsing label " + str(index)
-		segments = map_index_data[index]
-		for seg in segments:
-			j = seg[0]
-			while j <= seg[1]:
-				im = cv2.imread(PATH_TO_DATA + get_frame_fig_name(j))
-				im = im.flatten()
-				im = im.reshape(1, im.shape[0])
-				print j
-				if X is None:
-					X = im
-				else:
-					X = np.concatenate((X, im), axis = 0)
-				frm_map[i] = j
-				label_map[i] = index
-				j += 1
-				i += 1
-	return X, label_map, frm_map
 
 def make_hypercolumns_vector(hypercolumns_layers, X):
 	X_hc = None
