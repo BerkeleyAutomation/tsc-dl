@@ -94,3 +94,5 @@ while targetCount <= numTargets
     targetCount = targetCount +1;
 end
 
+save(['output' filesep 'kinematics.mat'],'target_buffer','x_traj')
+
