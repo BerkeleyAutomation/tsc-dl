@@ -2,3 +2,5 @@
 *.p
 *.ogv
 *.mp4
+
+toyExample/output/*
