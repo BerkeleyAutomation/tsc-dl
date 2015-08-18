@@ -1,10 +1,12 @@
 import os, sys
+import IPython
 
 # SIFT and SURF are only available for OpenCV 2.4.9
 os.chdir(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/'))
-sys.path.append(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/python2.7/dist-packages'))
+# sys.path.append(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/python2.7/dist-packages'))
 
 import cv2
+print cv2.__version__
 import numpy as np
 import utils
 
@@ -26,10 +28,7 @@ def min_kp_SIFT(PATH_TO_DATA):
 	cap.release()
 	return min(result)
 
-def run_sift(PATH_TO_DATA):
-	print("SIFT for video: " + PATH_TO_DATA)
-	# n_features = min_kp_SIFT(PATH_TO_DATA)
-	n_features = 10
+def run_sift(PATH_TO_DATA, n_features = 10):
 	cap = cv2.VideoCapture(PATH_TO_DATA)
 	sift = cv2.SIFT(nfeatures = n_features)
 	i = 0
@@ -51,6 +50,8 @@ def run_sift(PATH_TO_DATA):
 			vector1 += [kp_elem.response, kp_elem.pt[0], kp_elem.pt[1], kp_elem.size, kp_elem.angle]
 
 		vector2 = utils.reshape(des.flatten())
+
+		IPython.embed()
 
 		X1 = utils.safe_concatenate(X1, utils.reshape(np.array(vector1)))
 		X2 = utils.safe_concatenate(X2, vector2)

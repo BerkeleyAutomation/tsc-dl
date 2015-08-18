@@ -76,7 +76,7 @@ class MilestonesClustering():
 
 		self.gmm_objects = {}
 
-		self.sr = 10
+		self.sr = 3
 
 	def construct_features(self):
 
@@ -129,19 +129,19 @@ class MilestonesClustering():
 
 			size_of_X = self.data_X_size[demonstration]
 
+			cp_demonstration = []
 			for i in range(len(Y) - 1):
 
 				if Y[i] != Y[i + 1]:
-
 					change_pt = N[i][size_of_X:]
-					# print N.shape, change_pt.shape
 					self.append_cp_array(change_pt)
 					self.map_cp2frm[cp_index] = start + i * self.sr
+					cp_demonstration.append(start + i * self.sr)
 					self.map_cp2demonstrations[cp_index] = demonstration
 					self.list_of_cp.append(cp_index)
 
 					cp_index += 1
-
+				IPython.embed()
 
 	def append_cp_array(self, cp):
 		if self.change_pts is None:
@@ -317,7 +317,7 @@ class MilestonesClustering():
 			utils.sys_copy(from_path, to_path)
 
 	# Prune clusters which represent less than 20% of the total demonstration data
-	def check_pruning_condition(self, list_of_cp_key):
+	def check_pruning_condition(self, list_of_cp_key, representativeness = 0.8):
 		demonstrations_in_cluster = [self.map_cp2demonstrations[cp] for cp in list_of_cp_key]
 
 		num_demonstrations = len(set(demonstrations_in_cluster))
@@ -326,7 +326,7 @@ class MilestonesClustering():
 
 		print data_representation, len(list_of_cp_key)
 
-		return data_representation <= 0.4
+		return data_representation <= representativeness 
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
@@ -622,11 +622,11 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 

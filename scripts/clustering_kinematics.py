@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 import IPython
 import itertools
+import sys
 from decimal import Decimal
 
 import constants
@@ -63,9 +64,9 @@ class KinematicsClustering():
 
 		self.gmm_objects = {}
 
-		self.sr = 10
+		self.sr = 3
 
-		utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
+		# utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
 
 	def construct_features_visual(self):
 
@@ -329,7 +330,7 @@ class KinematicsClustering():
 		data = [self.label_based_scores_1, self.silhouette_scores, self.dunn_scores_1,
 		self.dunn_scores_2, self.dunn_scores_3]
 
-		pickle.dump(data, open(self.metrics_picklefile, "wb"))
+		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
 		return data
 
@@ -411,11 +412,11 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 
 	vision_mode = False

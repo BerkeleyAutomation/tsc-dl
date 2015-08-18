@@ -4,7 +4,7 @@ CAFFE_ROOT = '/home/animesh/caffe/'
 
 PATH_TO_SUTURING_DATA = "/home/animesh/DeepMilestones/jigsaws/Suturing_video/"
 
-PATH_TO_CLUSTERING_RESULTS = "/home/animesh/DeepMilestones/clustering_FCED_v3/"
+PATH_TO_CLUSTERING_RESULTS = "/home/animesh/DeepMilestones/clustering_E12345/"
 
 PATH_TO_SUTURING_KINEMATICS = "/home/animesh/DeepMilestones/jigsaws/Suturing_kinematics/kinematics/AllGestures/"
 
@@ -50,7 +50,7 @@ ALEXNET_FEATURES_FOLDER = "alexnetfeatures_2/"
 
 VGG_FEATURES_FOLDER = "vggfeatures_2/"
 
-PROC_FEATURES_FOLDER = "features_FCED/"
+PROC_FEATURES_FOLDER = "features_E12345/"
 
 CROP_PARAMS = {"capture2": "\"crop=330:260:150:150\"", "capture1": "\"crop=330:260:200:170\""}
 
