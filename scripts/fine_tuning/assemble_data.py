@@ -16,9 +16,11 @@ import parser
 FPS = 30
 
 def convert_video_to_frames(list_of_videos):
+
+	CROP_PARAMS = {"capture1": constants.CROP_PARAMS_CAPTURE_1, "capture2": constants.CROP_PARAMS_CAPTURE_2}
 	for video in list_of_videos:
 		for camera in ["capture1", "capture2"]:
-			os.chdir(constants.PATH_TO_SUTURING_DATA)
+			os.chdir(constants.PATH_TO_DATA)
 			video_file_name = video + "_" + camera
 			mkdir_path = constants.NEW_FRAMES_FOLDER + video_file_name
 			print "mkdir " + mkdir_path
@@ -28,9 +30,9 @@ def convert_video_to_frames(list_of_videos):
 			print command
 			os.system(command)
 
-			command = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + video_file_name
+			command = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video_file_name
 			print "cd " + command
-			os.chdir(constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + video_file_name)
+			os.chdir(constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video_file_name)
 
 			command = "ffmpeg -i " + video_file_name + ".avi -filter:v " + constant.CROP_PARAMS[camera] + " cropped.avi"
 			print command
@@ -60,7 +62,7 @@ def generate_train_val_test_files(list_of_videos):
 
 	for video in list_of_videos:
 		for camera in ["capture1", "capture2"]:
-			os.chdir(constants.PATH_TO_SUTURING_DATA)
+			os.chdir(constants.PATH_TO_DATA)
 			transcriptions_file = TRANSCRIPTIONS_FOLDER + video + ".txt"
 			with open(transcriptions_file, "rb") as f:
 				for line in f:
@@ -71,7 +73,7 @@ def generate_train_val_test_files(list_of_videos):
 					label = constants.map_surgeme_label[surgeme]
 					i = start
 					while i <= end:
-						data = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + video + "_" + camera + "/" + utils.get_frame_fig_name(i) + " "+ str(label) + " \n"
+						data = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video + "_" + camera + "/" + utils.get_frame_fig_name(i) + " "+ str(label) + " \n"
 						list_of_data.append(data)
 						i += 1
 	random.shuffle(list_of_data)
@@ -83,9 +85,9 @@ def generate_train_val_test_files(list_of_videos):
 	val = test[:len(test)/2]
 	test = test[len(test)/2:]
 
-	train_file_name = constants.PATH_TO_SUTURING_DATA + "train.txt"
-	val_file_name = constants.PATH_TO_SUTURING_DATA + "val.txt"
-	test_file_name = constants.PATH_TO_SUTURING_DATA + "test.txt"
+	train_file_name = constants.PATH_TO_DATA + "train.txt"
+	val_file_name = constants.PATH_TO_DATA + "val.txt"
+	test_file_name = constants.PATH_TO_DATA + "test.txt"
 
 	IPython.embed()
 
@@ -94,6 +96,6 @@ def generate_train_val_test_files(list_of_videos):
 	write_to_file(test_file_name, test)
 
 if __name__ == "__main__":
-	list_of_videos = parser.generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
-	# convert_video_to_frames(list_of_videos)
-	generate_train_val_test_files(list_of_videos)
+	list_of_videos = parser.generate_list_of_videos(constants.PATH_TO_DATA + constants.CONFIG_FILE)
+	convert_video_to_frames(list_of_videos)
+	# generate_train_val_test_files(list_of_videos)

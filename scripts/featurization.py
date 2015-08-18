@@ -30,15 +30,15 @@ from sklearn.decomposition import PCA, IncrementalPCA
 # 11 - HOG
 # 12 - SIFT v2
 
-PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
+PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
 def load_cnn_features(demonstration, layer, folder, net):
-	Z = pickle.load(open(constants.PATH_TO_SUTURING_DATA + folder + layer
+	Z = pickle.load(open(constants.PATH_TO_DATA + folder + layer
 		+ "_" + net + "_" + demonstration + "_capture2.p", "rb"))
 	return Z.astype(np.float)
 
 def get_kinematic_features(demonstration):
-	return parser.parse_kinematics(constants.PATH_TO_SUTURING_KINEMATICS, constants.PATH_TO_SUTURING_DATA
+	return parser.parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA
 		+ constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p", demonstration + ".txt")
 
 def main(DEBUG = False):
@@ -59,7 +59,7 @@ def main(DEBUG = False):
 		kinematics[demonstration] = W
 
 
-	sr = 3
+	sr = constants.SR
 	featurize_1(list_of_demonstrations, kinematics, sr)
 	# featurize_2(list_of_demonstrations, kinematics, sr)
 	# featurize_3(list_of_demonstrations, kinematics, sr)
@@ -78,14 +78,14 @@ def featurize_1(list_of_demonstrations, kinematics, sr):
 	data_X_2 = {}
 	for demonstration in list_of_demonstrations:
 		print "SIFT for ", demonstration
-		start, end = parser.get_start_end_annotations(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
+		start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 						+ demonstration + "_capture2.p")
 
 		W = kinematics[demonstration]
 		W_sampled = utils.sample_matrix(W, sampling_rate = sr)
 
 
-		PATH_TO_SIFT = constants.PATH_TO_SUTURING_DATA + "sift_FCED/SIFT_"+ demonstration
+		PATH_TO_SIFT = constants.PATH_TO_DATA + "sift_FCED/SIFT_"+ demonstration
 		Z = pickle.load(open(PATH_TO_SIFT + "_1.p", "rb"))
 		Z = Z[start:end + 1]
 		Z_sampled_1 = utils.sample_matrix(Z, sampling_rate = sr)

@@ -1,12 +1,19 @@
 import numpy as np
+import yaml
+
+def parse_yaml(yaml_fname):
+	config = yaml.load(open(yaml_fname, 'r'))
+	return config
+
+config = parse_yaml("../config/suturing.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
-PATH_TO_SUTURING_DATA = "/home/animesh/DeepMilestones/jigsaws/Suturing_video/"
+PATH_TO_DATA = config['PATH_TO_DATA']
 
-PATH_TO_CLUSTERING_RESULTS = "/home/animesh/DeepMilestones/clustering_E12345/"
+PATH_TO_CLUSTERING_RESULTS = config['PATH_TO_CLUSTERING_RESULTS']
 
-PATH_TO_SUTURING_KINEMATICS = "/home/animesh/DeepMilestones/jigsaws/Suturing_kinematics/kinematics/AllGestures/"
+PATH_TO_KINEMATICS = config['PATH_TO_KINEMATICS']
 
 PATH_TO_OPENCV_2_4_9 = "~/opencv_2.4.9/opencv-2.4.9/lib/"
 
@@ -34,7 +41,7 @@ NET_PARAMS = {"AlexNet": [CAFFE_ROOT + 'models/bvlc_reference_caffenet/deploy.pr
 alex_net_layers], "VGG_SOS": [CAFFE_ROOT + 'models/vgg_sos/deploy.prototxt', CAFFE_ROOT + 'models/vgg_sos/VGG16_SalObjSub.caffemodel', vgg_layers],
 "VGG": [CAFFE_ROOT + 'models/vgg/deploy.prototxt', CAFFE_ROOT + 'models/vgg/VGG_ILSVRC_16_layers.caffemodel', vgg_layers]}
 
-CONFIG_FILE = "meta_file_Suturing.txt"
+CONFIG_FILE = config['CONFIG_FILE']
 
 VIDEO_FOLDER = "video/"
 
@@ -46,13 +53,18 @@ TRANSCRIPTIONS_FOLDER = "transcriptions/"
 
 ANNOTATIONS_FOLDER = "annotations/"
 
-ALEXNET_FEATURES_FOLDER = "alexnetfeatures_2/"
+ALEXNET_FEATURES_FOLDER = config["ALEXNET_FEATURES_FOLDER"]
 
-VGG_FEATURES_FOLDER = "vggfeatures_2/"
+VGG_FEATURES_FOLDER = config["VGG_FEATURES_FOLDER"]
 
-PROC_FEATURES_FOLDER = "features_E12345/"
+PROC_FEATURES_FOLDER = config["PROC_FEATURES_FOLDER"]
 
-CROP_PARAMS = {"capture2": "\"crop=330:260:150:150\"", "capture1": "\"crop=330:260:200:170\""}
+CROP_PARAMS_CAPTURE_1 = config["CROP_PARAMS_CAPTURE_1"]
+
+CROP_PARAMS_CAPTURE_2 = config["CROP_PARAMS_CAPTURE_2"]
+
+# Sampling rate
+SR = config["SR"]
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}

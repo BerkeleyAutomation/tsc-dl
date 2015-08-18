@@ -2,11 +2,11 @@ import numpy as np
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
-PATH_TO_SUTURING_DATA = "/home/animesh/DeepMilestones/jigsaws/Suturing_video/"
+PATH_TO_DATA = "/home/animesh/DeepMilestones/jigsaws/Suturing_video/"
 
 PATH_TO_CLUSTERING_RESULTS = "/home/animesh/DeepMilestones/clustering_FCED/"
 
-PATH_TO_SUTURING_KINEMATICS = "/home/animesh/DeepMilestones/jigsaws/Suturing_kinematics/kinematics/AllGestures/"
+PATH_TO_KINEMATICS = "/home/animesh/DeepMilestones/jigsaws/Suturing_kinematics/kinematics/AllGestures/"
 
 color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
 

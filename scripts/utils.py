@@ -7,6 +7,7 @@ from sklearn import (manifold, datasets, decomposition, ensemble, lda,
 	random_projection, preprocessing, covariance, cluster, neighbors)
 import random
 import os
+import yaml
 
 import encoding
 import constants
@@ -250,6 +251,9 @@ def print_and_write_2(metric, mean, std, file):
 	# print("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
 	file.write("\n%1.3f  %1.3f  %s\n" % (mean, std, metric))
 
+def parse_yaml(yaml_fname):
+	config = yaml.load(open(yaml_fname, 'r'))
+	return config
 
 def binary_search(ranges, val):
 	if len(ranges) == 1:

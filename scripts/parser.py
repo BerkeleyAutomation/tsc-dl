@@ -10,7 +10,6 @@ from forward_pass import CNNFeatureExtractor
 
 def forward_pass_entire_dataset():
 	net = CNNFeatureExtractor("VGG_SOS")
-	# list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
 
 	list_of_videos = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
 	'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
@@ -19,13 +18,13 @@ def forward_pass_entire_dataset():
 	i = 1
 	for video in list_of_videos:
 		# print "-------------------- " + video +"_capture1 -----" + str(i) + "--out-of-"+ str(total)+"-----------------"
-		# PATH_TO_ANNOTATION = constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER + video + "_capture1.p"
-		# PATH_TO_DATA = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + video + "_capture1/"
+		# PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + video + "_capture1.p"
+		# PATH_TO_DATA = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video + "_capture1/"
 		# get_cnn_features_pickle_dump(net, video + "_capture1", PATH_TO_DATA, PATH_TO_ANNOTATION)
 		# i += 1
 		print "-------------------- " + video +"_capture2 -----" + str(i) +"--out-of-"+ str(total)+"-----------------"
-		PATH_TO_ANNOTATION = constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER + video + "_capture2.p"
-		PATH_TO_DATA = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + video + "_capture2/"
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + video + "_capture2.p"
+		PATH_TO_DATA = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video + "_capture2/"
 		get_cnn_features_pickle_dump(net, video + "_capture2", PATH_TO_DATA, PATH_TO_ANNOTATION)
 		i += 1
 
@@ -35,7 +34,7 @@ def get_cnn_features_pickle_dump(net, fname, PATH_TO_DATA, annotations):
 	list_of_layers = ['conv5_1', 'conv5_3']
 	Z = net.forward_pass(PATH_TO_DATA, annotations, list_of_layers = list_of_layers, sampling_rate = 1, no_plot_mode = True)
 	for key in Z.keys():
-		pickle.dump(Z[key], open(constants.PATH_TO_SUTURING_DATA + constants.VGG_FEATURES_FOLDER + key + "_vgg_" + fname + ".p", "wb"))
+		pickle.dump(Z[key], open(constants.PATH_TO_DATA + constants.VGG_FEATURES_FOLDER + key + "_vgg_" + fname + ".p", "wb"))
 
 def generate_list_of_videos(config_file_name, include_camera = False):
 	list_of_videos = []
@@ -65,16 +64,25 @@ def frame2surgeme_map_demonstration(PATH_TO_TRANSCRIPTION, demonstration):
 	return map_frame2surgeme
 
 def get_all_frame2surgeme_maps(list_of_videos):
+	"""
+	For each demonstration in list_of_videos, function returns a map:
+	[frame number] -> segment label
+	"""
+
 	map_frame2surgeme = {}
 
 	for demonstration in list_of_videos:
 
-		map_frame2surgeme[demonstration] = frame2surgeme_map_demonstration(constants.PATH_TO_SUTURING_DATA +
+		map_frame2surgeme[demonstration] = frame2surgeme_map_demonstration(constants.PATH_TO_DATA +
 			constants.TRANSCRIPTIONS_FOLDER, demonstration)
 
 	return map_frame2surgeme
 
 def convert_transcription_to_annotation(PATH_TO_TRANSCRIPTION, PATH_TO_ANNOTATION, demonstration):
+	"""
+	Converts transcription.txt file to annotations.p file containing a dictionary of surgeme labels
+	"""
+
 	segments = {}
 	with open(PATH_TO_TRANSCRIPTION + demonstration + ".txt", "rb") as f:
 		for line in f:
@@ -94,13 +102,17 @@ def convert_transcription_to_annotation(PATH_TO_TRANSCRIPTION, PATH_TO_ANNOTATIO
 	pickle.dump(segments, open(PATH_TO_ANNOTATION + demonstration + "_capture2.p", "wb"))
 
 def parse_annotations():
-	list_of_videos = generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
+	list_of_videos = generate_list_of_videos(constants.PATH_TO_DATA + constants.CONFIG_FILE)
 	# Note that left and right cameres have same transcriptions/annotations
 	for video in list_of_videos:
-		convert_transcription_to_annotation(constants.PATH_TO_SUTURING_DATA + constants.TRANSCRIPTIONS_FOLDER,
-			constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER, video)
+		convert_transcription_to_annotation(constants.PATH_TO_DATA + constants.TRANSCRIPTIONS_FOLDER,
+			constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER, video)
 
 def get_start_end_annotations(PATH_TO_ANNOTATION):
+	"""
+	Given the annotation (pickle) file, function returns the start and end
+	frames of the demonstration.
+	"""
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 	list_of_end_start_pts = []
 	for key in segments:
@@ -122,30 +134,17 @@ def get_annotation_segments(PATH_TO_ANNOTATION):
 	return list_of_end_start_pts
 
 def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname, sampling_rate = 1):
-	# 39-41  (3) : Slave left tooltip xyz
-	# 42-50  (9) : Slave left tooltip R
-	# 51-53  (3) : Slave left tooltip trans_vel x', y', z'   
-	# 54-56  (3) : Slave left tooltip rot_vel
-	# 57     (1) : Slave left gripper angle 
-	# 58-76  (19): Slave right
+	"""
+	Takes in PATH to kinematics data (a txt file) and outputs a N x 38 matrix,
+	where N is the number of frames. There are 38 dimensions in the kinematic data
 
-	# X = None
-	# with open(PATH_TO_KINEMATICS_DATA + fname, "rb") as f:
-	# 	i = 0
-	# 	print "Inside parse_kinematics"
-	# 	IPython.embed()
-	# 	# for line in f:
-	# 	# 	if i % sampling_rate == 0:
-	# 	# 		traj = np.array(line.split())
-	# 	# 		slave = traj[38:]
-	# 	# 		slave_left = traj[38:57]
-	# 	# 		slave_right = traj[57:]
-	# 	# 		if X is not None:
-	# 	# 			X = np.concatenate((X, slave.reshape(1, slave.shape[0])), axis = 0)
-	# 	# 		else:
-	# 	# 			X = slave.reshape(1, slave.shape[0])
-	# 	# 	i += 1
-	# return X
+	39-41  (3) : Slave left tooltip xyz
+	42-50  (9) : Slave left tooltip R
+	51-53  (3) : Slave left tooltip trans_vel x', y', z'   
+	54-56  (3) : Slave left tooltip rot_vel
+	57     (1) : Slave left gripper angle 
+	58-76  (19): Slave right
+	"""
 
 	start, end = get_start_end_annotations(PATH_TO_ANNOTATION)
 
@@ -164,21 +163,6 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname, samplin
 		else:
 			X = slave.reshape(1, slave.shape[0])		
 		i += sampling_rate
-	# with open(PATH_TO_KINEMATICS_DATA + fname, "rb") as f:
-	# 	i = 0
-	# 	print "Inside parse_kinematics"
-	# 	IPython.embed()
-		# for line in f:
-		# 	if i % sampling_rate == 0:
-		# 		traj = np.array(line.split())
-		# 		slave = traj[38:]
-		# 		slave_left = traj[38:57]
-		# 		slave_right = traj[57:]
-		# 		if X is not None:
-		# 			X = np.concatenate((X, slave.reshape(1, slave.shape[0])), axis = 0)
-		# 		else:
-		# 			X = slave.reshape(1, slave.shape[0])
-		# 	i += 1
 	return X.astype(np.float)
 
 

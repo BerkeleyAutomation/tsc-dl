@@ -18,7 +18,7 @@ from sklearn import (mixture, neighbors, metrics)
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 
-PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
+PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
 class KinematicsClustering():
 	def __init__(self, DEBUG, list_of_demonstrations, fname, log, vision_mode = False, feat_fname = None):
@@ -64,7 +64,7 @@ class KinematicsClustering():
 
 		self.gmm_objects = {}
 
-		self.sr = 3
+		self.sr = constants.SR
 
 		# utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
 
@@ -121,7 +121,7 @@ class KinematicsClustering():
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_SUTURING_DATA +
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA +
 				constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p")
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
@@ -175,7 +175,6 @@ class KinematicsClustering():
 			except KeyError as e:
 				print e
 				sys.exit()
-				# IPython.embed()
 
 			utils.print_and_write(("%3d   %s   %s   %3d   %3d\n" % (i, label, demonstration, frm, surgeme)), self.log)
 
@@ -203,7 +202,7 @@ class KinematicsClustering():
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
 
-			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
+			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_capture2.p"))
 
 			bin = utils.binary_search(ranges, frm)

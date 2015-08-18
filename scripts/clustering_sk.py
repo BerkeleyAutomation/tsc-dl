@@ -24,11 +24,11 @@ from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, no
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 from sklearn.cross_decomposition import (CCA, PLSCanonical)
 
-PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
+PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
 class MilestonesClustering():
 	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):
-		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
+		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_DATA + constants.CONFIG_FILE)
 	
 		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
@@ -124,7 +124,7 @@ class MilestonesClustering():
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_capture2.p")
 
 			size_of_X = self.data_X_size[demonstration]
@@ -310,7 +310,7 @@ class MilestonesClustering():
 			surgeme = self.map_frm2surgeme[demonstration][self.map_cp2frm[cp]]
 			frm = utils.get_frame_fig_name(self.map_cp2frm[cp])
 
-			from_path = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + frm
+			from_path = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + frm
 
 			to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/milestones/" + self.map_cp2milestones[cp] + "_" + str(surgeme) + "_" + demonstration + "_" + frm
 
@@ -330,7 +330,7 @@ class MilestonesClustering():
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
-		from_path = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + utils.get_frame_fig_name(frm)
+		from_path = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + utils.get_frame_fig_name(frm)
 
 		to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/" + l1_cluster + "/" + l2_cluster + "_" + str(surgeme) + "_" + demonstration + "_" + utils.get_frame_fig_name(frm)
 
@@ -346,7 +346,7 @@ class MilestonesClustering():
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
 
-			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
+			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_capture2.p"))
 
 			bin = utils.binary_search(ranges, frm)
