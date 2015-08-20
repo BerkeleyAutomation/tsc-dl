@@ -2,11 +2,6 @@
 
 # This script converts all suturing .avi video files to .mat files which contain the c3d features
 FILES=/home/animesh/jigsaws/Suturing_video/video/*
-# COUNT=1
-# for f in $FILES; do
-# 	echo $COUNT
-# 	COUNT=$((COUNT+1))
-# done
 
 COUNT=1
 for f in $FILES; do

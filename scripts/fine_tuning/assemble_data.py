@@ -19,24 +19,25 @@ def convert_video_to_frames(list_of_videos):
 
 	CROP_PARAMS = {"capture1": constants.CROP_PARAMS_CAPTURE_1, "capture2": constants.CROP_PARAMS_CAPTURE_2}
 	for video in list_of_videos:
-		for camera in ["capture1", "capture2"]:
-			os.chdir(constants.PATH_TO_DATA)
+		# for camera in ["capture1", "capture2"]:
+		for camera in ["capture1",]:
+			# os.chdir(constants.PATH_TO_DATA)
 			video_file_name = video + "_" + camera
-			mkdir_path = constants.NEW_FRAMES_FOLDER + video_file_name
-			print "mkdir " + mkdir_path
-			os.mkdir(mkdir_path)
+			# mkdir_path = constants.NEW_FRAMES_FOLDER + video_file_name
+			# print "mkdir " + mkdir_path
+			# os.mkdir(mkdir_path)
 
-			command = "cp " + constants.VIDEO_FOLDER + video_file_name + ".avi " + mkdir_path
-			print command
-			os.system(command)
+			# command = "cp " + constants.VIDEO_FOLDER + video_file_name + ".avi " + mkdir_path
+			# print command
+			# os.system(command)
 
 			command = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video_file_name
 			print "cd " + command
 			os.chdir(constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video_file_name)
 
-			command = "ffmpeg -i " + video_file_name + ".avi -filter:v " + constant.CROP_PARAMS[camera] + " cropped.avi"
-			print command
-			os.system(command) 
+			# command = "ffmpeg -i " + video_file_name + ".avi -filter:v " + constant.CROP_PARAMS[camera] + " cropped.avi"
+			# print command
+			# os.system(command) 
 
 			command = "ffmpeg -i cropped.avi -vf scale=640:480 cropped_scaled.avi"
 			print command
@@ -96,6 +97,8 @@ def generate_train_val_test_files(list_of_videos):
 	write_to_file(test_file_name, test)
 
 if __name__ == "__main__":
-	list_of_videos = parser.generate_list_of_videos(constants.PATH_TO_DATA + constants.CONFIG_FILE)
+	# list_of_videos = parser.generate_list_of_videos(constants.PATH_TO_DATA + constants.CONFIG_FILE)
+	list_of_videos = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+	"Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 	convert_video_to_frames(list_of_videos)
 	# generate_train_val_test_files(list_of_videos)

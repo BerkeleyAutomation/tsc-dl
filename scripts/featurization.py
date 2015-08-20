@@ -34,18 +34,20 @@ PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
 def load_cnn_features(demonstration, layer, folder, net):
 	Z = pickle.load(open(constants.PATH_TO_DATA + folder + layer
-		+ "_" + net + "_" + demonstration + "_capture2.p", "rb"))
+		+ "_" + net + "_" + demonstration + "_" + constants.CAMERA +".p", "rb"))
 	return Z.astype(np.float)
 
 def get_kinematic_features(demonstration):
 	return parser.parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA
-		+ constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p", demonstration + ".txt")
+		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", demonstration + ".txt")
 
 def main(DEBUG = False):
 	if DEBUG:
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		"Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
@@ -60,10 +62,10 @@ def main(DEBUG = False):
 
 
 	sr = constants.SR
-	featurize_1(list_of_demonstrations, kinematics, sr)
-	# featurize_2(list_of_demonstrations, kinematics, sr)
-	# featurize_3(list_of_demonstrations, kinematics, sr)
-	# featurize_4(list_of_demonstrations, kinematics, sr)
+	# featurize_1(list_of_demonstrations, kinematics, sr)
+	featurize_2(list_of_demonstrations, kinematics, sr)
+	featurize_3(list_of_demonstrations, kinematics, sr)
+	featurize_4(list_of_demonstrations, kinematics, sr)
 	# featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
 	# featurize_7(list_of_demonstrations, kinematics, sr)
@@ -79,7 +81,7 @@ def featurize_1(list_of_demonstrations, kinematics, sr):
 	for demonstration in list_of_demonstrations:
 		print "SIFT for ", demonstration
 		start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
-						+ demonstration + "_capture2.p")
+						+ demonstration + "_" + constants.CAMERA +".p")
 
 		W = kinematics[demonstration]
 		W_sampled = utils.sample_matrix(W, sampling_rate = sr)
@@ -107,19 +109,19 @@ def featurize_1(list_of_demonstrations, kinematics, sr):
 def featurize_2(list_of_demonstrations, kinematics, sr):
 	print "FEATURIZATION 2"
 	featurize_cnn_features(list_of_demonstrations, kinematics, "conv4",
-		constants.ALEXNET_FEATURES_FOLDER, 2, "alexnet", sr)
+		constants.ALEXNET_FEATURES_FOLDER, 2, "AlexNet", sr)
 
 # Featurize - AlexNet conv3
 def featurize_3(list_of_demonstrations, kinematics, sr):
 	print "FEATURIZATION 3"
 	featurize_cnn_features(list_of_demonstrations, kinematics, "conv3",
-		constants.ALEXNET_FEATURES_FOLDER, 3, "alexnet", sr)
+		constants.ALEXNET_FEATURES_FOLDER, 3, "AlexNet", sr)
 
 # Featurize - AlexNet pool5
 def featurize_4(list_of_demonstrations, kinematics, sr):
 	print "FEATURIZATION 4"
 	featurize_cnn_features(list_of_demonstrations, kinematics, "pool5",
-		constants.ALEXNET_FEATURES_FOLDER, 4, "alexnet", sr)
+		constants.ALEXNET_FEATURES_FOLDER, 4, "AlexNet", sr)
 
 # Featurize - VGG conv5_3
 def featurize_5(list_of_demonstrations, kinematics, sr):
@@ -134,7 +136,7 @@ def featurize_6(list_of_demonstrations, kinematics, sr):
 		constants.VGG_FEATURES_FOLDER, 6, "vgg", sr)
 
 # Featurize - VGG conv5_3 + LCD + VLAD
-def featurize_7(list_of_demonstrations, kinematics, config = [True, False, False]):
+def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True]):
 	print "FEATURIZATION 7"
 	a = 14 # Need to find the original values!!
 	M = 512
@@ -212,7 +214,7 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, False, False
 	if config[2]:
 		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(7) + "_GRP" + ".p", "wb"))
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, False, False]):
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, True, True]):
 
 	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
 

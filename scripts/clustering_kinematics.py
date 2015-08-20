@@ -65,8 +65,11 @@ class KinematicsClustering():
 		self.gmm_objects = {}
 
 		self.sr = constants.SR
+		self.representativeness = constants.PRUNING_FACTOR
 
-		# utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
+		# Components for Mixture model at each level
+		self.n_components_cp = 10
+		self.n_components_L1 = 10
 
 	def construct_features_visual(self):
 
@@ -117,12 +120,12 @@ class KinematicsClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = 10, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
 			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA +
-				constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p")
+				constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
@@ -157,7 +160,7 @@ class KinematicsClustering():
 
 		print "Clustering changepoints..."
 
-		gmm = mixture.GMM(n_components = 10, covariance_type='full')
+		gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		gmm.fit(self.changepoints)
 
 		predictions = gmm.predict(self.changepoints)
@@ -178,21 +181,6 @@ class KinematicsClustering():
 
 			utils.print_and_write(("%3d   %s   %s   %3d   %3d\n" % (i, label, demonstration, frm, surgeme)), self.log)
 
-	def check_pruning_condition(self, list_of_cp_key):
-		"""
-		Prune clusters which represent less than 20 percent of the total demonstration data
-		"""
-
-		demonstrations_in_cluster = [self.map_cp2demonstrations[cp] for cp in list_of_cp_key]
-
-		num_demonstrations = len(set(demonstrations_in_cluster))
-		num_total_demonstrations = len(self.list_of_demonstrations)
-		data_representation = num_demonstrations / float(num_total_demonstrations)
-
-		print data_representation
-
-		return data_representation < 0.8
-
 	def cluster_evaluation(self):
 
 		for cp in self.list_of_cp:
@@ -203,7 +191,7 @@ class KinematicsClustering():
 			self.map_cp2surgemes[cp] = curr_surgeme
 
 			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
-				+ demonstration + "_capture2.p"))
+				+ demonstration + "_" + constants.CAMERA + ".p"))
 
 			bin = utils.binary_search(ranges, frm)
 
@@ -411,7 +399,14 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+
+		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
+		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
+		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
