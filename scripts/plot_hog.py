@@ -87,7 +87,7 @@ import IPython
 import cv2
 
 IPython.embed()
-image = color.rgb2gray(cv2.imread("../images/sample.jpg"))
+image = color.rgb2gray(cv2.imread("../images/sample2.jpg"))
 
 fd, hog_image = hog(image, orientations=8, pixels_per_cell=(16, 16),
                     cells_per_block=(1, 1), visualise=True)
