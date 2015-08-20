@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 import IPython
 import itertools
+import sys
 from decimal import Decimal
 
 import constants
@@ -17,7 +18,7 @@ from sklearn import (mixture, neighbors, metrics)
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 
-PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
+PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
 class KinematicsClustering():
 	def __init__(self, DEBUG, list_of_demonstrations, fname, log, vision_mode = False, feat_fname = None):
@@ -63,9 +64,12 @@ class KinematicsClustering():
 
 		self.gmm_objects = {}
 
-		self.sr = 10
+		self.sr = constants.SR
+		self.representativeness = constants.PRUNING_FACTOR
 
-		utils.print_and_write("Dumping metrics to file: " + self.metrics_picklefile, self.log)
+		# Components for Mixture model at each level
+		self.n_components_cp = 10
+		self.n_components_L1 = 10
 
 	def construct_features_visual(self):
 
@@ -77,7 +81,7 @@ class KinematicsClustering():
 			X = self.data_X[demonstration]
 			X_visual = None
 			for i in range(len(X)):
-				utils.safe_concatenate(X_visual, utils.reshape(X[i][38:]))
+				X_visual = utils.safe_concatenate(X_visual, utils.reshape(X[i][38:]))
 			assert X_visual.shape[0] == X.shape[0]
 
 			self.data_X[demonstration] = X_visual
@@ -116,12 +120,12 @@ class KinematicsClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = 10, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_SUTURING_DATA +
-				constants.ANNOTATIONS_FOLDER + demonstration + "_capture2.p")
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA +
+				constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
@@ -156,7 +160,7 @@ class KinematicsClustering():
 
 		print "Clustering changepoints..."
 
-		gmm = mixture.GMM(n_components = 10, covariance_type='full')
+		gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		gmm.fit(self.changepoints)
 
 		predictions = gmm.predict(self.changepoints)
@@ -174,24 +178,8 @@ class KinematicsClustering():
 			except KeyError as e:
 				print e
 				sys.exit()
-				# IPython.embed()
 
 			utils.print_and_write(("%3d   %s   %s   %3d   %3d\n" % (i, label, demonstration, frm, surgeme)), self.log)
-
-	def check_pruning_condition(self, list_of_cp_key):
-		"""
-		Prune clusters which represent less than 20 percent of the total demonstration data
-		"""
-
-		demonstrations_in_cluster = [self.map_cp2demonstrations[cp] for cp in list_of_cp_key]
-
-		num_demonstrations = len(set(demonstrations_in_cluster))
-		num_total_demonstrations = len(self.list_of_demonstrations)
-		data_representation = num_demonstrations / float(num_total_demonstrations)
-
-		print data_representation
-
-		return data_representation < 0.8
 
 	def cluster_evaluation(self):
 
@@ -202,8 +190,8 @@ class KinematicsClustering():
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
 
-			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
-				+ demonstration + "_capture2.p"))
+			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+				+ demonstration + "_" + constants.CAMERA + ".p"))
 
 			bin = utils.binary_search(ranges, frm)
 
@@ -224,8 +212,6 @@ class KinematicsClustering():
 			self.map_cp2surgemetransitions[cp] = surgemetransition
 
 		self.cp_surgemes = set(self.map_cp2surgemes.values())
-
-		IPython.embed()
 
 		# Initialize data structures
 		table = {}
@@ -331,7 +317,7 @@ class KinematicsClustering():
 		data = [self.label_based_scores_1, self.silhouette_scores, self.dunn_scores_1,
 		self.dunn_scores_2, self.dunn_scores_3]
 
-		pickle.dump(data, open(self.metrics_picklefile, "wb"))
+		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
 		return data
 
@@ -369,6 +355,8 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 def parse_metrics(metrics, file):
 
 	mutual_information_1 = []
+	normalized_mutual_information_1 = []
+	adjusted_mutual_information_1 = []
 	homogeneity_1 = []
 
 	silhoutte_level_1 = []
@@ -379,6 +367,8 @@ def parse_metrics(metrics, file):
 	for elem in metrics:
 
 		mutual_information_1.append(elem[0]["mutual_info_score"])
+		normalized_mutual_information_1.append(elem[0]["normalized_mutual_info_score"])
+		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 
 		silhoutte_level_1.append(elem[1]["level1"])
@@ -387,6 +377,9 @@ def parse_metrics(metrics, file):
 		dunn3_level_1.append(elem[4]["level1"])
 
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
+	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
+	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
+
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
 
@@ -406,14 +399,22 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
+
+		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
+		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 
 	vision_mode = False
+	feat_fname = None
 	if args.visual:
 		vision_mode = True
 		feat_fname = args.visual

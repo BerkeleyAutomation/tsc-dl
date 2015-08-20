@@ -9,10 +9,6 @@ import sys
 import IPython
 import itertools
 
-#Cluster Validity Indices
-sys.path.insert(0, "/home/animesh/DeepMilestones/scripts/jqm_cvi")
-import cvi
-
 import constants
 import parser
 import utils
@@ -24,11 +20,11 @@ from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, no
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 from sklearn.cross_decomposition import (CCA, PLSCanonical)
 
-PATH_TO_FEATURES = constants.PATH_TO_SUTURING_DATA + constants.PROC_FEATURES_FOLDER
+PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
 class MilestonesClustering():
 	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):
-		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_SUTURING_DATA + constants.CONFIG_FILE)
+		# self.list_of_demonstrations = parser.generate_list_of_videos(constants.PATH_TO_DATA + constants.CONFIG_FILE)
 	
 		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
@@ -47,9 +43,7 @@ class MilestonesClustering():
 		self.map_cp2frm = {}
 		self.map_cp2demonstrations = {}
 		self.map_cp_level1 = {}
-		self.map_cp_level2 = {}
 		self.map_level1_cp = {}
-		self.map_level2_cp = {}
 		self.map_cp2milestones = {}
 		self.map_cp2surgemes = {}
 		self.map_cp2surgemetransitions = {}
@@ -76,7 +70,13 @@ class MilestonesClustering():
 
 		self.gmm_objects = {}
 
-		self.sr = 10
+		self.sr = constants.SR
+		self.representativeness = constants.PRUNING_FACTOR
+
+		# Components for Mixture model at each level
+		self.n_components_cp = 5
+		self.n_components_L1 = 10
+		self.n_components_L2 = 5
 
 	def construct_features(self):
 
@@ -118,30 +118,29 @@ class MilestonesClustering():
 			# print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = 10, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
-				+ demonstration + "_capture2.p")
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+				+ demonstration + "_" + constants.CAMERA + ".p")
 
 			size_of_X = self.data_X_size[demonstration]
 
+			cp_demonstration = []
 			for i in range(len(Y) - 1):
 
 				if Y[i] != Y[i + 1]:
-
 					change_pt = N[i][size_of_X:]
-					# print N.shape, change_pt.shape
 					self.append_cp_array(change_pt)
 					self.map_cp2frm[cp_index] = start + i * self.sr
+					cp_demonstration.append(start + i * self.sr)
 					self.map_cp2demonstrations[cp_index] = demonstration
 					self.list_of_cp.append(cp_index)
 
 					cp_index += 1
-
 
 	def append_cp_array(self, cp):
 		if self.change_pts is None:
@@ -155,7 +154,6 @@ class MilestonesClustering():
 			except ValueError as e:
 				print e
 				sys.exit()
-				# IPython.embed()
 			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:38])), axis = 0)
 			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[38:])), axis = 0)
 
@@ -190,7 +188,7 @@ class MilestonesClustering():
 
 		# print "Level1 : Clustering changepoints in Z(t)"
 
-		gmm = mixture.GMM(n_components = 10, covariance_type='full')
+		gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		gmm.fit(self.change_pts_Z)
 
 		Y = gmm.predict(self.change_pts_Z)
@@ -241,6 +239,7 @@ class MilestonesClustering():
 		line = "L1 Cluster   L2 Cluster   Demonstration   Frame#  CP#   Surgeme\n"
 		self.file.write(line)
 
+		print "---Checking data representativeness ---"
 		for key in sorted(self.map_level1_cp.keys()):
 			mkdir_l1_cluster = mkdir_path + "/" + key
 
@@ -250,6 +249,7 @@ class MilestonesClustering():
 				continue
 
 			os.mkdir(mkdir_l1_cluster)
+		print "--- ---"
 
 		for key in sorted(self.map_level1_cp.keys()):
 			matrix = self.l2_cluster_matrices[key]
@@ -259,11 +259,11 @@ class MilestonesClustering():
 				self.pruned_L1_clusters.append(key)
 				del self.map_level1_cp[key]
 				for pruned_cp in list_of_cp_key:
+					print "Pruned: " + str(key) + " " + str(pruned_cp) + " " + str(self.map_cp2demonstrations[pruned_cp])
 					self.list_of_cp.remove(pruned_cp)
 				continue
 
-			n_components = 3
-			gmm = mixture.GMM(n_components = n_components, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 
 
 			try:
@@ -288,14 +288,15 @@ class MilestonesClustering():
 				except KeyError as e:
 					print e
 					sys.exit()
-					# IPython.embed()
 
 				self.map_cp2milestones[cp] = milestone
 
 				self.file.write("%s             %3d         %s   %3d   %3d    %3d\n" % (l1_cluster, l2_cluster, demonstration, frm, cp, surgeme))
 
-				self.copy_frames(demonstration, frm, str(l1_cluster), str(l2_cluster), surgeme)
+				if not constants.REMOTE:
+					self.copy_frames(demonstration, frm, str(l1_cluster), str(l2_cluster), surgeme)
 
+		if not constants.REMOTE:
 			self.copy_milestone_frames(matrix, list_of_cp_key, gmm)
 
 	def copy_milestone_frames(self, matrix, list_of_cp_key, gmm):
@@ -303,14 +304,14 @@ class MilestonesClustering():
 		neigh.fit(matrix, list_of_cp_key)
 		milestone_closest_cp = neigh.predict(gmm.means_)
 
-		assert len(milestone_closest_cp) == 3
+		assert len(milestone_closest_cp) == self.n_components_L2
 
 		for cp in milestone_closest_cp:
 			demonstration = self.map_cp2demonstrations[cp]
 			surgeme = self.map_frm2surgeme[demonstration][self.map_cp2frm[cp]]
 			frm = utils.get_frame_fig_name(self.map_cp2frm[cp])
 
-			from_path = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + frm
+			from_path = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_" + constants.CAMERA + "/" + frm
 
 			to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/milestones/" + self.map_cp2milestones[cp] + "_" + str(surgeme) + "_" + demonstration + "_" + frm
 
@@ -326,11 +327,11 @@ class MilestonesClustering():
 
 		print data_representation, len(list_of_cp_key)
 
-		return data_representation <= 0.3
+		return data_representation <= self.representativeness
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
-		from_path = constants.PATH_TO_SUTURING_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_capture2/" + utils.get_frame_fig_name(frm)
+		from_path = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration +"_" + constants.CAMERA + "/" + utils.get_frame_fig_name(frm)
 
 		to_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial + "/" + l1_cluster + "/" + l2_cluster + "_" + str(surgeme) + "_" + demonstration + "_" + utils.get_frame_fig_name(frm)
 
@@ -346,8 +347,8 @@ class MilestonesClustering():
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
 
-			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_SUTURING_DATA + constants.ANNOTATIONS_FOLDER
-				+ demonstration + "_capture2.p"))
+			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+				+ demonstration + "_" + constants.CAMERA + ".p"))
 
 			bin = utils.binary_search(ranges, frm)
 
@@ -423,8 +424,10 @@ class MilestonesClustering():
 
 		for cp in self.list_of_cp:
 			labels_true.append(self.map_cp2surgemetransitions[cp])
-
-			milestone_label = self.map_cp2milestones[cp]
+			try:
+				milestone_label = self.map_cp2milestones[cp]
+			except KeyError:
+				IPython.embed()
 			labels_pred_1.append(milestone_label)
 			labels_pred_2.append(list(milestone_label)[0])
 
@@ -541,8 +544,13 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 def parse_metrics(metrics, filename):
 
 	mutual_information_1 = []
+	normalized_mutual_information_1 = []
+	adjusted_mutual_information_1 = []
 	homogeneity_1 = []
+
 	mutual_information_2 = []
+	normalized_mutual_information_2 = []
+	adjusted_mutual_information_2 = []
 	homogeneity_2 = []
 
 	silhoutte_level_1 = []
@@ -558,6 +566,13 @@ def parse_metrics(metrics, filename):
 	for elem in metrics:
 		mutual_information_1.append(elem[0]["mutual_info_score"])
 		mutual_information_2.append(elem[1]["mutual_info_score"])
+
+		normalized_mutual_information_1.append(elem[0]["normalized_mutual_info_score"])
+		normalized_mutual_information_2.append(elem[1]["normalized_mutual_info_score"])
+
+		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
+		adjusted_mutual_information_2.append(elem[1]["adjusted_mutual_info_score"])
+
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 		homogeneity_2.append(elem[1]["homogeneity_score"])
 
@@ -575,6 +590,13 @@ def parse_metrics(metrics, filename):
 
 	utils.print_and_write_2("mutual_info_1", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("mutual_info_2", np.mean(mutual_information_2), np.std(mutual_information_2), file)
+
+	utils.print_and_write_2("normalized_mutual_info_1", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
+	utils.print_and_write_2("normalized_mutual_info_2", np.mean(normalized_mutual_information_2), np.std(normalized_mutual_information_2), file)
+
+	utils.print_and_write_2("adjusted_mutual_info_1", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
+	utils.print_and_write_2("adjusted_mutual_info_2", np.mean(adjusted_mutual_information_2), np.std(adjusted_mutual_information_2), file)
+
 	utils.print_and_write_2("homogeneity_1", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 	utils.print_and_write_2("homogeneity_2", np.mean(homogeneity_2), np.std(homogeneity_2), file)
 
@@ -603,11 +625,17 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
+		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
+		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 

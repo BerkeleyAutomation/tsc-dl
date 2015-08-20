@@ -1,13 +1,18 @@
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
+import os, sys
 import IPython
 import pickle
 
+# SIFT and SURF are only available for OpenCV 2.4.9
+os.chdir(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/'))
+# sys.path.append(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/python2.7/dist-packages'))
+
+import cv2
+print cv2.__version__
+import numpy as np
 import utils
 
 def min_kp_SIFT(PATH_TO_DATA):
-	print "Calculating #of features for video: ", PATH_TO_DATA
+	print("Calculating #of features for video: " + PATH_TO_DATA)
 	cap = cv2.VideoCapture(PATH_TO_DATA)
 	sift = cv2.SIFT(nfeatures = 10)
 	result = []
@@ -17,7 +22,7 @@ def min_kp_SIFT(PATH_TO_DATA):
 		if not ret:
 			break;
 		kp, des = sift.detectAndCompute(frame, None)
-		print i
+		print(i)
 		result.append(len(kp))
 		i += 1
 
@@ -25,7 +30,6 @@ def min_kp_SIFT(PATH_TO_DATA):
 	return min(result)
 
 def run_sift(PATH_TO_DATA, count, n_features = 20):
-
 	cap = cv2.VideoCapture(PATH_TO_DATA)
 	sift = cv2.SIFT(nfeatures = n_features)
 	i = 0
@@ -38,6 +42,9 @@ def run_sift(PATH_TO_DATA, count, n_features = 20):
 			break;
 		kp, des = sift.detectAndCompute(frame, None)
 
+		img = cv2.drawKeypoints(frame,kp)
+
+		cv2.imshow('sift',img)
 		vector1 = []
 		vector2 = []
 		kp.sort(key = lambda x: x.response, reverse = True)
@@ -45,13 +52,11 @@ def run_sift(PATH_TO_DATA, count, n_features = 20):
 			vector1 += [kp_elem.response, kp_elem.pt[0], kp_elem.pt[1], kp_elem.size, kp_elem.angle]
 			vector2 += [kp_elem.pt[0], kp_elem.pt[1]]
 		# vector2 = utils.reshape(des.flatten())
-
 		try:
 			X1 = utils.safe_concatenate(X1, utils.reshape(np.array(vector1[:n_features * 5])))
 			X2 = utils.safe_concatenate(X2, utils.reshape(np.array(vector2[:n_features * 2])))
 		except ValueError as e:
 			IPython.embed()
-		i += 1
 
 	cap.release()
 	cv2.destroyAllWindows()

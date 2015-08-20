@@ -14,7 +14,7 @@ def run_video_with_bsub(cap, func, kernel = None, params = None):
 		fgbg = func(params[0], params[1], params[2], params[3])
 	else:
 		fgbg = func()
-	SAVE_PATH = constants.PATH_TO_SUTURING_DATA + constants.NEW_BGSUB_FOLDER + "Suturing_E003_capture2/"
+	SAVE_PATH = constants.PATH_TO_DATA + constants.NEW_BGSUB_FOLDER + "Suturing_E003_capture2/"
 	i = 1
 	while(1):
 		ret, frame = cap.read()
