@@ -43,9 +43,13 @@ def dunn_index(points, predictions, means):
 
 	del_list = distance.pdist(means, 'euclidean')
 
-	dunn_index_1 = min(del_list) / max(delta_list_1)
-	dunn_index_2 = min(del_list) / max(delta_list_2)
-	dunn_index_3 = min(del_list) / max(delta_list_3)
+	try:
+		dunn_index_1 = min(del_list) / max(delta_list_1)
+		dunn_index_2 = min(del_list) / max(delta_list_2)
+		dunn_index_3 = min(del_list) / max(delta_list_3)
+	except ValueError as e:
+		print e
+		return [None, None, None]
 
 	return [dunn_index_1, dunn_index_2, dunn_index_3]
 
@@ -58,5 +62,4 @@ if __name__ == "__main__":
 	predictions = g.predict(points)
 	means = g.means_
 
-	IPython.embed()
 

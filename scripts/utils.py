@@ -8,11 +8,15 @@ from sklearn import (manifold, datasets, decomposition, ensemble, lda,
 import random
 import os
 import yaml
+from decimal import Decimal
 
 import encoding
 import constants
 
 def cca(W, Z):
+	"""
+	Canonical Correlation Analysis (CCA): Returns rows of Z which are maximally correlated to W.
+	"""
 	print "CCA....."
 	import matlab
 	import matlab.engine as mateng
@@ -31,6 +35,9 @@ def cca(W, Z):
 	return Z
 
 def grp(X, C = 100):
+	"""
+	Gaussian Random Projection (GRP): Projection of X into C dimensions. 
+	"""
 	print "GRP..."
 	print X.shape
 	print("Computing GaussianRandomProjection, using %3d components" % C)
@@ -40,6 +47,10 @@ def grp(X, C = 100):
 	return X_grp
 
 def pca(X, PC = 2):
+	"""
+	Principal Components Analysis (PCA): Scaling followed by projection of X
+    onto PC principal components
+    """
 	print "PCA....."
 	print("Computing PCA embedding, using %3d principal components" % PC)
 	scaler = preprocessing.StandardScaler().fit(X)
@@ -180,6 +191,9 @@ def vlad_experiment(X, list_of_K, list_of_PC, label_map, frm_map, figure_name, l
 				plot_annotated_embedding(X_vlad_tsne, label_map, frm_map, name + '_tsne', title = "t-SNE - " + name)
 
 def get_frame_fig_name(frm_num):
+	"""
+	Useful for parsing frames and loading into memory.
+	"""
 	if len(str(frm_num)) == 1:
 		return "00000" + str(frm_num) + ".jpg"
 	elif len(str(frm_num)) == 2:
@@ -201,15 +215,29 @@ def get_chronological_sequences(annotations_file):
 	return sequences
 
 def hashcode():
+	"""
+	Returns hashcode to uniquely define a
+    clustering trial run.
+    """
 	return str(random.randrange(1000, 10000))
 
 def flatten(data):
+	"""
+	Flattens np array and returns as 1 * N array.
+	"""
 	return reshape(data.flatten())
 
 def reshape(data):
+	"""
+	Reshapes any 1-D np array with shape (N,) to (1,N).
+	"""
 	return data.reshape(1, data.shape[0])
 
 def dict_insert_list(key, value, dict):
+	"""
+    Used to maintain a dictionary of lists. For given key-value
+    pair, function checks if key exists before inserting.
+    """
 	if key not in dict:
 		dict[key] = [value,]
 	else:
@@ -218,6 +246,10 @@ def dict_insert_list(key, value, dict):
 		dict[key] = curr_list
 
 def sys_copy(from_path, to_path):
+	"""
+    Executes copy function on filesystem
+    given the input (from_path) and output (to_path) files to copy.
+    """
 	command = "cp " + from_path + " " + to_path
 	os.system(command)
 
@@ -230,6 +262,10 @@ def dict_insert(key, value, data_dict, axis = 0):
 		data_dict[key] = curr_value
 
 def safe_concatenate(X, W, axis = 0):
+	"""
+    Checks if X is None before concatenating W
+    to X along specified axis (0 by default)
+	"""
 	if X is None:
 		return W
 	else:
@@ -238,12 +274,17 @@ def safe_concatenate(X, W, axis = 0):
 def sample_matrix(matrix, sampling_rate = 1):
 	return matrix[::sampling_rate]
 
-def nsf(num, n=1):
-    """n-Significant Figures"""
+def nsf(num, n = 3):
+    """
+    n-Significant Figures
+    """
     numstr = ("{0:.%ie}" % (n-1)).format(num)
     return float(numstr)
 
 def print_and_write(content, file):
+	"""
+    Prints to STDOUT and to given file
+	"""
 	# print content
 	file.write(content)
 
@@ -255,7 +296,31 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
+def label_convert_to_numbers(labels):
+	"""
+    Converts labels of some type (e.g. String "A0" "1->3", etc to numerals).
+    Helpful for passing labels into sklearn metric functions.
+	"""
+	new_labels = []
+	one2one_mapping = {}
+	index = 0
+	unique_labels = set(labels)
+	for unique_label in unique_labels:
+		one2one_mapping[unique_label] = index
+		index += 1
+
+	for elem in labels:
+		new_labels.append(one2one_mapping[elem])
+	assert len(new_labels) == len(labels)
+
+	return new_labels
+
+
 def binary_search(ranges, val):
+	"""
+    Performs binary search to find which segment [start:end]
+    bin val falls within. Returns the segment.
+	"""
 	if len(ranges) == 1:
 		return ranges[0]
 
