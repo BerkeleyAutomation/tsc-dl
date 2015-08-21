@@ -79,7 +79,7 @@ class MilestonesClustering():
 		self.representativeness = constants.PRUNING_FACTOR
 
 		# Components for Mixture model at each level
-		self.n_components_cp = 10
+		self.n_components_cp = 50
 		self.n_components_L1 = 10
 		self.n_components_L2 = 3
 
@@ -110,7 +110,10 @@ class MilestonesClustering():
 
 			self.data_N[demonstration] = N
 
-	def generate_change_points(self):
+	def generate_change_points_1(self):
+		"""
+		Generates changespoints by clustering within a demonstration.
+		"""
 
 		cp_index = 0
 
@@ -129,24 +132,66 @@ class MilestonesClustering():
 
 			size_of_X = self.data_X_size[demonstration]
 
-			cp_demonstration = []
 			for i in range(len(Y) - 1):
 
 				if Y[i] != Y[i + 1]:
 					change_pt = N[i][size_of_X:]
 					self.append_cp_array(change_pt)
 					self.map_cp2frm[cp_index] = start + i * self.sr
-					cp_demonstration.append(start + i * self.sr)
 					self.map_cp2demonstrations[cp_index] = demonstration
 					self.list_of_cp.append(cp_index)
 
 					cp_index += 1
 
+	def generate_change_points_2(self):
+		"""
+		Generates changespoints by clustering across demonstrations.
+		"""
+		cp_index = 0
+		i = 0
+		big_N = None
+		map_index2demonstration = {}
+		map_index2frm = {}
+		size_of_X = self.data_X_size[self.list_of_demonstrations[0]]
+
+		for demonstration in self.list_of_demonstrations:
+			print demonstration
+			N = self.data_N[demonstration]
+
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+				+ demonstration + "_" + constants.CAMERA + ".p")
+
+			for j in range(N.shape[0]):
+				map_index2demonstration[i] = demonstration
+				map_index2frm[i] = start + j * self.sr
+				i += 1
+
+			big_N = utils.safe_concatenate(big_N, N)
+
+		print "Generated big_N"
+
+		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+		gmm.fit(big_N)
+		Y = gmm.predict(big_N)
+
+		for w in range(len(Y) - 1):
+
+			if Y[w] != Y[w + 1]:
+				change_pt = big_N[w][size_of_X:]
+				self.append_cp_array(change_pt)
+				self.map_cp2frm[cp_index] = map_index2frm[w]
+				self.map_cp2demonstrations[cp_index] = map_index2demonstration[w]
+				self.list_of_cp.append(cp_index)
+
+				cp_index += 1
+
+		print "Done with generating change points"
+
 	def append_cp_array(self, cp):
 		if self.change_pts is None:
 			self.change_pts = utils.reshape(cp)
-			self.change_pts_W = utils.reshape(cp[:38])
-			self.change_pts_Z = utils.reshape(cp[38:])
+			self.change_pts_W = utils.reshape(cp[:constants.KINEMATICS_DIM])
+			self.change_pts_Z = utils.reshape(cp[constants.KINEMATICS_DIM:])
 
 		else:
 			try:
@@ -154,8 +199,8 @@ class MilestonesClustering():
 			except ValueError as e:
 				print e
 				sys.exit()
-			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:38])), axis = 0)
-			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[38:])), axis = 0)
+			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:constants.KINEMATICS_DIM])), axis = 0)
+			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[constants.KINEMATICS_DIM:])), axis = 0)
 
 
 	def save_cluster_metrics(self, points, predictions, means, key, model, level2_mode = False):
@@ -540,7 +585,7 @@ class MilestonesClustering():
 
 		self.generate_transition_features()
 
-		self.generate_change_points()
+		self.generate_change_points_2()
 
 		self.cluster_changepoints_level1()
 

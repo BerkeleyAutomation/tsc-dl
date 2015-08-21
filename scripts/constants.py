@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/suturing.yaml")
+config = parse_yaml("../config/0001.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -63,7 +63,6 @@ CROP_PARAMS_CAPTURE_1 = config["CROP_PARAMS_CAPTURE_1"]
 
 CROP_PARAMS_CAPTURE_2 = config["CROP_PARAMS_CAPTURE_2"]
 
-# Sampling rate
 SR = config["SR"]
 
 CAMERA = config["CAMERA"]
@@ -71,6 +70,10 @@ CAMERA = config["CAMERA"]
 PRUNING_FACTOR = config["PRUNING_FACTOR"]
 
 REMOTE = config["REMOTE"]
+
+SIMULATION = config["SIMULATION"]
+
+KINEMATICS_DIM = config["KINEMATICS_DIM"]
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}

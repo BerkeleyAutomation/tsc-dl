@@ -2,8 +2,10 @@
 import IPython
 import pickle
 import numpy as np
+import scipy.io
 
 import constants
+import utils
 
 def generate_list_of_demonstrations(config_file_name, include_camera = False):
 	list_of_demonstrations = []
@@ -69,11 +71,12 @@ def convert_transcription_to_annotation(PATH_TO_TRANSCRIPTION, PATH_TO_ANNOTATIO
 	pickle.dump(segments, open(PATH_TO_ANNOTATION + demonstration + "_capture1.p", "wb"))
 	pickle.dump(segments, open(PATH_TO_ANNOTATION + demonstration + "_capture2.p", "wb"))
 
-def parse_annotations():
+def parse_annotations(list_of_demonstrations = None):
 	"""
 	Note that left and right cameres have same transcriptions/annotations
 	"""
-	list_of_demonstrations = generate_list_of_demonstrations(constants.PATH_TO_DATA + constants.CONFIG_FILE)
+	if not list_of_demonstrations:
+		list_of_demonstrations = generate_list_of_demonstrations(constants.PATH_TO_DATA + constants.CONFIG_FILE)
 	for video in list_of_demonstrations:
 		convert_transcription_to_annotation(constants.PATH_TO_DATA + constants.TRANSCRIPTIONS_FOLDER,
 			constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER, video)
@@ -103,7 +106,7 @@ def get_annotation_segments(PATH_TO_ANNOTATION):
 			list_of_end_start_pts.append(elem)
 	return list_of_end_start_pts
 
-def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname, sampling_rate = 1):
+def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 	"""
 	Takes in PATH to kinematics data (a txt file) and outputs a N x 38 matrix,
 	where N is the number of frames. There are 38 dimensions in the kinematic data
@@ -115,26 +118,30 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname, samplin
 	57     (1) : Slave left gripper angle 
 	58-76  (19): Slave right
 	"""
-
 	start, end = get_start_end_annotations(PATH_TO_ANNOTATION)
 
 	X = None
-	all_lines = open(PATH_TO_KINEMATICS_DATA + fname, "rb").readlines()
-	i = start - 1
-	if i < 0:
-		i = 0 
-	while i < end:
-		traj = np.array(all_lines[i].split())
-		slave = traj[38:]
-		# slave_left = traj[38:57]
-		# slave_right = traj[57:]
-		if X is not None:
-			X = np.concatenate((X, slave.reshape(1, slave.shape[0])), axis = 0)
-		else:
-			X = slave.reshape(1, slave.shape[0])		
-		i += sampling_rate
+	if constants.SIMULATION:
+		mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
+		X = mat['x_traj']
+		X = X.reshape(X.shape[1], X.shape[0])
+	else:
+		X = None
+		all_lines = open(PATH_TO_KINEMATICS_DATA + fname, "rb").readlines()
+		i = start - 1
+		if i < 0:
+			i = 0 
+		while i < end:
+			traj = np.array(all_lines[i].split())
+			slave = traj[constants.KINEMATICS_DIM:]
+			X = utils.safe_concatenate(X, utils.reshape(slave))
+			i += 1
 	return X.astype(np.float)
 
 
 if __name__ == "__main__":
+	list_of_demonstrations = ["0001_01", "0001_02", "0001_03"]
+	# parse_annotations(list_of_demonstrations)
+
+	X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0001_01_capture1.p", "0001_01.mat")
 	pass
