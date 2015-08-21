@@ -20,12 +20,15 @@ function [ ] = genLabelFile( frameLabels, outputDir, fileName )
     t= 1;
     label = {};
     while t < size(frameLabels,2)      
-      if frameLabels(3, t) == frameLabels(3, t+1)
+      if frameLabels(:, t) == frameLabels(:, t+1)%if all values are same assign rotation
+          if t == 1, label{t} = 'G2'; end
+          label{t+1} = 'G2';%rotation
+      elseif frameLabels(3, t) == frameLabels(3, t+1)
           if t == 1, label{t} = 'G1'; end
           label{t+1} = 'G1';%movement
       elseif frameLabels(1:2, t) == frameLabels(1:2, t+1)          
           if t == 1, label{t} = 'G2'; end
-          label{t+1} = 'G2'; %rotation
+          label{t+1} = 'G2';%rotation 
       else
          fprintf('Can only have two labels--check data \n')
          disp(frameLabels(:,t))
@@ -47,4 +50,3 @@ function [ ] = genLabelFile( frameLabels, outputDir, fileName )
     fclose(fid);
         
 end
-
