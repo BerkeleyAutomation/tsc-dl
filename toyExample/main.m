@@ -5,10 +5,13 @@ addpath(genpath(pwd))
 
 %% Experiment specifc details
 %flags for experiment params
-varyRobotInit = false;
-noisyDynamics = false; 
+varyRobotInit = true;
+noisyDynamics = true; 
 varyTargetInit = false;
 targetNoise = true;
+
+% In order of increasing difficulty
+% exptList = ['0001', '1000', '0100', '0101', '1001', '1101', '1110'];
 
 exptSetup = [num2str(varyRobotInit) num2str(noisyDynamics)...
     num2str(varyTargetInit) num2str(targetNoise)];
@@ -29,14 +32,14 @@ mkdir_if_not_exist (vidTrans);
 vidFrames = [outputDirPrefix filesep exptSetup '_video' filesep 'frames'];
 mkdir_if_not_exist (vidFrames);
 
-numDemos = 5b; 
+numDemos = 5; 
 flag_plotTraj = true; 
 
 % initialize random number generator
 seed_RNG = rng(1,'twister');
-if strcmp(exptSetup, '0101')
-    seed_RNG = rng(10,'twister');%for exptsetup only 0101
-end
+% if strcmp(exptSetup, '0101')
+%     seed_RNG = rng(10,'twister');%for exptsetup only 0101
+% end
 
 %% Initialize
 for expt = 1:numDemos
@@ -47,18 +50,19 @@ for expt = 1:numDemos
     mkdir_if_not_exist (outputDir);
     if outputDir(end) ~= '/', outputDir = [outputDir filesep]; end
 
-    pause('on') %for save fig
+%     pause('on') %for save fig
        
     numTargets = 3;
     
     %to use the same targets as first iteration
     if expt==1 
-        target_buffer = random('unif', -10, 10, 2, numTargets);
+        target_list = random('unif', -10, 10, 2, numTargets);
     end    
+    target_buffer = [];%this buffer list is updated online as targets are reached
     
     %generate new targets for every expt run
     if expt>1 && varyTargetInit
-        target_buffer = random('unif', -10, 10, 2, numTargets);
+        target_list = random('unif', -10, 10, 2, numTargets);
     end
        
     %state representation is [x,y,theta (radian)]
@@ -75,6 +79,7 @@ for expt = 1:numDemos
     x_traj = x_curr;        
     
     minStep = 1;
+    rotStepSize = pi/18;
     % dynamics noise is used as a percent of minStep
     if noisyDynamics, dynamicsNoise = 0.5; end
     % target noise level absolute values.
@@ -98,24 +103,19 @@ for expt = 1:numDemos
     for targetCount = 1:numTargets 
         % sample new target    
         % target_curr = genTarget();        
-        target_curr = target_buffer(:, targetCount);
+        target_curr = target_list(:, targetCount);
         
         if targetNoise 
-%             if expt ==1 
-%                 %save the means from first time around
-%                 target_mean(:,targetCount) = target_curr;
-%             elseif expt>1
-%                 target_curr =  target_mean(:, targetCount) +...
-%                     random('unif',-targetNoiseLevel,targetNoiseLevel, 2,1);
-%             end
             target_curr =  target_curr+ ...
                 random('unif',-targetNoiseLevel,targetNoiseLevel, 2,1);
-            % make sure its in [-10,10]x[-10,10]
+            % make sure target is in [-10,10]x[-10,10]
             if sum(abs(target_curr)>10)>=1
                 target_curr(abs(target_curr)>10) = ...
                     10*sign(target_curr(abs(target_curr)>10));
             end            
         end
+        
+        target_buffer = [target_buffer , target_curr];
                
         if targetCount>1
            delete(objHandles) 
@@ -127,7 +127,7 @@ for expt = 1:numDemos
         diff = target_curr - x_curr(1:2);
         headingToTarget = atan2 (diff(2), diff(1));
 
-        sDir = -pi:pi/18:pi;
+        sDir = -pi:rotStepSize:pi;
         sDir = sort([sDir(2:end), headingToTarget, x_curr(3)]);
         ind_curr = find(sDir == x_curr(3) );
         ind_target = find(sDir == headingToTarget );
@@ -138,9 +138,7 @@ for expt = 1:numDemos
             searchArray = [sDir(max(ind_curr)+1:end), sDir(1:ind_target)];
         else
             searchArray = sDir(max(ind_curr)+1:ind_target);
-        end
-
-        % searchArray = searchArray + x_curr(3)*ones(1, length(searchArray));
+        end        
 
         for s = 1:length(searchArray)        
             x_curr(3) = searchArray (s);
@@ -193,8 +191,7 @@ for expt = 1:numDemos
     end
     
     save([kinDIR filesep exptSetup '_' num2str(expt,'%02d') '.mat'],...
-        'target_buffer','x_traj')
-    %todo: fix the label error 1:3 is G1
+        'target_buffer','x_traj')    
     genLabelFile (x_traj, vidTrans, [exptSetup '_' num2str(expt,'%02d')] );
     
     close all
