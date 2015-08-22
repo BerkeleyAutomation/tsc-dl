@@ -31,6 +31,14 @@ def setup_manual_labels(segments):
 
 	return list_of_start_end, tuple(list_of_colors)
 
+def setup_automatic_labels_2(list_of_frms, color):
+	list_of_start_end = []
+	list_of_colors = []
+	for elem in list_of_frms:
+		list_of_start_end.append((elem[0], elem[1] - elem[0]))
+		list_of_colors.append(color)
+	return list_of_start_end, tuple(list_of_colors)
+
 def setup_automatic_labels(list_of_frms, color):
 	"""
 	Takes in changepoints and converts it to format
@@ -55,13 +63,35 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	* For now, the list_of_frms are constrained to 4 for visualization sanity sake.
 	"""
 
-	# all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
-	# dpgmm = mixture.DPGMM(n_components=20, covariance_type='full')
-	# X = np.array(all_frms)
-	# X = X.reshape(len(all_frms), 1)
-	# dpgmm.fit(X)
-	# Y = dpgmm.predict(X)
-	# IPython.embed()
+	all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
+	time_cluster = mixture.GMM(n_components=25, covariance_type='full', n_iter=500, tol=5e-5, min_covar = 0.001)
+	X = np.array(all_frms)
+	X = X.reshape(len(all_frms), 1)
+	time_cluster.fit(X)
+	Y = time_cluster.predict(X)
+	
+	list_of_elem = []
+	for i in range(len(Y)):
+		list_of_elem.append((Y[i], X[i]))
+	list_of_elem = sorted(list_of_elem, key = lambda x:x[1][0] )
+
+	for elem in list_of_elem:
+		print elem
+
+	dict_time_clusters = {}
+	for elem in list_of_elem:
+		utils.dict_insert_list(elem[0], elem[1], dict_time_clusters)
+
+	list_time_clusters = []
+	for cluster in dict_time_clusters.keys():
+		cluster_frames = dict_time_clusters[cluster]
+		min_frm = min(cluster_frames)
+		max_frm = max(cluster_frames)
+
+		list_time_clusters.append((min_frm[0], max_frm[0]))
+
+
+	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
 
@@ -69,6 +99,8 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 	labels_manual, colors_manual = setup_manual_labels(segments)
+
+
 	labels_automatic_1, colors_automatic_1 = setup_automatic_labels(list_of_frms_1, "k")
 	labels_automatic_2, colors_automatic_2 = setup_automatic_labels(list_of_frms_2, "k")
 	labels_automatic_3, colors_automatic_3 = setup_automatic_labels(list_of_frms_3, "k")
@@ -77,7 +109,7 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	fig, ax = plt.subplots()
 
 	ax.broken_barh(labels_manual, (21, 2), facecolors = colors_manual)
-	ax.broken_barh(labels_automatic_1, (17, 2), facecolors = colors_automatic_1)
+	ax.broken_barh(labels_automatic_0, (17, 2), facecolors = colors_automatic_0)
 	ax.broken_barh(labels_automatic_2, (13, 2), facecolors = colors_automatic_2)
 	ax.broken_barh(labels_automatic_3, (9, 2), facecolors = colors_automatic_3)
 	ax.broken_barh(labels_automatic_4, (5, 2), facecolors = colors_automatic_4)
@@ -87,7 +119,7 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	ax.set_xlabel('Frame number')
 	ax.set_yticks([6,10,14,18,22])
 	# ax.set_yticks([15,25,35, 45, 55])
-	ax.set_yticklabels(['Automatic4','Automatic3','Automatic2', 'Automatic1', 'Manual'])
+	ax.set_yticklabels(['Automatic4','Automatic3','Automatic2', 'Time Clustering', 'Manual'])
 	ax.grid(True)
 
 	if save_fname:

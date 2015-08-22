@@ -29,7 +29,7 @@ mkdir_if_not_exist (vidTrans);
 vidFrames = [outputDirPrefix filesep exptSetup '_video' filesep 'frames'];
 mkdir_if_not_exist (vidFrames);
 
-numDemos = 5; 
+numDemos = 5b; 
 flag_plotTraj = true; 
 
 % initialize random number generator
