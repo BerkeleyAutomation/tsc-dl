@@ -38,16 +38,24 @@ def load_cnn_features(demonstration, layer, folder, net):
 	return Z.astype(np.float)
 
 def get_kinematic_features(demonstration):
+	if constants.SIMULATION:
+		kinematics_fname = demonstration + ".mat"
+	else:
+		kinematics_fname = demonstration + ".txt"
 	return parser.parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA
-		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", demonstration + ".txt")
+		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", kinematics_fname)
 
 def main(DEBUG = False):
 	if DEBUG:
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
-		list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		"Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		list_of_demonstrations = ["1001_01", "1001_02", "1001_03", "1001_04", "1001_05"]
+
+		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
@@ -66,9 +74,9 @@ def main(DEBUG = False):
 	featurize_2(list_of_demonstrations, kinematics, sr)
 	featurize_3(list_of_demonstrations, kinematics, sr)
 	featurize_4(list_of_demonstrations, kinematics, sr)
-	# featurize_5(list_of_demonstrations, kinematics, sr)
+	featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
-	# featurize_7(list_of_demonstrations, kinematics, sr)
+	# featurize_7(list_of_demonstrations, kinematics)
 
 	pass
 
@@ -127,20 +135,25 @@ def featurize_4(list_of_demonstrations, kinematics, sr):
 def featurize_5(list_of_demonstrations, kinematics, sr):
 	print "FEATURIZATION 5"
 	featurize_cnn_features(list_of_demonstrations, kinematics, "conv5_3",
-		constants.VGG_FEATURES_FOLDER, 5, "vgg", sr)
+		constants.VGG_FEATURES_FOLDER, 5, "VGG", sr)
 
 # Featurize - VGG conv5_1
 def featurize_6(list_of_demonstrations, kinematics, sr):
 	print "FEATURIZATION 6"
 	featurize_cnn_features(list_of_demonstrations, kinematics, "conv5_1",
-		constants.VGG_FEATURES_FOLDER, 6, "vgg", sr)
+		constants.VGG_FEATURES_FOLDER, 6, "VGG", sr)
 
 # Featurize - VGG conv5_3 + LCD + VLAD
 def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True]):
 	print "FEATURIZATION 7"
 	a = 14 # Need to find the original values!!
 	M = 512
-	BATCH_SIZE = 30
+
+	if constants.SIMULATION:
+		BATCH_SIZE = 5
+	else:
+		BATCH_SIZE = 30
+
 	data_X_PCA = {}
 	data_X_CCA = {}
 	data_X_GRP = {}
@@ -150,7 +163,7 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True])
 
 	for demonstration in list_of_demonstrations:
 		W = kinematics[demonstration]
-		Z = load_cnn_features(demonstration, "conv5_3", constants.VGG_FEATURES_FOLDER, "vgg")
+		Z = load_cnn_features(demonstration, "conv5_3", constants.VGG_FEATURES_FOLDER, "VGG")
 		W_new = utils.sample_matrix(W, sampling_rate = BATCH_SIZE)
 
 		Z_batch = None

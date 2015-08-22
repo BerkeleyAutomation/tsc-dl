@@ -38,8 +38,14 @@ def setup_automatic_labels(list_of_frms, color):
 	"""
 	list_of_start_end = []
 	list_of_colors = []
+
+	if constants.SIMULATION:
+		bar_size = 2
+	else:
+		bar_size = 30
+
 	for elem in list_of_frms:
-		list_of_start_end.append((elem - 15, 30))
+		list_of_start_end.append((elem - (bar_size/2), bar_size))
 		list_of_colors.append(color)
 	return list_of_start_end, tuple(list_of_colors)
 

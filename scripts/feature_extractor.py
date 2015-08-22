@@ -7,9 +7,9 @@ import constants
 
 from forward_pass import CNNFeatureExtractor
 
-layers_of_interest = {"VGG_SOS": ['conv5_1', 'conv5_3'], "AlexNet": ["conv3", "conv4", "pool5"]}
+layers_of_interest = {"VGG": ['conv5_1', 'conv5_3'], "VGG_SOS": ['conv5_1', 'conv5_3'], "AlexNet": ["conv3", "conv4", "pool5"]}
 
-features_folder = {"VGG_SOS": constants.VGG_FEATURES_FOLDER, "AlexNet": constants.ALEXNET_FEATURES_FOLDER}
+features_folder = {"VGG": constants.VGG_FEATURES_FOLDER, "VGG_SOS": constants.VGG_FEATURES_FOLDER, "AlexNet": constants.ALEXNET_FEATURES_FOLDER}
 
 def forward_pass_entire_dataset(list_of_demonstrations, net_name, camera):
 	net = CNNFeatureExtractor(net_name)
@@ -38,6 +38,7 @@ if __name__ == "__main__":
 	# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 	# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-	list_of_demonstrations = ["0001_01", "0001_02", "0001_03"]
+	list_of_demonstrations = ["1001_01", "1001_02", "1001_03", "1001_04", "1001_05"]
 
-	forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", "capture1")
+	forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", constants.CAMERA)
+	forward_pass_entire_dataset(list_of_demonstrations, "VGG", constants.CAMERA)

@@ -22,16 +22,6 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 
 PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
-def make_transition_feature(matrix, temporal_window, index):
-	"""
-	Input: Matrix X with start index i and window t
-	Output: N = np.array(X[i], X[i+1], ... X[i + t])
-	"""
-	result = None
-	for i in range(temporal_window + 1):
-		result = utils.safe_concatenate(result, utils.reshape(matrix[index + i]), axis = 1)
-	return result
-
 class MilestonesClustering():
 	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):	
 		self.list_of_demonstrations = list_of_demonstrations
@@ -79,9 +69,9 @@ class MilestonesClustering():
 		self.representativeness = constants.PRUNING_FACTOR
 
 		# Components for Mixture model at each level
-		self.n_components_cp = 50
-		self.n_components_L1 = 10
-		self.n_components_L2 = 3
+		self.n_components_cp = constants.N_COMPONENTS_CP
+		self.n_components_L1 = constants.N_COMPONENTS_L1
+		self.n_components_L2 = constants.N_COMPONENTS_L2
 
 		self.temporal_window = 1
 
@@ -105,7 +95,7 @@ class MilestonesClustering():
 			N = None
 			for t in range(T - self.temporal_window):
 
-				n_t = make_transition_feature(X, self.temporal_window, t)
+				n_t = utils.make_transition_feature(X, self.temporal_window, t)
 				N = utils.safe_concatenate(N, n_t)
 
 			self.data_N[demonstration] = N
@@ -511,20 +501,20 @@ class MilestonesClustering():
 		try:
 			for ave in ["micro", "macro", "weighted"]:
 				key = "precision_" + ave
-				score1 = utils.nsf(precision_score(labels_true, labels_pred_1, average = ave))
-				score2 = utils.nsf(precision_score(labels_true, labels_pred_2, average = ave))
+				score_1 = utils.nsf(precision_score(labels_true, labels_pred_1, average = ave))
+				score_2 = utils.nsf(precision_score(labels_true, labels_pred_2, average = ave))
 
-				self.label_based_scores_1[key] = score1
-				self.label_based_scores_2[key] = score2
+				self.label_based_scores_1[key] = score_1
+				self.label_based_scores_2[key] = score_2
 
 				self.file.write("%3.3f        %3.3f        %s\n" % (score_1, score_2, key))
 
 				key = "recall_" + ave
-				score1 = utils.nsf(recall_score(labels_true, labels_pred_1, average = ave))
-				score2 = utils.nsf(recall_score(labels_true, labels_pred_2, average = ave))
+				score_1 = utils.nsf(recall_score(labels_true, labels_pred_1, average = ave))
+				score_2 = utils.nsf(recall_score(labels_true, labels_pred_2, average = ave))
 
-				self.label_based_scores_1[key] = score1
-				self.label_based_scores_2[key] = score2
+				self.label_based_scores_1[key] = score_1
+				self.label_based_scores_2[key] = score_2
 
 				self.file.write("%3.3f        %3.3f        %s\n" % (score_1, score_2, key))
 
@@ -740,7 +730,7 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
 
-		assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+		# assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
 
 		automatic_1 = list_of_frms_demonstration[0]
 		automatic_2 = list_of_frms_demonstration[1]
@@ -768,7 +758,9 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+
+		list_of_demonstrations = ["0001_01", "0001_02", "0001_03"]
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
@@ -779,10 +771,17 @@ if __name__ == "__main__":
 
 	i = 1
 	all_metrics = []
+
+	# for _ in range(4):
+	# 	print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(4) + " ----"
+	# 	mc = MilestonesClustering(DEBUG, list_of_demonstrations, args.feat_fname, args.metric_fname)
+	# 	all_metrics.append(mc.do_everything())
+	# 	i += 1
+
 	for elem in combinations:	
 		print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(len(combinations)) + " ----"
 		mc = MilestonesClustering(DEBUG, list(elem), args.feat_fname, args.metric_fname)
 		all_metrics.append(mc.do_everything())
 		i += 1
-	# print "----------- CALCULATING THE ODDS ------------"
+	print "----------- CALCULATING THE ODDS ------------"
 	post_evaluation(all_metrics, args.metric_fname, list_of_demonstrations, args.metric_fname)

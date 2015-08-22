@@ -13,6 +13,7 @@ import parser
 import utils
 import cluster_evaluation
 import featurization
+import broken_barh
 
 from sklearn import (mixture, neighbors, metrics)
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
@@ -62,14 +63,13 @@ class KinematicsClustering():
 
 		self.label_based_scores_1 = {}
 
-		self.gmm_objects = {}
-
 		self.sr = constants.SR
 		self.representativeness = constants.PRUNING_FACTOR
 
 		# Components for Mixture model at each level
-		self.n_components_cp = 10
-		self.n_components_L1 = 10
+		self.n_components_cp = constants.N_COMPONENTS_CP_KIN
+		self.n_components_L1 = constants.N_COMPONENTS_L1_KIN
+
 
 	def construct_features_visual(self):
 
@@ -81,7 +81,7 @@ class KinematicsClustering():
 			X = self.data_X[demonstration]
 			X_visual = None
 			for i in range(len(X)):
-				X_visual = utils.safe_concatenate(X_visual, utils.reshape(X[i][38:]))
+				X_visual = utils.safe_concatenate(X_visual, utils.reshape(X[i][constants.KINEMATICS_DIM:]))
 			assert X_visual.shape[0] == X.shape[0]
 
 			self.data_X[demonstration] = X_visual
@@ -92,7 +92,6 @@ class KinematicsClustering():
 			self.data_X[demonstration] = utils.sample_matrix(featurization.get_kinematic_features(demonstration), sampling_rate = self.sr)
 
 	def generate_transition_features(self):
-		print "Generating Transition Features"
 
 		self.X_dimension = self.data_X[self.list_of_demonstrations[0]].shape[1]
 		print "X dimension", str(self.X_dimension)
@@ -102,17 +101,18 @@ class KinematicsClustering():
 			X = self.data_X[demonstration]
 			self.data_X_size[demonstration] = X.shape[1]
 			T = X.shape[0]
-			N = utils.reshape(np.concatenate((X[0], X[1]), axis = 1))
+			N = None
 
-			for t in range(T - 1):
-
-				n_t = utils.reshape(np.concatenate((X[t], X[t + 1]), axis = 1))
-				N = np.concatenate((N, n_t), axis = 0)
+			for t in range(T - self.temporal_window):
+				n_t = utils.make_transition_feature(X, self.temporal_window, t)
+				N = utils.safe_concatenate(N, n_t)
 
 			self.data_N[demonstration] = N
 
-	def generate_change_points(self):
-
+	def generate_change_points_1(self):
+		"""
+		Generates changespoints by clustering within demonstration.
+		"""
 		cp_index = 0
 
 		for demonstration in self.list_of_demonstrations:
@@ -141,20 +141,67 @@ class KinematicsClustering():
 
 					cp_index += 1
 
+	def generate_change_points_2(self):
+		"""
+		Generates changespoints by clustering across demonstrations.
+		"""
+		cp_index = 0
+		i = 0
+		big_N = None
+		map_index2demonstration = {}
+		map_index2frm = {}
+		size_of_X = self.data_X_size[self.list_of_demonstrations[0]]
+
+		for demonstration in self.list_of_demonstrations:
+			print demonstration
+			N = self.data_N[demonstration]
+
+			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+				+ demonstration + "_" + constants.CAMERA + ".p")
+
+			for j in range(N.shape[0]):
+				map_index2demonstration[i] = demonstration
+				map_index2frm[i] = start + j * self.sr
+				i += 1
+
+			big_N = utils.safe_concatenate(big_N, N)
+
+		print "Generated big_N"
+
+		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+		gmm.fit(big_N)
+		Y = gmm.predict(big_N)
+
+		for w in range(len(Y) - 1):
+
+			if Y[w] != Y[w + 1]:
+				change_pt = big_N[w][size_of_X:]
+				self.append_cp_array(change_pt)
+				self.map_cp2frm[cp_index] = map_index2frm[w]
+				self.map_cp2demonstrations[cp_index] = map_index2demonstration[w]
+				self.list_of_cp.append(cp_index)
+
+				cp_index += 1
+
+		print "Done with generating change points"
+
+
 	def append_cp_array(self, cp):
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
 	def save_cluster_metrics(self, points, predictions, means, key, model):
 
-		self.gmm_objects[key] = model
 		silhoutte = metrics.silhouette_score(points, predictions, metric='euclidean')
 		self.silhouette_scores[key] = silhoutte
 
 		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
 
-		self.dunn_scores_1[key] = dunn_scores[0]
-		self.dunn_scores_2[key] = dunn_scores[1]
-		self.dunn_scores_3[key] = dunn_scores[2]
+		if (dunn_scores[0] is not None) and (dunn_scores[1] is not None) and (dunn_scores[2] is not None):
+
+			self.dunn_scores_1[key] = dunn_scores[0]
+			self.dunn_scores_2[key] = dunn_scores[1]
+			self.dunn_scores_3[key] = dunn_scores[2]
+
 
 	def cluster_changepoints(self):
 
@@ -207,7 +254,7 @@ class KinematicsClustering():
 			if abs(frm - (bin[0] - 1)) < abs(bin[1] + 1 - frm):
 				surgemetransition = str(prev_surgeme) + "->" + str(curr_surgeme)
 			else:
-				surgemetransition = str(curr_surgeme) + "->" + str(prev_surgeme)
+				surgemetransition = str(curr_surgeme) + "->" + str(next_surgeme)
 
 			self.map_cp2surgemetransitions[cp] = surgemetransition
 
@@ -258,14 +305,18 @@ class KinematicsClustering():
 		utils.print_and_write("\n\n", self.log)
 
 	def prepare_labels(self):
-		labels_pred = []
-		labels_true = []
+		labels_pred_ = []
+		labels_true_ = []
 
 		for cp in self.list_of_cp:
-			labels_true.append(self.map_cp2surgemetransitions[cp])
-			labels_pred.append(self.map_cp2cluster[cp])
+			labels_true_.append(self.map_cp2surgemetransitions[cp])
+			labels_pred_.append(self.map_cp2cluster[cp])
+
+		labels_pred = utils.label_convert_to_numbers(labels_pred_)
+		labels_true = utils.label_convert_to_numbers(labels_true_)
 
 		assert len(labels_true) == len(labels_pred)
+		assert len(labels_true_) == len(labels_pred_)
 
 		return labels_true, labels_pred
 
@@ -285,6 +336,23 @@ class KinematicsClustering():
 			self.label_based_scores_1[key] = score_1
 
 			utils.print_and_write(("%3.3f        %s\n" % (score_1, key)), self.log)
+
+		# ------ Precision & Recall ------
+		utils.print_and_write("\n Precision & Recall scores \n", self.log)
+		for ave in ["micro", "macro", "weighted"]:
+			key = "precision_" + ave
+			score_1 = utils.nsf(precision_score(labels_true, labels_pred, average = ave))
+
+			self.label_based_scores_1[key] = score_1
+
+			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score_1), 2), key), self.log)
+
+			key = "recall_" + ave
+			score_1 = utils.nsf(recall_score(labels_true, labels_pred_1, average = ave))
+
+			self.label_based_scores_1[key] = score_1
+
+			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score_1), 2), key), self.log)
 
 		utils.print_and_write("\nSilhoutte scores\n", self.log)
 
@@ -314,8 +382,14 @@ class KinematicsClustering():
 			score = self.dunn_scores_3[layer]
 			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score), 2), layer), self.log)
 
+		# ------ Visualizing changepoints on broken barh ------
+		viz = {}
+
+		for cp in self.list_of_cp:
+			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
+
 		data = [self.label_based_scores_1, self.silhouette_scores, self.dunn_scores_1,
-		self.dunn_scores_2, self.dunn_scores_3]
+		self.dunn_scores_2, self.dunn_scores_3, viz]
 
 		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
@@ -330,7 +404,7 @@ class KinematicsClustering():
 
 		self.generate_transition_features()
 
-		self.generate_change_points()
+		self.generate_change_points_2()
 
 		self.cluster_changepoints()
 
@@ -352,17 +426,26 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def parse_metrics(metrics, file):
+def post_evaluation(metrics, file):
 
 	mutual_information_1 = []
 	normalized_mutual_information_1 = []
 	adjusted_mutual_information_1 = []
 	homogeneity_1 = []
+	precision_1_micro = []
+	recall_1_micro = []
+	precision_1_macro = []
+	recall_1_macro = []
+	precision_1_weighted = []
+	recall_1_weighted = []
+
 
 	silhoutte_level_1 = []
 	dunn1_level_1 = []
 	dunn2_level_1 = []
 	dunn3_level_1 = []
+
+	list_of_frms = {}
 
 	for elem in metrics:
 
@@ -376,6 +459,26 @@ def parse_metrics(metrics, file):
 		dunn2_level_1.append(elem[3]["level1"])
 		dunn3_level_1.append(elem[4]["level1"])
 
+		precision_1_micro.append(elem[0]["precision_micro"])
+		precision_1_macro.append(elem[0]["precision_macro"])
+		precision_1_weighted.append(elem[0]["precision_weighted"])
+
+		recall_1_micro.append(elem[0]["recall_micro"])
+		recall_1_macro.append(elem[0]["recall_macro"])
+		recall_1_weighted.append(elem[0]["recall_weighted"])
+
+		viz = elem[5]
+		for demonstration in viz.keys():
+			utils.dict_insert_list(demonstration, viz[demonstration], list_of_frms)
+
+	utils.print_and_write_2("precision_1_micro", np.mean(precision_1_micro), np.std(precision_1_micro), file)
+	utils.print_and_write_2("precision_1_macro", np.mean(precision_1_macro), np.std(precision_1_macro), file)
+	utils.print_and_write_2("precision_1_weighted", np.mean(precision_1_weighted), np.std(precision_1_weighted), file)
+
+	utils.print_and_write_2("recall_1_micro", np.mean(recall_1_micro), np.std(recall_1_micro), file)
+	utils.print_and_write_2("recall_1_macro", np.mean(recall_1_macro), np.std(recall_1_macro), file)
+	utils.print_and_write_2("recall_1_weighted", np.mean(recall_1_weighted), np.std(recall_1_weighted), file)
+
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
 	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
@@ -386,6 +489,19 @@ def parse_metrics(metrics, file):
 	utils.print_and_write_2("dunn1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
 	utils.print_and_write_2("dunn2", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
 	utils.print_and_write_2("dunn3", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
+
+	for demonstration in list_of_demonstrations:
+		list_of_frms_demonstration = list_of_frms[demonstration]
+
+		assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+
+		automatic_1 = list_of_frms_demonstration[0]
+		automatic_2 = list_of_frms_demonstration[1]
+		automatic_3 = list_of_frms_demonstration[2]
+		automatic_4 = list_of_frms_demonstration[3]
+
+		broken_barh.plot_broken_barh(demonstration, automatic_1, automatic_2, automatic_3, automatic_4,
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" +feat_fname + "_bbarh.jpg")
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -431,6 +547,6 @@ if __name__ == "__main__":
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
-	parse_metrics(all_metrics, log)
+	post_evaluation(all_metrics, log)
 
 	log.close()

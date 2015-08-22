@@ -315,6 +315,15 @@ def label_convert_to_numbers(labels):
 
 	return new_labels
 
+def make_transition_feature(matrix, temporal_window, index):
+	"""
+	Input: Matrix X with start index i and window t
+	Output: N = np.array(X[i], X[i+1], ... X[i + t])
+	"""
+	result = None
+	for i in range(temporal_window + 1):
+		result = safe_concatenate(result, reshape(matrix[index + i]), axis = 1)
+	return result
 
 def binary_search(ranges, val):
 	"""
