@@ -12,7 +12,6 @@ import constants
 import parser
 import utils
 import cluster_evaluation
-import featurization
 import broken_barh
 
 from sklearn import (mixture, neighbors, metrics)
@@ -33,7 +32,7 @@ class KinematicsClustering():
 		self.feat_fname = feat_fname
 		self.data_X = {}
 		self.X_dimension = 0
-		self.data_X_size = {}
+		self.data_X_size = 0
 		self.data_N = {}
 		self.log = log
 
@@ -69,7 +68,7 @@ class KinematicsClustering():
 		# Components for Mixture model at each level
 		self.n_components_cp = constants.N_COMPONENTS_CP_KIN
 		self.n_components_L1 = constants.N_COMPONENTS_L1_KIN
-
+		self.temporal_window = 1
 
 	def construct_features_visual(self):
 
@@ -89,7 +88,7 @@ class KinematicsClustering():
 	def construct_features_kinematics(self):
 
 		for demonstration in self.list_of_demonstrations:
-			self.data_X[demonstration] = utils.sample_matrix(featurization.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			self.data_X[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
 
 	def generate_transition_features(self):
 
@@ -99,7 +98,6 @@ class KinematicsClustering():
 		for demonstration in self.list_of_demonstrations:
 
 			X = self.data_X[demonstration]
-			self.data_X_size[demonstration] = X.shape[1]
 			T = X.shape[0]
 			N = None
 
@@ -120,7 +118,7 @@ class KinematicsClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=1000, thresh = 5e-5, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
@@ -150,7 +148,6 @@ class KinematicsClustering():
 		big_N = None
 		map_index2demonstration = {}
 		map_index2frm = {}
-		size_of_X = self.data_X_size[self.list_of_demonstrations[0]]
 
 		for demonstration in self.list_of_demonstrations:
 			print demonstration
@@ -166,33 +163,32 @@ class KinematicsClustering():
 
 			big_N = utils.safe_concatenate(big_N, N)
 
-		print "Generated big_N"
+		print "Generating Changepoints. Fitting GMM ..."
 
 		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		gmm.fit(big_N)
 		Y = gmm.predict(big_N)
 
+		print "Done fitting GMM..."
+
 		for w in range(len(Y) - 1):
 
 			if Y[w] != Y[w + 1]:
-				change_pt = big_N[w][size_of_X:]
-				self.append_cp_array(change_pt)
+				change_pt = big_N[w][self.X_dimension:]
+				self.append_cp_array(utils.reshape(change_pt))
 				self.map_cp2frm[cp_index] = map_index2frm[w]
 				self.map_cp2demonstrations[cp_index] = map_index2demonstration[w]
 				self.list_of_cp.append(cp_index)
 
 				cp_index += 1
 
-		print "Done with generating change points"
+		print "Done with generating change points, " + str(cp_index)
 
 
 	def append_cp_array(self, cp):
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
 	def save_cluster_metrics(self, points, predictions, means, key, model):
-
-		silhoutte = metrics.silhouette_score(points, predictions, metric='euclidean')
-		self.silhouette_scores[key] = silhoutte
 
 		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
 
@@ -227,6 +223,22 @@ class KinematicsClustering():
 				sys.exit()
 
 			utils.print_and_write(("%3d   %s   %s   %3d   %3d\n" % (i, label, demonstration, frm, surgeme)), self.log)
+
+	def cluster_pruning(self):
+		for cluster in self.map_level1_cp.keys():
+			cluster_list_of_cp = self.map_level1_cp[cluster]
+			cluster_demonstrations = []
+			for cp in cluster_list_of_cp:
+				cluster_demonstrations.append(self.map_cp2demonstrations[cp])
+			data_representation = float(len(set(cluster_demonstrations))) / float(len(self.list_of_demonstrations))
+			print str(cluster) + ": " + str(data_representation), " " + str(len(cluster_list_of_cp))
+			if data_representation <= constants.PRUNING_FACTOR:
+				new_cluster_list = cluster_list_of_cp[:]
+				for cp in cluster_list_of_cp:
+					print "Pruning " + str(cluster) + " " + str(data_representation) +  ": " + str(cp)
+					self.list_of_cp.remove(cp)
+					new_cluster_list.remove(cp)
+				self.map_level1_cp[cluster] = new_cluster_list
 
 	def cluster_evaluation(self):
 
@@ -277,7 +289,6 @@ class KinematicsClustering():
 			for cp in list_of_cp_key:
 				surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
 				surgeme_count[surgeme] += 1
-
 				curr_dict = table[L1_cluster]
 				curr_dict[surgeme] += 1
 				table[L1_cluster] = curr_dict
@@ -348,18 +359,11 @@ class KinematicsClustering():
 			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score_1), 2), key), self.log)
 
 			key = "recall_" + ave
-			score_1 = utils.nsf(recall_score(labels_true, labels_pred_1, average = ave))
+			score_1 = utils.nsf(recall_score(labels_true, labels_pred, average = ave))
 
 			self.label_based_scores_1[key] = score_1
 
 			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score_1), 2), key), self.log)
-
-		utils.print_and_write("\nSilhoutte scores\n", self.log)
-
-		# ------ Silhouette Scores ------
-		for layer in sorted(self.silhouette_scores):
-			score = self.silhouette_scores[layer]
-			utils.print_and_write("%3.3f        %s\n" % (round(Decimal(score), 2), layer), self.log)
 
 		utils.print_and_write("\nDunn Scores1\n", self.log)
 
@@ -404,9 +408,11 @@ class KinematicsClustering():
 
 		self.generate_transition_features()
 
-		self.generate_change_points_2()
+		self.generate_change_points_1()
 
 		self.cluster_changepoints()
+
+		self.cluster_pruning()
 
 		self.cluster_evaluation()
 
@@ -426,7 +432,7 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def post_evaluation(metrics, file):
+def post_evaluation(metrics, file, fname):
 
 	mutual_information_1 = []
 	normalized_mutual_information_1 = []
@@ -440,7 +446,6 @@ def post_evaluation(metrics, file):
 	recall_1_weighted = []
 
 
-	silhoutte_level_1 = []
 	dunn1_level_1 = []
 	dunn2_level_1 = []
 	dunn3_level_1 = []
@@ -454,7 +459,6 @@ def post_evaluation(metrics, file):
 		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 
-		silhoutte_level_1.append(elem[1]["level1"])
 		dunn1_level_1.append(elem[2]["level1"])
 		dunn2_level_1.append(elem[3]["level1"])
 		dunn3_level_1.append(elem[4]["level1"])
@@ -484,7 +488,6 @@ def post_evaluation(metrics, file):
 	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
 
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
-	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
 
 	utils.print_and_write_2("dunn1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
 	utils.print_and_write_2("dunn2", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
@@ -501,7 +504,7 @@ def post_evaluation(metrics, file):
 		automatic_4 = list_of_frms_demonstration[3]
 
 		broken_barh.plot_broken_barh(demonstration, automatic_1, automatic_2, automatic_3, automatic_4,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" +feat_fname + "_bbarh.jpg")
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + "_bbarh.jpg")
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -516,12 +519,14 @@ if __name__ == "__main__":
 	else:
 		DEBUG = False
 
-		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+
+		# list_of_demonstrations = ['0100_01','0100_02','0100_03','0100_04','0100_05']
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
@@ -547,6 +552,6 @@ if __name__ == "__main__":
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
-	post_evaluation(all_metrics, log)
+	post_evaluation(all_metrics, log, args.fname)
 
 	log.close()

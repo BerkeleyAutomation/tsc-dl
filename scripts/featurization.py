@@ -37,14 +37,6 @@ def load_cnn_features(demonstration, layer, folder, net):
 		+ "_" + net + "_" + demonstration + "_" + constants.CAMERA +".p", "rb"))
 	return Z.astype(np.float)
 
-def get_kinematic_features(demonstration):
-	if constants.SIMULATION:
-		kinematics_fname = demonstration + ".mat"
-	else:
-		kinematics_fname = demonstration + ".txt"
-	return parser.parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA
-		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", kinematics_fname)
-
 def main(DEBUG = False):
 	if DEBUG:
 		list_of_demonstrations = ['Suturing_E005',]

@@ -138,11 +138,22 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 			i += 1
 	return X.astype(np.float)
 
+def get_kinematic_features(demonstration):
+	"""
+	Marshalls request to format needed for parse_kinematics.
+	"""
+	if constants.SIMULATION:
+		kinematics_fname = demonstration + ".mat"
+	else:
+		kinematics_fname = demonstration + ".txt"
+	return parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA
+		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", kinematics_fname)
 
 if __name__ == "__main__":
 
-	list_of_demonstrations = ["1001_01", "1001_02", "1001_03", "1001_04", "1001_05"]
-	parse_annotations(list_of_demonstrations)
+	list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
+	# parse_annotations(list_of_demonstrations)
 
-	# X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0101_01_capture1.p", "0101_01.mat")
+	# X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0001_01_capture1.p", "0001_01.mat")
+	# IPython.embed()
 	pass

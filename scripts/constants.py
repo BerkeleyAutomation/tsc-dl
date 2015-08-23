@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/1001.yaml")
+config = parse_yaml("../config/suturing.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -20,7 +20,8 @@ PATH_TO_OPENCV_2_4_9 = "~/opencv_2.4.9/opencv-2.4.9/lib/"
 color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
 
 alphabet_map = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H", 9:"I", 10: "J",
-11: "K", 12: "L", 13: "M", 14: "N", 15: "O", 16: "P"}
+11: "K", 12: "L", 13: "M", 14: "N", 15: "O", 16: "P", 17: "Q", 18: "R", 19: "S", 20: "T", 21:"U", 22:"V", 23:"W",
+24: "X", 25:"Y", 26:"Z"}
 
 # Extra colors added:
 # E9967A is beige/dark salmon

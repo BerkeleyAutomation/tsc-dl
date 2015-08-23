@@ -48,9 +48,9 @@ def setup_automatic_labels(list_of_frms, color):
 	list_of_colors = []
 
 	if constants.SIMULATION:
-		bar_size = 2
+		bar_size = 0.5
 	else:
-		bar_size = 30
+		bar_size = 10
 
 	for elem in list_of_frms:
 		list_of_start_end.append((elem - (bar_size/2), bar_size))
@@ -70,7 +70,7 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	"""
 
 	all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
-	time_cluster = mixture.GMM(n_components=25, covariance_type='full', n_iter=500, tol=5e-5, min_covar = 0.001)
+	time_cluster = mixture.GMM(n_components=25, covariance_type='full', n_iter=1000, thresh = 5e-5, min_covar = 0.001)
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
 	time_cluster.fit(X)
@@ -114,18 +114,19 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 
 	fig, ax = plt.subplots()
 
-	ax.broken_barh(labels_manual, (21, 2), facecolors = colors_manual)
-	ax.broken_barh(labels_automatic_0, (17, 2), facecolors = colors_automatic_0)
+	ax.broken_barh(labels_manual, (25, 2), facecolors = colors_manual)
+	ax.broken_barh(labels_automatic_0, (21, 2), facecolors = colors_automatic_0)
+	ax.broken_barh(labels_automatic_1, (17, 2), facecolors = colors_automatic_1)
 	ax.broken_barh(labels_automatic_2, (13, 2), facecolors = colors_automatic_2)
 	ax.broken_barh(labels_automatic_3, (9, 2), facecolors = colors_automatic_3)
 	ax.broken_barh(labels_automatic_4, (5, 2), facecolors = colors_automatic_4)
 
-	ax.set_ylim(3,25)
+	ax.set_ylim(3,29)
 	ax.set_xlim(0, end + 100) # Need to replace this with start and end frames
 	ax.set_xlabel('Frame number')
-	ax.set_yticks([6,10,14,18,22])
+	ax.set_yticks([6, 10, 14, 18, 22, 26])
 	# ax.set_yticks([15,25,35, 45, 55])
-	ax.set_yticklabels(['Automatic4','Automatic3','Automatic2', 'Time Clustering', 'Manual'])
+	ax.set_yticklabels(['Automatic4','Automatic3','Automatic2', 'Automatic1','Time Clustering', 'Manual'])
 	ax.grid(True)
 
 	if save_fname:

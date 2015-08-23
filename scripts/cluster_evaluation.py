@@ -17,6 +17,8 @@ def split(points, predictions):
 	return points_list
 
 def dunn_index(points, predictions, means):
+	if len(points) == 0:
+		return [None, None, None]
 	points_in_clusters = split(points, predictions)	
 	delta_list_1 = []
 	delta_list_2 = []
