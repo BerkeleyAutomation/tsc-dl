@@ -124,7 +124,7 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 	if constants.SIMULATION:
 		mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
 		X = mat['x_traj']
-		X = X.reshape(X.shape[1], X.shape[0])
+		X = X.T
 	else:
 		X = None
 		all_lines = open(PATH_TO_KINEMATICS_DATA + fname, "rb").readlines()
@@ -154,6 +154,6 @@ if __name__ == "__main__":
 	list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
 	# parse_annotations(list_of_demonstrations)
 
-	# X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0001_01_capture1.p", "0001_01.mat")
-	# IPython.embed()
+	X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0001_02_capture1.p", "0001_02.mat")
+	IPython.embed()
 	pass
