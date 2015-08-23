@@ -86,6 +86,16 @@ class MilestonesClustering():
 				print "[ERROR] Missing demonstrations"
 				sys.exit()
 
+	def loads_features_split(self):
+		"""
+		"""
+		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.featfile),"rb"))
+
+		for demonstration in self.list_of_demonstrations:
+			if demonstration not in self.data_X.keys():
+				print "[ERROR] Missing demonstrations"
+				sys.exit()
+
 	def generate_transition_features(self):
 		for demonstration in self.list_of_demonstrations:
 
@@ -762,7 +772,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		list_of_demonstrations = ["0101_01", "0101_02", "0101_03", "0101_04", "0101_05"]
+		list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',

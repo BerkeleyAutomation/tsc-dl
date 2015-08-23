@@ -3,7 +3,7 @@
 Experiments: 
 1. Noisy targets : 0001
 2. Varying robot initialization: 1000
-3. Dynamics Noise: 0010
+3. Dynamics Noise: 0100
 4. Noisy Target + Dynamics Noise: 0101
 5. Noisy Target + vary robot init: 1001 
 6. Noisy Target + vary robot init + Dynamics Noise: 1101
