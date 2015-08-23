@@ -1,0 +1,20 @@
+PATH_TO_DATA: "/Users/adithyamurali/dev/DeepMilestones/jigsaws/Suturing_video/"
+PATH_TO_CLUSTERING_RESULTS: "/Users/adithyamurali/dev/DeepMilestones/clustering/clustering_suturing/"
+PATH_TO_KINEMATICS: "/Users/adithyamurali/dev/DeepMilestones/jigsaws/Suturing_kinematics/kinematics/AllGestures/"
+CONFIG_FILE: "meta_file_Suturing.txt"
+ALEXNET_FEATURES_FOLDER : "alexnetfeatures_2/"
+VGG_FEATURES_FOLDER : "vggfeatures_2/"
+PROC_FEATURES_FOLDER : "features_E12345/"
+REMOTE : True
+SIMULATION : False
+KINEMATICS_DIM : 38
+CROP_PARAMS_CAPTURE_1: "crop=330:260:200:170"
+CROP_PARAMS_CAPTURE_2: "crop=330:260:150:150"
+CAMERA: "capture2"
+SR: 3
+PRUNING_FACTOR: 0.75
+N_COMPONENTS_CP : 20
+N_COMPONENTS_L1 : 10
+N_COMPONENTS_L2 : 3
+N_COMPONENTS_CP_KIN : 20
+N_COMPONENTS_L1_KIN : 10

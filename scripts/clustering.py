@@ -170,7 +170,7 @@ class MilestonesClustering():
 
 		print "Generated big_N"
 
-		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
 		gmm.fit(big_N)
 		Y = gmm.predict(big_N)
 

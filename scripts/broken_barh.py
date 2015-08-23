@@ -70,7 +70,8 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	"""
 
 	all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
-	time_cluster = mixture.GMM(n_components=25, covariance_type='full', n_iter=1000, thresh = 5e-5, min_covar = 0.001)
+	N_COMPONENTS = min(25, len(all_frms))
+	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=1000, thresh = 5e-5, min_covar = 0.001)
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
 	time_cluster.fit(X)
