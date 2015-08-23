@@ -40,8 +40,8 @@ class MilestonesClustering():
 		self.list_of_cp = []
 		self.map_cp2frm = {}
 		self.map_cp2demonstrations = {}
-		self.map_cp_level1 = {}
-		self.map_level1_cp = {}
+		self.map_cp2level1 = {}
+		self.map_level12cp = {}
 		self.map_cp2milestones = {}
 		self.map_cp2surgemes = {}
 		self.map_cp2surgemetransitions = {}
@@ -230,16 +230,16 @@ class MilestonesClustering():
 
 		for i in range(len(Y)):
 			label = constants.alphabet_map[Y[i] + 1]
-			self.map_cp_level1[i] = label
-			utils.dict_insert_list(label, i, self.map_level1_cp)
+			self.map_cp2level1[i] = label
+			utils.dict_insert_list(label, i, self.map_level12cp)
 
 		self.generate_l2_cluster_matrices()
 
 	def generate_l2_cluster_matrices(self):
 
-		for key in sorted(self.map_level1_cp.keys()):
+		for key in sorted(self.map_level12cp.keys()):
 
-			list_of_cp = self.map_level1_cp[key]
+			list_of_cp = self.map_level12cp[key]
 			matrix = None
 
 			for cp_index in list_of_cp:
@@ -273,10 +273,10 @@ class MilestonesClustering():
 		self.file.write(line)
 
 		print "---Checking data representativeness ---"
-		for key in sorted(self.map_level1_cp.keys()):
+		for key in sorted(self.map_level12cp.keys()):
 			mkdir_l1_cluster = mkdir_path + "/" + key
 
-			list_of_cp_key = self.map_level1_cp[key]
+			list_of_cp_key = self.map_level12cp[key]
 
 			if self.check_pruning_condition(list_of_cp_key):
 				continue
@@ -284,13 +284,13 @@ class MilestonesClustering():
 			os.mkdir(mkdir_l1_cluster)
 		print "--- ---"
 
-		for key in sorted(self.map_level1_cp.keys()):
+		for key in sorted(self.map_level12cp.keys()):
 			matrix = self.l2_cluster_matrices[key]
-			list_of_cp_key = self.map_level1_cp[key]
+			list_of_cp_key = self.map_level12cp[key]
 
 			if self.check_pruning_condition(list_of_cp_key):
 				self.pruned_L1_clusters.append(key)
-				del self.map_level1_cp[key]
+				del self.map_level12cp[key]
 				for pruned_cp in list_of_cp_key:
 					print "Pruned: " + str(key) + " " + str(pruned_cp) + " " + str(self.map_cp2demonstrations[pruned_cp])
 					self.list_of_cp.remove(pruned_cp)
@@ -405,7 +405,7 @@ class MilestonesClustering():
 
 		# Initialize data structures
 		table = {}
-		for L1_cluster in self.map_level1_cp.keys():
+		for L1_cluster in self.map_level12cp.keys():
 			new_dict = {}
 			for surgeme in self.cp_surgemes:
 				new_dict[surgeme] = 0
@@ -415,8 +415,8 @@ class MilestonesClustering():
 		for surgeme in self.cp_surgemes:
 			surgeme_count[surgeme] = 0
 
-		for L1_cluster in self.map_level1_cp.keys():
-			list_of_cp_key = self.map_level1_cp[L1_cluster]
+		for L1_cluster in self.map_level12cp.keys():
+			list_of_cp_key = self.map_level12cp[L1_cluster]
 			for cp in list_of_cp_key:
 				surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
 				surgeme_count[surgeme] += 1
@@ -425,7 +425,7 @@ class MilestonesClustering():
 				curr_dict[surgeme] += 1
 				table[L1_cluster] = curr_dict
 
-		final_clusters = list(set(self.map_level1_cp.keys()) - set(self.pruned_L1_clusters))
+		final_clusters = list(set(self.map_level12cp.keys()) - set(self.pruned_L1_clusters))
 
 		confusion_matrix = "    "
 		for surgeme in self.cp_surgemes:
@@ -459,6 +459,7 @@ class MilestonesClustering():
 			try:
 				milestone_label = self.map_cp2milestones[cp]
 			except KeyError:
+				IPython.embed()
 				print "Too Few elements inside cluster!!"
 				sys.exit()
 			labels_pred_1_.append(milestone_label)
