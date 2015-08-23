@@ -26,6 +26,8 @@ class MilestonesClustering():
 	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):	
 		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
+		self.data_W = {}
+		self.data_Z = {}
 		self.data_X_size = {}
 		self.data_N = {}
 
@@ -86,15 +88,43 @@ class MilestonesClustering():
 				print "[ERROR] Missing demonstrations"
 				sys.exit()
 
+	def construct_features_visual(self):
+		"""
+		Independently loads/sets-up the kinematics in self.data_Z.
+		"""
+		data_X = pickle.load(open(PATH_TO_FEATURES + str(self.featfile),"rb"))
+		for demonstration in self.list_of_demonstrations:
+			X = data_X[demonstration]
+			Z = None
+			for i in range(len(X)):
+				Z = utils.safe_concatenate(Z, utils.reshape(X[i][constants.KINEMATICS_DIM:]))
+			assert Z.shape[0] == X.shape[0]
+
+			self.data_Z[demonstration] = Z
+
+	def construct_features_kinematics(self):
+		"""
+		Independently loads/sets-up the kinematics in self.data_W.
+		"""
+		for demonstration in self.list_of_demonstrations:
+			self.data_W[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+
 	def loads_features_split(self):
 		"""
+		Independently loads/sets-up the kinematics and visual data, then
+		concatenates to populate self.data_X with X vectors.
 		"""
-		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.featfile),"rb"))
+		self.construct_features_kinematics()
+		self.construct_features_visual()
 
 		for demonstration in self.list_of_demonstrations:
-			if demonstration not in self.data_X.keys():
-				print "[ERROR] Missing demonstrations"
-				sys.exit()
+			W = self.data_W[demonstration]
+			Z = self.data_W[demonstration]
+
+			assert W.shape[0] == Z.shape[0]
+			assert W.shape[1] == constants.KINEMATICS_DIM
+
+			self.data_X[demonstration] = utils.safe_concatenate(W, Z, axis = 1)
 
 	def generate_transition_features(self):
 		for demonstration in self.list_of_demonstrations:
@@ -170,7 +200,12 @@ class MilestonesClustering():
 
 		print "Generated big_N"
 
-		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+		if constants.REMOTE == 1:
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
+		elif constants.REMOTE == 2:
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+		else:
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		gmm.fit(big_N)
 		Y = gmm.predict(big_N)
 
@@ -231,7 +266,13 @@ class MilestonesClustering():
 
 		# print "Level1 : Clustering changepoints in Z(t)"
 
-		gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
+		if constants.REMOTE == 1:
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', thresh = 0.01)
+		elif constants.REMOTE == 2:
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
+		else:
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
+
 		gmm.fit(self.change_pts_Z)
 
 		Y = gmm.predict(self.change_pts_Z)
@@ -306,8 +347,12 @@ class MilestonesClustering():
 					self.list_of_cp.remove(pruned_cp)
 				continue
 
-			gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
-
+			if constants.REMOTE == 1:
+				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', thresh = 0.01)
+			if constants.REMOTE == 2:
+				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', tol = 0.01)
+			else:
+				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 
 			try:
 				gmm.fit(matrix)
@@ -335,10 +380,10 @@ class MilestonesClustering():
 
 				self.file.write("%s             %3d         %s   %3d   %3d    %3d\n" % (l1_cluster, l2_cluster, demonstration, frm, cp, surgeme))
 
-				if not constants.REMOTE:
+				if constants.REMOTE == 0:
 					self.copy_frames(demonstration, frm, str(l1_cluster), str(l2_cluster), surgeme)
 
-		if not constants.REMOTE:
+		if not constants.REMOTE == 0:
 			self.copy_milestone_frames(matrix, list_of_cp_key, gmm)
 
 	def copy_milestone_frames(self, matrix, list_of_cp_key, gmm):
@@ -583,7 +628,8 @@ class MilestonesClustering():
 
 	def do_everything(self):
 
-		self.loads_features()
+		# self.loads_features()
+		self.loads_features_split()
 
 		self.generate_transition_features()
 

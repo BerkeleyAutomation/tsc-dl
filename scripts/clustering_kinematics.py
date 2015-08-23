@@ -165,7 +165,12 @@ class KinematicsClustering():
 
 		print "Generating Changepoints. Fitting GMM ..."
 
-		gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+		if constants.REMOTE == 1:
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
+		if constants.REMOTE == 2:
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+		else:
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		gmm.fit(big_N)
 		Y = gmm.predict(big_N)
 
@@ -203,7 +208,12 @@ class KinematicsClustering():
 
 		print "Clustering changepoints..."
 
-		gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
+		if constants.REMOTE == 1:
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', thresh = 0.01)
+		elif constants.REMOTE == 2:
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
+		else:
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		gmm.fit(self.changepoints)
 
 		predictions = gmm.predict(self.changepoints)
