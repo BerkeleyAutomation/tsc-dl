@@ -71,17 +71,23 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	# k-fold validation (Leave one out)
 	numDemos = 5
 	sizeTestSet = numDemos - 1
+	list_of_frms = [list_of_frms_1, list_of_frms_2, list_of_frms_3, list_of_frms_4]
 	all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
 	
 	N_COMPONENTS = min(25, len(all_frms))
-	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=1000, thresh = 5e-5, min_covar = 0.001)
+	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=1000, tol = 5e-5, min_covar = 0.001)
+	# time_cluster = mixture.VBGMM(n_components=N_COMPONENTS, alpha = 100, covariance_type='full', n_iter=100, tol = 5e-5, min_covar = 0.001)
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
 	time_cluster.fit(X)
 	Y = time_cluster.predict(X)
 
 	means = time_cluster.means_
-	covars = time_cluster.covars_
+	covars = time_cluster.covars_ #only for GMM
+	#only VBGMM -- outputs precision
+	# covars = time_cluster.precs_ 
+	# for i in range(len(Y)):
+	# 	covars[Y[i]][0][0] = np.divide(1, covars[Y[i]][0][0])
 	
 	list_of_elem = []	
 	
@@ -91,16 +97,29 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	
 	list_of_elem = sorted(list_of_elem, key = lambda x:x[1][0] )	
 
-	for elem in list_of_elem:
-		print elem
+	# for elem in list_of_elem:
+	# 	print elem
 
 	dict_time_clusters = {}
 	for elem in list_of_elem:
 		utils.dict_insert_list(elem[0], elem[1], dict_time_clusters)
 
 	list_time_clusters = []
+	list_time_clusters_noPrune = []
 	for cluster in dict_time_clusters.keys():
+		#get all frames in this cluster
 		cluster_frames = dict_time_clusters[cluster]
+		setClusterFrames = set([elem[0] for elem in cluster_frames])
+		#test if frames in cluster are representative of the test set
+		rep = []
+		for id in range(sizeTestSet):
+			elemSet = set(list_of_frms[id])					
+			commonElem = elemSet.intersection(setClusterFrames)
+			id_in_cluster = 1. if len(commonElem)>0 else 0.
+			rep.append(id_in_cluster)
+
+		pruneCluster = True if sum(rep)/sizeTestSet < constants.PRUNING_FACTOR else False
+		
 		min_frm = min(cluster_frames)
 		max_frm = max(cluster_frames)
 		
@@ -110,10 +129,14 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 		leftFrame = max(min_frm[0], mean - std)
 		rightFrame = min(max_frm[0], mean + std)
 
-		# list_time_clusters.append((min_frm[0], max_frm[0]))
-		list_time_clusters.append((leftFrame, rightFrame))
+		list_time_clusters_noPrune.append((leftFrame, rightFrame))
+		# keep for plotting is pruneFlag = 0
+		if not(pruneCluster):			
+			# list_time_clusters.append((min_frm[0], max_frm[0]))
+			list_time_clusters.append((leftFrame, rightFrame))
 
-
+	print "Number of Clusters pruned in Time Clustering: ",  len(list_time_clusters_noPrune) - len(list_time_clusters)  
+	
 	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
