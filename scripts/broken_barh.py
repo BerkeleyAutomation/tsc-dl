@@ -68,19 +68,28 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 
 	* For now, the list_of_frms are constrained to 4 for visualization sanity sake.
 	"""
-
+	# k-fold validation (Leave one out)
+	numDemos = 5
+	sizeTestSet = numDemos - 1
 	all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
+	
 	N_COMPONENTS = min(25, len(all_frms))
 	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=1000, thresh = 5e-5, min_covar = 0.001)
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
 	time_cluster.fit(X)
 	Y = time_cluster.predict(X)
+
+	means = time_cluster.means_
+	covars = time_cluster.covars_
 	
-	list_of_elem = []
+	list_of_elem = []	
+	
 	for i in range(len(Y)):
-		list_of_elem.append((Y[i], X[i]))
-	list_of_elem = sorted(list_of_elem, key = lambda x:x[1][0] )
+		# list_of_elem.append((Y[i], X[i]))
+		list_of_elem.append((Y[i], X[i], means[Y[i]][0], np.sqrt(covars[Y[i]][0][0])))
+	
+	list_of_elem = sorted(list_of_elem, key = lambda x:x[1][0] )	
 
 	for elem in list_of_elem:
 		print elem
@@ -94,8 +103,15 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 		cluster_frames = dict_time_clusters[cluster]
 		min_frm = min(cluster_frames)
 		max_frm = max(cluster_frames)
+		
+		mean = means[cluster][0]
+		std = np.sqrt(covars[cluster][0][0])
+		
+		leftFrame = max(min_frm[0], mean - std)
+		rightFrame = min(max_frm[0], mean + std)
 
-		list_time_clusters.append((min_frm[0], max_frm[0]))
+		# list_time_clusters.append((min_frm[0], max_frm[0]))
+		list_time_clusters.append((leftFrame, rightFrame))
 
 
 	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
