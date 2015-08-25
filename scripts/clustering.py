@@ -151,7 +151,7 @@ class MilestonesClustering():
 
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=1000, thresh = 5e-5)
 			gmm.fit(N)
 			Y = gmm.predict(N)
 	
@@ -267,7 +267,7 @@ class MilestonesClustering():
 		# print "Level1 : Clustering changepoints in Z(t)"
 
 		if constants.REMOTE == 1:
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', thresh = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
 		else:
@@ -348,7 +348,7 @@ class MilestonesClustering():
 				continue
 
 			if constants.REMOTE == 1:
-				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', thresh = 0.01)
+				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
 			if constants.REMOTE == 2:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', tol = 0.01)
 			else:
@@ -383,7 +383,7 @@ class MilestonesClustering():
 				if constants.REMOTE == 0:
 					self.copy_frames(demonstration, frm, str(l1_cluster), str(l2_cluster), surgeme)
 
-		if not constants.REMOTE == 0:
+		if constants.REMOTE == 0:
 			self.copy_milestone_frames(matrix, list_of_cp_key, gmm)
 
 	def copy_milestone_frames(self, matrix, list_of_cp_key, gmm):
@@ -814,11 +814,11 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
+		# list_of_demonstrations = ["0101_01", "0101_02", "0101_03", "0101_04", "0101_05"]
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',

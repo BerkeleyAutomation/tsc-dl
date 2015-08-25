@@ -57,7 +57,7 @@ def setup_automatic_labels(list_of_frms, color):
 		list_of_colors.append(color)
 	return list_of_start_end, tuple(list_of_colors)
 
-def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms_3, list_of_frms_4, save_fname = None):
+def plot_broken_barh(demonstration, data, save_fname = None):
 	"""
 	Parameters:
 	-----------
@@ -69,36 +69,32 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	* For now, the list_of_frms are constrained to 4 for visualization sanity sake.
 	"""
 	# k-fold validation (Leave one out)
-	numDemos = 5
+	numDemos = min(5, len(data.keys()) + 1)
 	sizeTestSet = numDemos - 1
-	list_of_frms = [list_of_frms_1, list_of_frms_2, list_of_frms_3, list_of_frms_4]
-	all_frms = list_of_frms_1 + list_of_frms_2 + list_of_frms_3 + list_of_frms_4
+
+	list_of_frms = []
+	all_frms = []
+	for key in data.keys():
+		elem = data[key]
+		list_of_frms.append(elem)
+		all_frms += elem
 	
-	N_COMPONENTS = min(25, len(all_frms))
-	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=1000, tol = 5e-5, min_covar = 0.001)
-	# time_cluster = mixture.VBGMM(n_components=N_COMPONENTS, alpha = 100, covariance_type='full', n_iter=100, tol = 5e-5, min_covar = 0.001)
+	N_COMPONENTS = min(constants.N_COMPONENTS_TIME, len(all_frms))
+	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=1000, thresh = 5e-5, min_covar = 0.001)
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
 	time_cluster.fit(X)
 	Y = time_cluster.predict(X)
 
 	means = time_cluster.means_
-	covars = time_cluster.covars_ #only for GMM
-	#only VBGMM -- outputs precision
-	# covars = time_cluster.precs_ 
-	# for i in range(len(Y)):
-	# 	covars[Y[i]][0][0] = np.divide(1, covars[Y[i]][0][0])
+	covars = time_cluster.covars_
 	
 	list_of_elem = []	
 	
 	for i in range(len(Y)):
-		# list_of_elem.append((Y[i], X[i]))
 		list_of_elem.append((Y[i], X[i], means[Y[i]][0], np.sqrt(covars[Y[i]][0][0])))
 	
 	list_of_elem = sorted(list_of_elem, key = lambda x:x[1][0] )	
-
-	# for elem in list_of_elem:
-	# 	print elem
 
 	dict_time_clusters = {}
 	for elem in list_of_elem:
@@ -107,10 +103,10 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 	list_time_clusters = []
 	list_time_clusters_noPrune = []
 	for cluster in dict_time_clusters.keys():
-		#get all frames in this cluster
+		# get all frames in this cluster
 		cluster_frames = dict_time_clusters[cluster]
 		setClusterFrames = set([elem[0] for elem in cluster_frames])
-		#test if frames in cluster are representative of the test set
+		# test if frames in cluster are representative of the test set
 		rep = []
 		for id in range(sizeTestSet):
 			elemSet = set(list_of_frms[id])					
@@ -136,36 +132,30 @@ def plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms
 			list_time_clusters.append((leftFrame, rightFrame))
 
 	print "Number of Clusters pruned in Time Clustering: ",  len(list_time_clusters_noPrune) - len(list_time_clusters)  
-	
-	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
-
 	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
-
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
-	labels_manual, colors_manual = setup_manual_labels(segments)
-
-
-	labels_automatic_1, colors_automatic_1 = setup_automatic_labels(list_of_frms_1, "k")
-	labels_automatic_2, colors_automatic_2 = setup_automatic_labels(list_of_frms_2, "k")
-	labels_automatic_3, colors_automatic_3 = setup_automatic_labels(list_of_frms_3, "k")
-	labels_automatic_4, colors_automatic_4 = setup_automatic_labels(list_of_frms_4, "k")
 
 	fig, ax = plt.subplots()
+	# Generate labels for 1) Manual 2) Time clusters
+	labels_manual, colors_manual = setup_manual_labels(segments)
+	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
 
+	# Plot 1) Manual 2) Time clusters
 	ax.broken_barh(labels_manual, (25, 2), facecolors = colors_manual)
 	ax.broken_barh(labels_automatic_0, (21, 2), facecolors = colors_automatic_0)
-	ax.broken_barh(labels_automatic_1, (17, 2), facecolors = colors_automatic_1)
-	ax.broken_barh(labels_automatic_2, (13, 2), facecolors = colors_automatic_2)
-	ax.broken_barh(labels_automatic_3, (9, 2), facecolors = colors_automatic_3)
-	ax.broken_barh(labels_automatic_4, (5, 2), facecolors = colors_automatic_4)
+
+	list_of_plot_ranges = [(17, 2), (13, 2), (9, 2), (5, 2)]
+
+	for i in range(min(sizeTestSet, 4)):
+		labels_automatic, colors_automatic = setup_automatic_labels(list_of_frms[i], "k")
+		ax.broken_barh(labels_automatic, list_of_plot_ranges[i], facecolors = colors_automatic)
 
 	ax.set_ylim(3,29)
-	ax.set_xlim(0, end + 100) # Need to replace this with start and end frames
+	ax.set_xlim(0, end + 100)
 	ax.set_xlabel('Frame number')
 	ax.set_yticks([6, 10, 14, 18, 22, 26])
-	# ax.set_yticks([15,25,35, 45, 55])
 	ax.set_yticklabels(['Automatic4','Automatic3','Automatic2', 'Automatic1','Time Clustering', 'Manual'])
 	ax.grid(True)
 

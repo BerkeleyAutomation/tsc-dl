@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/0001.yaml")
+config = parse_yaml("../config/baseline.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -21,7 +21,8 @@ color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '
 
 alphabet_map = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H", 9:"I", 10: "J",
 11: "K", 12: "L", 13: "M", 14: "N", 15: "O", 16: "P", 17: "Q", 18: "R", 19: "S", 20: "T", 21:"U", 22:"V", 23:"W",
-24: "X", 25:"Y", 26:"Z"}
+24: "X", 25:"Y", 26:"Z", 27:"A1", 28:"A2", 29:"A3", 30:"A4", 31:"A5", 32:"A6", 33:"A7", 34:"A8", 35:"A9", 36:"A10",
+37:"A11", 38:"A12", 39:"A13", 40:"A14", 41:"A15", 42:"A16", 43:"A17", 44:"A18", 45:"A19", 46:"A20", 47:"A21", 48:"A22", 49: "A23", 50:"A24"}
 
 # Extra colors added:
 # E9967A is beige/dark salmon
@@ -85,6 +86,8 @@ N_COMPONENTS_L2 = config["N_COMPONENTS_L2"]
 N_COMPONENTS_CP_KIN = config["N_COMPONENTS_CP_KIN"]
 
 N_COMPONENTS_L1_KIN = config["N_COMPONENTS_L1_KIN"]
+
+N_COMPONENTS_TIME = config["N_COMPONENTS_TIME"]
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}

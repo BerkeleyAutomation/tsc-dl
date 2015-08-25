@@ -325,6 +325,7 @@ def make_transition_feature(matrix, temporal_window, index):
 		result = safe_concatenate(result, reshape(matrix[index + i]), axis = 1)
 	return result
 
+
 def binary_search(ranges, val):
 	"""
     Performs binary search to find which segment [start:end]

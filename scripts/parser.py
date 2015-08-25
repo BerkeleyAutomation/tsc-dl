@@ -122,12 +122,14 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 
 	X = None
 	if constants.SIMULATION:
-		mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
-		X = mat['x_traj']
-		X = X.T
+		# mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
+		# X = mat['x_traj']
+		# X = X.T
+
+		X = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
 	else:
 		X = None
-		all_lines = open(PATH_TO_KINEMATICS_DATA + fname, "rb").readlines()
+		all_lines = open(PATH_TO_KINEMATICS_DATA + fname + ".txt", "rb").readlines()
 		i = start - 1
 		if i < 0:
 			i = 0 
@@ -142,18 +144,17 @@ def get_kinematic_features(demonstration):
 	"""
 	Marshalls request to format needed for parse_kinematics.
 	"""
-	if constants.SIMULATION:
-		kinematics_fname = demonstration + ".mat"
-	else:
-		kinematics_fname = demonstration + ".txt"
 	return parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA
-		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", kinematics_fname)
+		+ constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA +".p", demonstration)
 
 if __name__ == "__main__":
 
-	list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
-	# parse_annotations(list_of_demonstrations)
+	# list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
 
-	X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0001_02_capture1.p", "0001_02.mat")
-	IPython.embed()
+	list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
+
+	parse_annotations(list_of_demonstrations)
+
+	# X = parse_kinematics(constants.PATH_TO_KINEMATICS, constants.PATH_TO_DATA + "annotations/0001_02_capture1.p", "0001_02.mat")
+	# IPython.embed()
 	pass

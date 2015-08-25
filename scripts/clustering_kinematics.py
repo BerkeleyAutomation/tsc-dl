@@ -166,7 +166,7 @@ class KinematicsClustering():
 		print "Generating Changepoints. Fitting GMM ..."
 
 		if constants.REMOTE == 1:
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=1000, thresh = 5e-5)
 		if constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
 		else:
@@ -508,13 +508,12 @@ def post_evaluation(metrics, file, fname):
 		list_of_frms_demonstration = list_of_frms[demonstration]
 
 		assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+		data = {}
 
-		automatic_1 = list_of_frms_demonstration[0]
-		automatic_2 = list_of_frms_demonstration[1]
-		automatic_3 = list_of_frms_demonstration[2]
-		automatic_4 = list_of_frms_demonstration[3]
+		for i in range(len(list_of_frms_demonstration)):
+			data[i] = list_of_frms_demonstration[0]
 
-		broken_barh.plot_broken_barh(demonstration, automatic_1, automatic_2, automatic_3, automatic_4,
+		broken_barh.plot_broken_barh(demonstration, data,
 			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + "_bbarh.jpg")
 
 if __name__ == "__main__":
@@ -530,6 +529,8 @@ if __name__ == "__main__":
 	else:
 		DEBUG = False
 
+		list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
+
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
@@ -537,7 +538,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
+		# list_of_demonstrations = ["0101_01", "0101_02", "0101_03", "0101_04", "0101_05"]
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
@@ -558,7 +559,8 @@ if __name__ == "__main__":
 
 	for i in range(len(combinations)):
 		utils.print_and_write("\n----------- Combination #" + str(i) + " -------------\n", log)
-
+		print "\n----------- Combination #" + str(i) + " -------------\n"
+		print combinations[i]
 		mc = KinematicsClustering(DEBUG, list(combinations[i]), args.fname + str(i), log, vision_mode, feat_fname)
 		all_metrics.append(mc.do_everything())
 
