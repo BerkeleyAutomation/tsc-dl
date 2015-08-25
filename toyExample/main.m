@@ -5,10 +5,10 @@ addpath(genpath(pwd))
 
 %% Experiment specifc details
 %flags for experiment params
-varyRobotInit = true;
+varyRobotInit = false;
 noisyDynamics = true; 
 varyTargetInit = false;
-targetNoise = true;
+targetNoise = false;
 
 % In order of increasing difficulty
 % exptList = ['0001', '1000', '0100', '0101', '1001', '1101', '1110'];
@@ -78,9 +78,9 @@ for expt = 1:numDemos
     
     x_traj = x_curr;        
     
-    minStep = 1;
+    maxStep = 1;%only works for maxStep greater than one
     rotStepSize = pi/18;
-    % dynamics noise is used as a percent of minStep
+    % dynamics noise is used as a percent of maxStep
     if noisyDynamics, dynamicsNoise = 0.5; end
     % target noise level absolute values.
     if targetNoise, targetNoiseLevel = 1; end
@@ -154,36 +154,28 @@ for expt = 1:numDemos
 
         while (norm(diff)>0)
             diff = target_curr - x_curr(1:2);        
-            if  norm(diff)>minStep            
+            if  norm(diff)>maxStep            
                 if ~noisyDynamics % Perfect update
-                    x_curr(1:2)= x_curr(1:2) + diff./norm(diff);             
+                    x_curr(1:2)= x_curr(1:2) + maxStep*diff./norm(diff);             
                 else%noisy update based on an attracter
-                    x_curr(1:2)= x_curr(1:2) + diff./norm(diff) +...
-                        dynamicsNoise*random('unif',0,minStep,2,1);
+                    x_curr(1:2)= x_curr(1:2) + maxStep*diff./norm(diff) +...
+                        dynamicsNoise*random('unif',-maxStep,maxStep,2,1);
                 end
-                delete(objHandles) 
-                objHandles = plotState(x_curr, target_curr, axHandle );             
-                x_traj = [x_traj, x_curr]; %record trajectory        
-                if flag_plotTraj
-                    trajHandle = plotTraj( x_traj, axHandle );
-                end
-
-                iterCount = iterCount+1;
-                saveFig( figHandle, iterCount, outputDir );
 
             else %last step to reach to target
                 x_curr(1:2) = x_curr(1:2)+ diff; 
-                delete(objHandles) 
-                objHandles = plotState(x_curr, target_curr, axHandle );             
-                x_traj = [x_traj, x_curr]; %record trajectory        
-                if flag_plotTraj
-                    trajHandle = plotTraj( x_traj, axHandle );
-                end
-
-                iterCount = iterCount+1;
-                saveFig( figHandle, iterCount, outputDir);
-
             end
+            
+            delete(objHandles) 
+            objHandles = plotState(x_curr, target_curr, axHandle );             
+            x_traj = [x_traj, x_curr]; %record trajectory        
+            if flag_plotTraj
+                trajHandle = plotTraj( x_traj, axHandle );
+            end
+
+            iterCount = iterCount+1;
+            saveFig( figHandle, iterCount, outputDir );
+            
         end
 
         %% increment target counter
