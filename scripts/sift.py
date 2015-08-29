@@ -1,14 +1,10 @@
 import os, sys
 import IPython
 import pickle
-
-# SIFT and SURF are only available for OpenCV 2.4.9
-os.chdir(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/'))
-# sys.path.append(os.path.expanduser('~/opencv_2.4.9/opencv-2.4.9/lib/python2.7/dist-packages'))
-
 import cv2
-print cv2.__version__
 import numpy as np
+
+
 import utils
 
 def min_kp_SIFT(PATH_TO_DATA):
@@ -29,6 +25,18 @@ def min_kp_SIFT(PATH_TO_DATA):
 	cap.release()
 	return min(result)
 
+def run_sift_frame(PATH_TO_IMAGE, n_features = 10):
+	img = cv2.imread(PATH_TO_IMAGE)
+	# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	sift = cv2.SURF(4000)
+	# kp = sift.detect(gray, None)
+	# img = cv2.drawKeypoints(gray, kp)
+	kp = sift.detect(img, None)
+	img2 = cv2.drawKeypoints(img, kp)
+	cv2.imshow("frame", img2)
+	IPython.embed()
+	return len(kp)
+
 def run_sift(PATH_TO_DATA, count, n_features = 20):
 	cap = cv2.VideoCapture(PATH_TO_DATA)
 	sift = cv2.SIFT(nfeatures = n_features)
@@ -42,7 +50,7 @@ def run_sift(PATH_TO_DATA, count, n_features = 20):
 			break;
 		kp, des = sift.detectAndCompute(frame, None)
 
-		img = cv2.drawKeypoints(frame,kp)
+		img = cv2.drawKeypoints(frame, kp)
 
 		cv2.imshow('sift',img)
 		vector1 = []

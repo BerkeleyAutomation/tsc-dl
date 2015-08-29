@@ -325,6 +325,8 @@ def make_transition_feature(matrix, temporal_window, index):
 		result = safe_concatenate(result, reshape(matrix[index + i]), axis = 1)
 	return result
 
+def only_X(W):
+	return W.T[:1].T
 
 def binary_search(ranges, val):
 	"""

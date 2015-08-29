@@ -66,18 +66,23 @@ class KinematicsClustering():
 		self.representativeness = constants.PRUNING_FACTOR
 
 		# Components for Mixture model at each level
-		self.n_components_cp = constants.N_COMPONENTS_CP_KIN
-		self.n_components_L1 = constants.N_COMPONENTS_L1_KIN
-		self.temporal_window = 1
+		if self.vision_mode:
+			self.n_components_cp = constants.N_COMPONENTS_CP_Z
+			self.n_components_L1 = constants.N_COMPONENTS_L1_Z
+			self.temporal_window = constants.TEMPORAL_WINDOW_Z
+		else:
+			self.n_components_cp = constants.N_COMPONENTS_CP_W
+			self.n_components_L1 = constants.N_COMPONENTS_L1_W
+			self.temporal_window = constants.TEMPORAL_WINDOW_W
 
 	def construct_features_visual(self):
 
-		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
+		data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
 		for demonstration in self.list_of_demonstrations:
-			if demonstration not in self.data_X.keys():
+			if demonstration not in data_X.keys():
 				print "[ERROR] Missing demonstrations"
 				sys.exit()
-			X = self.data_X[demonstration]
+			X = data_X[demonstration]
 			X_visual = None
 			for i in range(len(X)):
 				X_visual = utils.safe_concatenate(X_visual, utils.reshape(X[i][constants.KINEMATICS_DIM:]))
@@ -89,6 +94,7 @@ class KinematicsClustering():
 
 		for demonstration in self.list_of_demonstrations:
 			self.data_X[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			print self.data_X[demonstration].shape
 
 	def generate_transition_features(self):
 
@@ -118,7 +124,7 @@ class KinematicsClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=1000, thresh = 5e-5, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=5000, thresh = 5e-5, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
@@ -165,8 +171,9 @@ class KinematicsClustering():
 
 		print "Generating Changepoints. Fitting GMM ..."
 
+
 		if constants.REMOTE == 1:
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=1000, thresh = 5e-5)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, thresh = 5e-5)
 		if constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
 		else:
@@ -209,7 +216,7 @@ class KinematicsClustering():
 		print "Clustering changepoints..."
 
 		if constants.REMOTE == 1:
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', thresh = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
 		else:
@@ -514,7 +521,7 @@ def post_evaluation(metrics, file, fname):
 			data[i] = list_of_frms_demonstration[0]
 
 		broken_barh.plot_broken_barh(demonstration, data,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + "_bbarh.jpg")
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg")
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -529,9 +536,15 @@ if __name__ == "__main__":
 	else:
 		DEBUG = False
 
-		list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
+		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
 
-		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+
+		# list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
+
+		# list_of_demonstrations = ["baseline2_010_01", "baseline2_010_02", "baseline2_010_03", "baseline2_010_04", "baseline2_010_05"]
+
+		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]

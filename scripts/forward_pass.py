@@ -97,8 +97,6 @@ class CNNFeatureExtractor:
 		X = {}
 		map_index_data = pickle.load(open(annotations, "rb"))
 
-		IPython.embed()
-
 		for index in map_index_data:
 			segments = map_index_data[index]
 			print "Processing images for label " + str(index)

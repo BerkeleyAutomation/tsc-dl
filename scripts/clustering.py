@@ -75,7 +75,7 @@ class MilestonesClustering():
 		self.n_components_L1 = constants.N_COMPONENTS_L1
 		self.n_components_L2 = constants.N_COMPONENTS_L2
 
-		self.temporal_window = 1
+		self.temporal_window = constants.TEMPORAL_WINDOW
 
 	def loads_features(self):
 		"""
@@ -83,6 +83,7 @@ class MilestonesClustering():
 		"""
 		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.featfile),"rb"))
 
+		IPython.embed()
 		for demonstration in self.list_of_demonstrations:
 			if demonstration not in self.data_X.keys():
 				print "[ERROR] Missing demonstrations"
@@ -414,7 +415,7 @@ class MilestonesClustering():
 
 		print data_representation, len(list_of_cp_key)
 
-		return data_representation < self.representativeness 
+		return data_representation <= self.representativeness 
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
@@ -788,22 +789,21 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
 
-		# assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+		assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+		data = {}
 
-		automatic_1 = list_of_frms_demonstration[0]
-		automatic_2 = list_of_frms_demonstration[1]
-		automatic_3 = list_of_frms_demonstration[2]
-		automatic_4 = list_of_frms_demonstration[3]
+		for i in range(len(list_of_frms_demonstration)):
+			data[i] = list_of_frms_demonstration[0]
 
-		broken_barh.plot_broken_barh(demonstration, automatic_1, automatic_2, automatic_3, automatic_4,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" +feat_fname + "_bbarh.jpg")
+		broken_barh.plot_broken_barh(demonstration, data,
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg")
 
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
 	argparser.add_argument("feat_fname", help = "Pickle file of visual features", default = 4)
-	argparser.add_argument("metric_fname", help = "Pickle file of visual features", default = 4)
+	argparser.add_argument("fname", help = "Pickle file of visual features", default = 4)
 	args = argparser.parse_args()
 
 	if args.debug == 'y':
@@ -814,11 +814,18 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
+		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+
+		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
+
 		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ["0101_01", "0101_02", "0101_03", "0101_04", "0101_05"]
+
+
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
@@ -832,14 +839,14 @@ if __name__ == "__main__":
 
 	# for _ in range(4):
 	# 	print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(4) + " ----"
-	# 	mc = MilestonesClustering(DEBUG, list_of_demonstrations, args.feat_fname, args.metric_fname)
+	# 	mc = MilestonesClustering(DEBUG, list_of_demonstrations, args.feat_fname, args.fname)
 	# 	all_metrics.append(mc.do_everything())
 	# 	i += 1
 
 	for elem in combinations:	
 		print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(len(combinations)) + " ----"
-		mc = MilestonesClustering(DEBUG, list(elem), args.feat_fname, args.metric_fname)
+		mc = MilestonesClustering(DEBUG, list(elem), args.feat_fname, args.fname)
 		all_metrics.append(mc.do_everything())
 		i += 1
 	print "----------- CALCULATING THE ODDS ------------"
-	post_evaluation(all_metrics, args.metric_fname, list_of_demonstrations, args.metric_fname)
+	post_evaluation(all_metrics, args.fname, list_of_demonstrations, args.feat_fname)

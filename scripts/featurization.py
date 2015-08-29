@@ -11,9 +11,9 @@ import parser
 import utils
 import lcd
 import encoding
-# import sift
+import sift
 
-from sklearn.decomposition import PCA, IncrementalPCA
+# from sklearn.decomposition import PCA, IncrementalPCA
 
 # Table of features:
 
@@ -41,7 +41,7 @@ def main(DEBUG = False):
 	if DEBUG:
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
-		list_of_demonstrations = ["1001_01", "1001_02", "1001_03", "1001_04", "1001_05"]
+		list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
@@ -57,23 +57,62 @@ def main(DEBUG = False):
 	print "Parsing Kinematic Features"
 	kinematics = {}
 	for demonstration in list_of_demonstrations:
-		W = get_kinematic_features(demonstration)
+		W = parser.get_kinematic_features(demonstration)
 		kinematics[demonstration] = W
 
 
 	sr = constants.SR
+	featurize_sift(list_of_demonstrations, kinematics, sr)
 	# featurize_1(list_of_demonstrations, kinematics, sr)
-	featurize_2(list_of_demonstrations, kinematics, sr)
-	featurize_3(list_of_demonstrations, kinematics, sr)
-	featurize_4(list_of_demonstrations, kinematics, sr)
-	featurize_5(list_of_demonstrations, kinematics, sr)
+	# featurize_2(list_of_demonstrations, kinematics, sr)
+	# featurize_3(list_of_demonstrations, kinematics, sr)
+	# featurize_4(list_of_demonstrations, kinematics, sr)
+	# featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
 	# featurize_7(list_of_demonstrations, kinematics)
-
 	pass
+
+
+
+def featurize_sift(list_of_demonstrations, kinematics, sr):
+	"""
+	Extracts SIFT features for all frames in list_of_demonstrations.
+	"""
+
+	data_X_xy = {}
+	data_X_x = {}
+
+	for demonstration in list_of_demonstrations:
+		print "SIFT for ", demonstration
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
+
+		Z = []
+		start, end = parser.get_start_end_annotations(PATH_TO_ANNOTATION)
+		for frm in range(start, end + 1):
+			PATH_TO_IMAGE = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration + "_" + constants.CAMERA + "/"
+			Z.append(sift.run_sift_frame(utils.get_full_image_path(PATH_TO_IMAGE, frm)))
+
+		Z = np.array(Z)
+		Z = Z.reshape(Z.shape[0],1)
+
+		W = kinematics[demonstration]
+		W_onlyx = utils.only_X(W)
+
+		X = np.concatenate((W, Z), axis = 1)
+		X_onlyx = np.concatenate((W_onlyx, Z), axis = 1)
+
+		data_X_xy[demonstration] = X
+		data_X_x[demonstration] = X_onlyx
+
+	pickle.dump(data_X_xy, open(PATH_TO_FEATURES + "SIFT_xy_2.p", "wb"))
+	pickle.dump(data_X_x, open(PATH_TO_FEATURES + "SIFT_x_2.p", "wb"))
 
 # Featurize - SIFT
 def featurize_1(list_of_demonstrations, kinematics, sr):
+	"""
+	Given .p (pickle) files of sift features, this function concatenates
+	Z with W vectors to produce X vector, dumped as pickle file.
+	"""
 	print "FEATURIZATION 1"
 
 	data_X_1 = {}

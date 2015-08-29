@@ -122,11 +122,10 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 
 	X = None
 	if constants.SIMULATION:
-		# mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
-		# X = mat['x_traj']
-		# X = X.T
-
-		X = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
+		mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
+		X = mat['x_traj']
+		X = X.T
+		# X = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
 	else:
 		X = None
 		all_lines = open(PATH_TO_KINEMATICS_DATA + fname + ".txt", "rb").readlines()
@@ -151,7 +150,11 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
 
-	list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
+	# list_of_demonstrations = ["baseline2_000_01", "baseline2_000_02", "baseline2_000_03", "baseline2_000_04", "baseline2_000_05"]
+
+	# list_of_demonstrations = ["baseline2_010_01", "baseline2_010_02", "baseline2_010_03", "baseline2_010_04", "baseline2_010_05"]
+
+	list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 	parse_annotations(list_of_demonstrations)
 

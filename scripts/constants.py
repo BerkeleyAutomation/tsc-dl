@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/baseline.yaml")
+config = parse_yaml("../config/needle_passing.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -59,6 +59,8 @@ ALEXNET_FEATURES_FOLDER = config["ALEXNET_FEATURES_FOLDER"]
 
 VGG_FEATURES_FOLDER = config["VGG_FEATURES_FOLDER"]
 
+SIFT_FEATURES_FOLDER = config["SIFT_FEATURES_FOLDER"]
+
 PROC_FEATURES_FOLDER = config["PROC_FEATURES_FOLDER"]
 
 CROP_PARAMS_CAPTURE_1 = config["CROP_PARAMS_CAPTURE_1"]
@@ -83,11 +85,21 @@ N_COMPONENTS_L1 = config["N_COMPONENTS_L1"]
 
 N_COMPONENTS_L2 = config["N_COMPONENTS_L2"]
 
-N_COMPONENTS_CP_KIN = config["N_COMPONENTS_CP_KIN"]
+N_COMPONENTS_CP_W = config["N_COMPONENTS_CP_W"]
 
-N_COMPONENTS_L1_KIN = config["N_COMPONENTS_L1_KIN"]
+N_COMPONENTS_L1_W = config["N_COMPONENTS_L1_W"]
+
+N_COMPONENTS_CP_Z = config["N_COMPONENTS_CP_Z"]
+
+N_COMPONENTS_L1_Z = config["N_COMPONENTS_L1_Z"]
 
 N_COMPONENTS_TIME = config["N_COMPONENTS_TIME"]
+
+TEMPORAL_WINDOW = config["TEMPORAL_WINDOW"]
+
+TEMPORAL_WINDOW_W = config["TEMPORAL_WINDOW_W"]
+
+TEMPORAL_WINDOW_Z = config["TEMPORAL_WINDOW_Z"]
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}
