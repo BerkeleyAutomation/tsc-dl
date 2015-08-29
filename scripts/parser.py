@@ -126,6 +126,14 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 		X = mat['x_traj']
 		X = X.T
 		# X = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
+	elif constants.TASK_NAME == "plane" or constants.TASK_NAME == "lego":
+		print "-- Parsing Kinematics for ", fname
+		trajectory = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
+		for frm in range(start, end + 1):
+			traj_point = trajectory[frm]
+			vector = list(traj_point.position[16:-12]) + list(traj_point.velocity[16:-12])
+			X = utils.safe_concatenate(X, utils.reshape(np.array(vector)))
+
 	else:
 		X = None
 		all_lines = open(PATH_TO_KINEMATICS_DATA + fname + ".txt", "rb").readlines()
@@ -154,7 +162,10 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["baseline2_010_01", "baseline2_010_02", "baseline2_010_03", "baseline2_010_04", "baseline2_010_05"]
 
-	list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+	# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+
+	list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+		"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 	parse_annotations(list_of_demonstrations)
 

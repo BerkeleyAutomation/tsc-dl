@@ -5,9 +5,11 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/needle_passing.yaml")
+config = parse_yaml("../config/plane.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
+
+TASK_NAME = config['TASK_NAME']
 
 PATH_TO_DATA = config['PATH_TO_DATA']
 
@@ -66,6 +68,8 @@ PROC_FEATURES_FOLDER = config["PROC_FEATURES_FOLDER"]
 CROP_PARAMS_CAPTURE_1 = config["CROP_PARAMS_CAPTURE_1"]
 
 CROP_PARAMS_CAPTURE_2 = config["CROP_PARAMS_CAPTURE_2"]
+
+CROP_PARAMS = {"capture1": CROP_PARAMS_CAPTURE_1, "capture2": CROP_PARAMS_CAPTURE_2}
 
 SR = config["SR"]
 

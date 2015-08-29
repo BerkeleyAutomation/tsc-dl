@@ -17,7 +17,6 @@ FPS = 30
 
 def convert_video_to_frames(list_of_videos):
 
-	CROP_PARAMS = {"capture1": constants.CROP_PARAMS_CAPTURE_1, "capture2": constants.CROP_PARAMS_CAPTURE_2}
 	for video in list_of_videos:
 		# for camera in ["capture1", "capture2"]:
 		for camera in ["capture1",]:

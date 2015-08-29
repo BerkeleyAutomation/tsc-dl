@@ -110,7 +110,6 @@ class CNNFeatureExtractor:
 					im = caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num))
 					self.net.blobs['data'].data[...] = self.transformer.preprocess('data', im)
 					out = self.net.forward()
-					IPython.embed()
 					for layer in list_of_layers:
 						if layer == 'input':
 							data = cv2.imread(full_image_path)
@@ -224,6 +223,8 @@ if __name__ == "__main__":
 
 	else:
 		print "Plotting Individual frames"
-		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers)
+		X, label_map, frm_map = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 3)
+		data = [X, label_map, frm_map]
+		pickle.dump(data, open(args.figure_name + ".p", "wb"))
 		utils.plot_all_layers(X, args.net, label_map, frm_map, args.figure_name, list_of_layers = layers)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import IPython
+import pylab as pl
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import (manifold, datasets, decomposition, ensemble, lda,
@@ -8,6 +9,7 @@ from sklearn import (manifold, datasets, decomposition, ensemble, lda,
 import random
 import os
 import yaml
+import pickle
 from decimal import Decimal
 
 import encoding
@@ -117,12 +119,37 @@ def plot_annotated_embedding(X, label_map, frm_map, figure_name, title=None):
 	plt.figure()
 	for i in range(X.shape[0]):
 		frm_num = frm_map[i]
-		plt.text(X[i, 0], X[i, 1], str(frm_num), color=constants.color_map[label_map[i]],
+		plt.text(X[i, 0], X[i, 1], "x", color=constants.color_map[label_map[i]],
 			fontdict = {'weight': 'bold', 'size': 10})
 	plt.xticks([]), plt.yticks([])
  	if title is not None:
 		plt.title(title)
 	plt.savefig(constants.PATH_TO_SAVE_FIG + figure_name + '.jpg')
+
+# Scale and visualize the embedding vectors
+def plot_pylab_scatter(X, label_map, frm_map, figure_name, title=None):
+	x_min, x_max = np.min(X, 0), np.max(X, 0)
+	X = (X - x_min) / (x_max - x_min)
+	plt.figure()
+	points = {}
+	for i in range(X.shape[0]):
+		frm_num = frm_map[i]
+		x_coord = X[i, 0]
+		y_coord = X[i, 1]
+		color = constants.color_map[label_map[i]]
+		if color in points:
+			(coords_x, coords_y) = points[color]
+			coords_x.append(x_coord)
+			coords_y.append(y_coord)
+			points[color] = (coords_x, coords_y)
+		else:
+			coords_x = [x_coord,]
+			coords_y = [y_coord,]
+			points[color] = (coords_x, coords_y)
+	for color in points:
+		(coords_x, coords_y) = points[color]
+		pl.scatter(np.array(coords_x), np.array(coords_y), color = color)
+	pl.savefig(constants.PATH_TO_SAVE_FIG + figure_name + '.jpg')
 
 def plot_hypercolumns(X, net, label_map, frm_map, figure_name, hypercolumns_layers, encoding_func = None):
 	hc_string = ''
@@ -136,17 +163,25 @@ def plot_hypercolumns(X, net, label_map, frm_map, figure_name, hypercolumns_laye
 		figure_name + '_'+ net +'_' + "Hypercolumn" + hc_string + '_tsne_pca', title = 't-SNE(PCA Input) - '+ net +' ' + " Hypercolumn " + hc_string)
 
 def plot_all_layers(X, net, label_map, frm_map, figure_name, list_of_layers = constants.alex_net_layers, encoding_func = None):
+
+	data = {}
+
 	for layer in list_of_layers:
 		print "----- Plotting layer " + str(layer) + " ---------"
 		X_layer = X[layer]
 		if encoding_func:
 			X_layer = encoding_func(X_layer)
-		X_pca = pca(X_layer)
+		X_pca = pca(X_layer, PC = 2)
 		X_tsne_pca = tsne_pca(X_layer)
-		plot_annotated_embedding(X_pca, label_map, frm_map,
-			figure_name + '_'+ net +'_' + layer + '_pca', title = 'PCA - '+ net +' ' + layer)
-		plot_annotated_embedding(X_tsne_pca, label_map, frm_map,
-			figure_name + '_'+ net +'_' + layer + '_tsne_pca', title = 't-SNE(PCA Input) - '+ net +' ' + layer)
+		X_grp = grp(X_layer, C = 2)
+		plot_pylab_scatter(X_pca, label_map, frm_map,
+			figure_name + '_'+ net +'_' + layer + '_PCA')
+		plot_pylab_scatter(X_tsne_pca, label_map, frm_map,
+			figure_name + '_'+ net +'_' + layer + '_t-SNE')
+		plot_pylab_scatter(X_grp, label_map, frm_map,
+			figure_name + '_'+ net +'_' + layer + '_GRP')
+		data[layer] = [X_pca, X_tsne_pca, X_grp]
+	pickle.dump(data, open(figure_name + "_dimred.p", "wb"))
 
 def plot_all_layers_joint(X1, net, label_map_1, frm_map_1, X2, label_map_2, frm_map_2, figure_name, layers = constants.alex_net_layers,  encoding_func = None):
 	num_X1_pts = X1[layers[0]].shape[0]

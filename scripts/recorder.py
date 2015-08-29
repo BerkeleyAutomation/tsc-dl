@@ -1,7 +1,10 @@
+import sys
+# sys.path.append()
+
+import roslib
 import rospy
 import cPickle as pickle
 import numpy as np
-import sys
 import os
 import IPython
 import time
@@ -14,9 +17,9 @@ import cv
 import cv2
 import cv_bridge
 import numpy as np
-import Image as im
 import signal
 
+import constants
 
 def get_frame_fig_name(frm_num):
     """
@@ -38,11 +41,11 @@ class Recording(object):
     def __init__(self, trial_name):
 
         # Preparing folders
-        self.task_name = "test"
+        self.task_name = constants.TASK_NAME
 
         self.trial_name = trial_name
-        self.kinematics_folder = self.task_name + "_kinematics/"
-        self.video_folder = self.task_name + "_video/frames/"
+        self.kinematics_folder = constants.PATH_TO_KINEMATICS
+        self.video_folder = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER
 
         # Make folders for frames
         command = self.video_folder + self.task_name + "_" + self.trial_name + "_capture1/"
@@ -66,14 +69,10 @@ class Recording(object):
         self.joint_state = None
 
         # Subscribers for images
-        rospy.Subscriber("/BC/left/image_rect_color", Image, self.left_image_callback, queue_size=1)
-        rospy.Subscriber("/BC/right/image_rect_color", Image, self.right_image_callback, queue_size=1)
+        rospy.Subscriber("/wide_stereo/left/image_rect_color", Image, self.left_image_callback, queue_size=1)
+        rospy.Subscriber("/wide_stereo/right/image_rect_color", Image, self.right_image_callback, queue_size=1)
         
         # Subscribers for kinematics
-        rospy.Subscriber("/dvrk_psm1/gripper_position", Float32, self.psm1_gripper_callback)
-        rospy.Subscriber("/dvrk_psm2/gripper_position", Float32, self.psm2_gripper_callback)        
-        rospy.Subscriber("/dvrk_psm1/joint_position_cartesian", PoseStamped, self.psm1_pose_callback)
-        rospy.Subscriber("/dvrk_psm2/joint_position_cartesian", PoseStamped, self.psm2_pose_callback)
         rospy.Subscriber("/joint_states", JointState, self.joint_state_callback)
 
         self.bridge = cv_bridge.CvBridge()
@@ -87,18 +86,6 @@ class Recording(object):
 
     def right_image_callback(self, msg):
         self.right_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-
-    def psm1_gripper_callback(self, msg):
-        self.psm1_gripper = msg
-
-    def psm2_gripper_callback(self, msg):
-        self.psm2_gripper = msg
-
-    def psm1_pose_callback(self, msg):
-        self.psm1_pose = msg
-
-    def psm2_pose_callback(self, msg):
-        self.psm2_pose = msg
 
     def joint_state_callback(self, msg):
         self.joint_state = msg
@@ -119,8 +106,8 @@ class Recording(object):
 
         print "Recorder Loop"
 
-        # while self.left_image is None or self.right_image is None:
-        #     pass
+        while self.left_image is None or self.right_image is None:
+            pass
 
         start = time.clock()
 
@@ -132,13 +119,7 @@ class Recording(object):
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture1/" + str(get_frame_fig_name(frm)), self.left_image)
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture2/" + str(get_frame_fig_name(frm)), self.right_image)
 
-            group = (
-                     self.psm1_gripper,
-                     self.psm2_gripper,
-                     self.psm1_pose,
-                     self.psm2_pose,
-                     self.joint_state)
-            self.data.append(group)
+            self.data.append(self.joint_state)
             frm += 1
 
 if __name__ == "__main__":
