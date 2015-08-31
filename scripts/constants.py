@@ -5,11 +5,10 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-<<<<<<< Updated upstream
-config = parse_yaml("../config/plane.yaml")
-=======
+# config = parse_yaml("../config/plane.yaml")
+
 config = parse_yaml("../config/0100.yaml")
->>>>>>> Stashed changes
+
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
