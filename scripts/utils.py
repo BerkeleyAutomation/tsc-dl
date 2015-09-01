@@ -128,12 +128,14 @@ def plot_annotated_embedding(X, label_map, frm_map, figure_name, title=None):
 
 # Scale and visualize the embedding vectors
 def plot_pylab_scatter(X, label_map, frm_map, figure_name, title=None):
+	"""
+	Plotting with pylab scatter.
+	"""
 	x_min, x_max = np.min(X, 0), np.max(X, 0)
 	X = (X - x_min) / (x_max - x_min)
 	plt.figure()
 	points = {}
 	for i in range(X.shape[0]):
-		frm_num = frm_map[i]
 		x_coord = X[i, 0]
 		y_coord = X[i, 1]
 		color = constants.color_map[label_map[i]]
@@ -150,6 +152,25 @@ def plot_pylab_scatter(X, label_map, frm_map, figure_name, title=None):
 		(coords_x, coords_y) = points[color]
 		pl.scatter(np.array(coords_x), np.array(coords_y), color = color)
 	pl.savefig(constants.PATH_TO_SAVE_FIG + figure_name + '.jpg')
+
+# Scale and visualize the embedding vectors
+def plot_scatter_continous(X, figure_name, title = None, colormap_name = "Accent"):
+	x_min, x_max = np.min(X, 0), np.max(X, 0)
+	X = (X - x_min) / (x_max - x_min)
+	plt.figure()
+	coords_x = []
+	coords_y = []
+	colors = np.linspace(0, 1, X.shape[0])
+	mymap = plt.get_cmap(colormap_name)
+
+	for i in range(X.shape[0]):
+		x_coord = X[i, 0]
+		y_coord = X[i, 1]
+		coords_x.append(x_coord)
+		coords_y.append(y_coord)
+
+	plt.scatter(np.array(coords_x), np.array(coords_y), s = 40, c = colors, edgecolors = 'None', cmap = mymap)
+	plt.savefig("../plots/"+ figure_name + "_" + colormap_name + ".jpg")
 
 def plot_hypercolumns(X, net, label_map, frm_map, figure_name, hypercolumns_layers, encoding_func = None):
 	hc_string = ''
@@ -387,3 +408,13 @@ def binary_search(ranges, val):
 
 	else:
 		return binary_search(right_ranges, val)
+
+if __name__ == "__main__":
+	data = pickle.load(open("final3_alexnet_dimred.p", "rb"))
+	colormap_name = "coolwarm"
+	for layer in ["conv3", "conv4", "pool5"]:
+		start = 0.25
+		end = 0.55
+		[X_pca, X_tsne_pca, X_grp] = data[layer]
+		plot_scatter_continous(X_pca[np.floor(X_pca.shape[0]*start):np.floor(X_pca.shape[0]*end),:], "PCA" + layer+ "_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+		# plot_scatter_continous(X_tsne_pca, "t-SNE" + layer,colormap_name = colormap_name)

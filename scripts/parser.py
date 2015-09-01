@@ -130,9 +130,13 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 		print "-- Parsing Kinematics for ", fname
 		trajectory = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
 		for frm in range(start, end + 1):
-			traj_point = trajectory[frm]
-			vector = list(traj_point.position[16:-12]) + list(traj_point.velocity[16:-12])
-			X = utils.safe_concatenate(X, utils.reshape(np.array(vector)))
+			try:
+				traj_point = trajectory[frm - start]
+			except IndexError as e:
+				print e
+				IPython.embed()
+			# vector = list(traj_point.position[16:-12]) + list(traj_point.velocity[16:-12])
+			X = utils.safe_concatenate(X, utils.reshape(traj_point))
 
 	else:
 		X = None

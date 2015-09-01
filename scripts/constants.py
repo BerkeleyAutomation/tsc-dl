@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/plane.yaml")
+config = parse_yaml("../config/010.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -97,7 +97,11 @@ N_COMPONENTS_CP_Z = config["N_COMPONENTS_CP_Z"]
 
 N_COMPONENTS_L1_Z = config["N_COMPONENTS_L1_Z"]
 
-N_COMPONENTS_TIME = config["N_COMPONENTS_TIME"]
+N_COMPONENTS_TIME_W = config["N_COMPONENTS_TIME_W"]
+
+N_COMPONENTS_TIME_Z = config["N_COMPONENTS_TIME_Z"]
+
+N_COMPONENTS_TIME_ZW = config["N_COMPONENTS_TIME_ZW"]
 
 TEMPORAL_WINDOW = config["TEMPORAL_WINDOW"]
 

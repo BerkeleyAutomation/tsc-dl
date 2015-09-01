@@ -544,7 +544,12 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["baseline2_010_01", "baseline2_010_02", "baseline2_010_03", "baseline2_010_04", "baseline2_010_05"]
 
-		list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+
+		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
