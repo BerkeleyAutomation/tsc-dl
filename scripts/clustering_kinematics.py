@@ -548,7 +548,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
 
-		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
 
@@ -566,7 +566,9 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		# list_of_demonstrations = ["0101_01", "0101_02", "0101_03", "0101_04", "0101_05"]
+
+		# list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
+		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',

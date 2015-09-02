@@ -204,7 +204,7 @@ class MilestonesClustering():
 		if constants.REMOTE == 1:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
 		elif constants.REMOTE == 2:
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		gmm.fit(big_N)
@@ -270,7 +270,7 @@ class MilestonesClustering():
 		if constants.REMOTE == 1:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
 		elif constants.REMOTE == 2:
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 
@@ -351,7 +351,7 @@ class MilestonesClustering():
 			if constants.REMOTE == 1:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
 			if constants.REMOTE == 2:
-				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', tol = 0.01)
+				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 			else:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 
@@ -515,8 +515,8 @@ class MilestonesClustering():
 			try:
 				milestone_label = self.map_cp2milestones[cp]
 			except KeyError:
-				IPython.embed()
 				print "Too Few elements inside cluster!!"
+				# IPython.embed()				
 				sys.exit()
 			labels_pred_1_.append(milestone_label)
 			labels_pred_2_.append(list(milestone_label)[0])
@@ -817,21 +817,20 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		# list_of_demonstrations = ["0101_01", "0101_02", "0101_03", "0101_04", "0101_05"]
 
-
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
+		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
