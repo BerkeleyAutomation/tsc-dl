@@ -784,7 +784,7 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	utils.print_and_write_2("dunn2_level2", np.mean(dunn2_level_2), np.std(dunn2_level_2), file)
 	utils.print_and_write_2("dunn3_level2", np.mean(dunn3_level_2), np.std(dunn3_level_2), file)
 
-	file.close()
+	list_of_dtw_values = []
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
@@ -795,9 +795,12 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		for i in range(len(list_of_frms_demonstration)):
 			data[i] = list_of_frms_demonstration[0]
 
-		broken_barh.plot_broken_barh(demonstration, data,
+		dtw_score = broken_barh.plot_broken_barh(demonstration, data,
 			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg")
+		list_of_dtw_values.append(dtw_score)
 
+	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
+	file.close()
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()

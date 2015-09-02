@@ -55,7 +55,7 @@ class KinematicsClustering():
 		self.cp_surgemes = []
 		self.pruned_L1_clusters = []
 
-		self.silhouette_scores = {}
+		self.silhouette_score = None
 		self.dunn_scores_1 = {}
 		self.dunn_scores_2 = {}
 		self.dunn_scores_3 = {}
@@ -171,7 +171,6 @@ class KinematicsClustering():
 
 		print "Generating Changepoints. Fitting GMM ..."
 
-
 		if constants.REMOTE == 1:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, thresh = 5e-5)
 		if constants.REMOTE == 2:
@@ -201,6 +200,9 @@ class KinematicsClustering():
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
 	def save_cluster_metrics(self, points, predictions, means, key, model):
+
+		if key == 'level1':
+			self.silhouette_score = metrics.silhouette_score(points, predictions, metric='euclidean')
 
 		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
 
@@ -409,7 +411,7 @@ class KinematicsClustering():
 		for cp in self.list_of_cp:
 			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
 
-		data = [self.label_based_scores_1, self.silhouette_scores, self.dunn_scores_1,
+		data = [self.label_based_scores_1, self.silhouette_score, self.dunn_scores_1,
 		self.dunn_scores_2, self.dunn_scores_3, viz]
 
 		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
@@ -462,7 +464,7 @@ def post_evaluation(metrics, file, fname):
 	recall_1_macro = []
 	precision_1_weighted = []
 	recall_1_weighted = []
-
+	silhouette_scores = []
 
 	dunn1_level_1 = []
 	dunn2_level_1 = []
@@ -476,6 +478,8 @@ def post_evaluation(metrics, file, fname):
 		normalized_mutual_information_1.append(elem[0]["normalized_mutual_info_score"])
 		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
+
+		silhouette_scores.append(elem[1])
 
 		dunn1_level_1.append(elem[2]["level1"])
 		dunn2_level_1.append(elem[3]["level1"])
@@ -504,12 +508,15 @@ def post_evaluation(metrics, file, fname):
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
 	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
+	utils.print_and_write_2("silhouette_scores", np.mean(silhouette_scores), np.std(silhouette_scores), file)
 
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 
 	utils.print_and_write_2("dunn1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
 	utils.print_and_write_2("dunn2", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
 	utils.print_and_write_2("dunn3", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
+
+	list_of_dtw_values = []
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
@@ -520,8 +527,11 @@ def post_evaluation(metrics, file, fname):
 		for i in range(len(list_of_frms_demonstration)):
 			data[i] = list_of_frms_demonstration[0]
 
-		broken_barh.plot_broken_barh(demonstration, data,
+		dtw_score = broken_barh.plot_broken_barh(demonstration, data,
 			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg")
+		list_of_dtw_values.append(dtw_score)
+
+	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()

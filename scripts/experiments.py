@@ -158,6 +158,7 @@ def evaluate_single_modal(metrics, file):
 	recall_1_macro = []
 	precision_1_weighted = []
 	recall_1_weighted = []
+	silhouette_scores = []
 
 
 	dunn1_level_1 = []
@@ -172,6 +173,8 @@ def evaluate_single_modal(metrics, file):
 		normalized_mutual_information_1.append(elem[0]["normalized_mutual_info_score"])
 		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
+
+		silhouette_scores.append(elem[1])
 
 		dunn1_level_1.append(elem[2]["level1"])
 		dunn2_level_1.append(elem[3]["level1"])
@@ -200,6 +203,7 @@ def evaluate_single_modal(metrics, file):
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
 	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
+	utils.print_and_write_2("silhouette_scores", np.mean(silhouette_scores), np.std(silhouette_scores), file)
 
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 
@@ -219,6 +223,10 @@ def post_evaluation_all(metrics_W, metrics_Z, metrics_ZW, file, fname, list_of_d
 
 	utils.print_and_write("\nXXXXXXXXXXXX Metric for Kinematics + Visual ZW XXXXXXXXXXXX\n", file)
 	list_of_frms_ZW = evaluate_multi_modal(metrics_ZW, file)
+
+	list_of_dtw_values_W = []
+	list_of_dtw_values_Z = []
+	list_of_dtw_values_ZW = []
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration_W = list_of_frms_W[demonstration]
@@ -240,8 +248,14 @@ def post_evaluation_all(metrics_W, metrics_Z, metrics_ZW, file, fname, list_of_d
 		save_fig = constants.PATH_TO_CLUSTERING_RESULTS + demonstration + "_" + fname + "_A.jpg"
 		save_fig2 = constants.PATH_TO_CLUSTERING_RESULTS + demonstration + "_" + fname + "_B.jpg"
 
-		broken_barh.plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fig, save_fig2)
+		dtw_score_W, dtw_score_Z, dtw_score_ZW = broken_barh.plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fig, save_fig2)
+		list_of_dtw_values_W.append(dtw_score_W)
+		list_of_dtw_values_Z.append(dtw_score_Z)
+		list_of_dtw_values_ZW.append(dtw_score_ZW)
 
+	utils.print_and_write_2("dtw_score_W", np.mean(list_of_dtw_values_W), np.std(list_of_dtw_values_W), file)
+	utils.print_and_write_2("dtw_score_Z", np.mean(list_of_dtw_values_Z), np.std(list_of_dtw_values_Z), file)
+	utils.print_and_write_2("dtw_score_ZW", np.mean(list_of_dtw_values_ZW), np.std(list_of_dtw_values_ZW), file)
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -249,8 +263,8 @@ if __name__ == "__main__":
 	argparser.add_argument("fname", help = "File name", default = 4)
 	args = argparser.parse_args()
 
-	list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
-	combinations = get_list_of_demo_combinations(list_of_demonstrations)
+	list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+	combinations = clustering.get_list_of_demo_combinations(list_of_demonstrations)
 
 	feat_fname = args.visual
 
@@ -285,9 +299,9 @@ if __name__ == "__main__":
 
 	for i in range(len(combinations)):
 		print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(len(combinations)) + " ----"
-		mc = MilestonesClustering(DEBUG, list(combinations[i]), feat_fname, args.fname)
+		mc = MilestonesClustering(False, list(combinations[i]), feat_fname, args.fname)
 		metrics_ZW.append(mc.do_everything())
 
-	post_evaluation(all_metrics, args.fname, list_of_demonstrations, feat_fname)
+	post_evaluation_all(metrics_W, metrics_Z, metrics_ZW, log, args.fname, list_of_demonstrations)
 
 	log.close()

@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/010.yaml")
+config = parse_yaml("../config/100.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 

@@ -13,6 +13,7 @@ import constants
 import parser
 
 from sklearn import mixture
+from dtw import dtw
 
 def get_ticks(manual_labels):
 	"""
@@ -39,6 +40,12 @@ def setup_manual_labels(segments):
 			list_of_colors.append(color)
 
 	return list_of_start_end, tuple(list_of_colors)
+
+def compute_dtw(time_sequence_1, time_sequence_2):
+	dist, cost, path =  dtw(sorted(time_sequence_1), sorted(time_sequence_2),
+		dist = lambda x, y: np.linalg.norm(x - y, ord=2))
+	return dist
+
 
 def setup_automatic_labels_2(list_of_frms, color):
 	list_of_start_end = []
@@ -138,7 +145,7 @@ def get_time_clusters(data, T_COMPONENTS):
 
 	labels_automatic, colors_automatic = setup_automatic_labels_2(list_time_clusters, "k")
 	labels_automatic_0, colors_automatic_0 = setup_automatic_labels(list_of_frms[0], "k")
-	return labels_automatic, colors_automatic, labels_automatic_0, colors_automatic_0
+	return labels_automatic, colors_automatic, labels_automatic_0, colors_automatic_0, means
 
 def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = None, save_fname2 = None):
 	"""
@@ -149,10 +156,18 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 
+	TASK = constants.TASK_NAME
+	if (TASK in ["lego", "plane"]):
+		end = end + 20
+	elif (TASK in ["000", "010", "011", "100"]):
+		end = end + 10
+	else:
+		end = end + 50
+
 	labels_manual, colors_manual = setup_manual_labels(segments)
-	labels_automatic_W, colors_automatic_W, labels_automatic_W_0, colors_automatic_W_0 = get_time_clusters(data_W, constants.N_COMPONENTS_TIME_W)
-	labels_automatic_Z, colors_automatic_Z, labels_automatic_Z_0, colors_automatic_Z_0 = get_time_clusters(data_Z, constants.N_COMPONENTS_TIME_Z)
-	labels_automatic_ZW, colors_automatic_ZW, labels_automatic_ZW_0, colors_automatic_ZW_0 = get_time_clusters(data_ZW, constants.N_COMPONENTS_TIME_ZW)
+	labels_automatic_W, colors_automatic_W, labels_automatic_W_0, colors_automatic_W_0, means_W = get_time_clusters(data_W, constants.N_COMPONENTS_TIME_W)
+	labels_automatic_Z, colors_automatic_Z, labels_automatic_Z_0, colors_automatic_Z_0, means_Z = get_time_clusters(data_Z, constants.N_COMPONENTS_TIME_Z)
+	labels_automatic_ZW, colors_automatic_ZW, labels_automatic_ZW_0, colors_automatic_ZW_0, means_ZW = get_time_clusters(data_ZW, constants.N_COMPONENTS_TIME_ZW)
 
 	fig, ax = plt.subplots()
 	ax.broken_barh(labels_manual, (17, 2), facecolors = colors_manual)
@@ -161,11 +176,10 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	ax.broken_barh(labels_automatic_ZW, (5, 2), facecolors = colors_automatic_ZW)
 
 	ax.set_ylim(3,21)
-	ax.set_xlim(0, end + 20)
+	ax.set_xlim(0, end)
 	ax.set_xlabel('Frame number')
 	ax.set_yticks([6, 10, 14, 18])
 	ax.set_yticklabels(['ZW','Z','W', 'Manual'])
-	ax.grid(True)
 
 	if save_fname:
 		plt.savefig(save_fname)
@@ -180,17 +194,31 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	ax.broken_barh(labels_automatic_ZW_0, (5, 2), facecolors = colors_automatic_ZW_0)
 
 	ax.set_ylim(3,21)
-	ax.set_xlim(0, end + 20)
+	ax.set_xlim(0, end)
 	ax.set_xlabel('Frame number')
 	ax.set_yticks([6, 10, 14, 18])
 	ax.set_yticklabels(['ZW_0','Z_0','W_0', 'Manual'])
-	ax.grid(True)
 
 	if save_fname2:
 		plt.savefig(save_fname2)
 	else:
 		plt.show()
 	pass
+
+	time_sequence_1 = [elem[0] + elem[1] for elem in labels_manual]
+
+	time_sequence_2 = [int(elem) for elem in means_W]
+	dtw_score_W = compute_dtw(time_sequence_1, time_sequence_2)
+
+	time_sequence_2 = [int(elem) for elem in means_Z]
+	dtw_score_Z = compute_dtw(time_sequence_1, time_sequence_2)
+
+	time_sequence_2 = [int(elem) for elem in means_ZW]
+	dtw_score_ZW = compute_dtw(time_sequence_1, time_sequence_2)
+
+	IPython.embed()
+
+	return dtw_score_W, dtw_score_Z, dtw_score_ZW
 
 
 def plot_broken_barh(demonstration, data, save_fname = None):
@@ -288,20 +316,33 @@ def plot_broken_barh(demonstration, data, save_fname = None):
 		labels_automatic, colors_automatic = setup_automatic_labels(list_of_frms[i], "k")
 		ax.broken_barh(labels_automatic, list_of_plot_ranges[i], facecolors = colors_automatic)
 
+	TASK = constants.TASK_NAME
+	if (TASK in ["lego", "plane"]):
+		end = end + 20
+	elif (TASK in ["000", "010", "011", "100"]):
+		end = end + 10
+	else:
+		end = end + 50
+
 	ticks = get_ticks(labels_manual)
 	ax.set_ylim(3,29)
-	ax.set_xlim(0, end + 100)
+	ax.set_xlim(0, end)
 	ax.set_xlabel('Frame number')
 	# ax.set_xticks(ticks)
 	ax.set_yticks([6, 10, 14, 18, 22, 26])
 	ax.set_yticklabels(['Automatic4','Automatic3','Automatic2', 'Automatic1','Time Clustering', 'Manual'])
-	ax.grid(True)
 
 	if save_fname:
 		plt.savefig(save_fname)
 	else:
 		plt.show()
 	pass
+
+	time_sequence_1 = [elem[0] + elem[1] for elem in manual_labels ]
+	time_sequence_2 = [int(elem) for elem in means]
+
+	dtw_score = compute_dtw(time_sequence_1, time_sequence_2)
+	return dtw_score
 
 if __name__ == "__main__":
 	#Needle passing examples
