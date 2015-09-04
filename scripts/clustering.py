@@ -83,7 +83,6 @@ class MilestonesClustering():
 		"""
 		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.featfile),"rb"))
 
-		IPython.embed()
 		for demonstration in self.list_of_demonstrations:
 			if demonstration not in self.data_X.keys():
 				print "[ERROR] Missing demonstrations"
@@ -238,7 +237,6 @@ class MilestonesClustering():
 			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:constants.KINEMATICS_DIM])), axis = 0)
 			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[constants.KINEMATICS_DIM:])), axis = 0)
 
-
 	def save_cluster_metrics(self, points, predictions, means, key, model, level2_mode = False):
 
 		try:
@@ -250,7 +248,9 @@ class MilestonesClustering():
 		except ValueError as e:
 			pass
 
-		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+		# dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+
+		dunn_scores = [0, 0, 0]
 
 		if (dunn_scores[0] is not None) and (dunn_scores[1] is not None) and (dunn_scores[2] is not None):
 
@@ -265,19 +265,33 @@ class MilestonesClustering():
 
 	def cluster_changepoints_level1(self):
 
-		# print "Level1 : Clustering changepoints in Z(t)"
+		print "Level1 : Clustering changepoints in Z(t)"
 
 		if constants.REMOTE == 1:
+			print "DPGMM L1 - start"
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
+			print "DPGMM L1 - end"
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
+			print "GMM L1 - end"
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 
 		gmm.fit(self.change_pts_Z)
+		Y_gmm = gmm.predict(self.change_pts_Z)
 
-		Y = gmm.predict(self.change_pts_Z)
-
+		Y = []
+		i = 0
+		while True:
+			print "In DPGMM Fit loop"
+			dpgmm.fit(self.change_pts_Z)
+			Y = dpgmm.predict(self.change_pts_Z)
+			if len(set(Y)) > 1:
+				break
+			i += 1
+			if i > 100:
+				break
 		self.save_cluster_metrics(self.change_pts_Z, Y, gmm.means_, 'level1', gmm)
 
 		for i in range(len(Y)):
@@ -307,7 +321,7 @@ class MilestonesClustering():
 
 	def cluster_changepoints_level2(self):
 
-		# print "Level2 : Clustering changepoints in W(t)"
+		print "Level2 : Clustering changepoints in W(t)"
 
 		mkdir_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial
 		os.mkdir(mkdir_path)
@@ -350,6 +364,7 @@ class MilestonesClustering():
 
 			if constants.REMOTE == 1:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
+				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 10000, alpha = 1, thresh= 1e-7)
 			if constants.REMOTE == 2:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 			else:
@@ -357,10 +372,15 @@ class MilestonesClustering():
 
 			try:
 				gmm.fit(matrix)
+				dpgmm.fit(matrix)
 			except ValueError as e:
 				continue
 
-			Y = gmm.predict(matrix)
+			Y_gmm = gmm.predict(matrix)
+			Y = dpgmm.predict(matrix)
+		 	if len(set(Y_gmm)) > len(set(Y)):
+				IPython.embed()
+
 			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
 
 			for i in range(len(Y)):
@@ -785,6 +805,8 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	utils.print_and_write_2("dunn3_level2", np.mean(dunn3_level_2), np.std(dunn3_level_2), file)
 
 	list_of_dtw_values = []
+	list_of_norm_dtw_values = []
+	list_of_lengths = []
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
@@ -795,11 +817,15 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		for i in range(len(list_of_frms_demonstration)):
 			data[i] = list_of_frms_demonstration[0]
 
-		dtw_score = broken_barh.plot_broken_barh(demonstration, data,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg")
+		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg", constants.N_COMPONENTS_TIME_ZW)
 		list_of_dtw_values.append(dtw_score)
+		list_of_norm_dtw_values.append(normalized_dtw_score)
+		list_of_lengths.append(length)
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
+	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
+	utils.print_and_write(list_of_lengths, file)
 	file.close()
 
 if __name__ == "__main__":
@@ -817,14 +843,16 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+		list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 

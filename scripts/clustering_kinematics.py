@@ -172,14 +172,19 @@ class KinematicsClustering():
 		print "Generating Changepoints. Fitting GMM ..."
 
 		if constants.REMOTE == 1:
+			dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, thresh = 5e-5)
 		if constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
-		gmm.fit(big_N)
-		Y = gmm.predict(big_N)
 
+		gmm.fit(big_N)
+		dpgmm.fit(big_N)
+
+		Y = gmm.predict(big_N)
+		# Y_dpgmm = dpgmm.predict(big_N)
+		print "Num clusters in Changepoint clusters: ", len(set(Y))
 		print "Done fitting GMM..."
 
 		for w in range(len(Y) - 1):
@@ -195,7 +200,6 @@ class KinematicsClustering():
 
 		print "Done with generating change points, " + str(cp_index)
 
-
 	def append_cp_array(self, cp):
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
@@ -204,7 +208,9 @@ class KinematicsClustering():
 		if key == 'level1':
 			self.silhouette_score = metrics.silhouette_score(points, predictions, metric='euclidean')
 
-		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+		# dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+
+		dunn_scores = [0,0,0]
 
 		if (dunn_scores[0] is not None) and (dunn_scores[1] is not None) and (dunn_scores[2] is not None):
 
@@ -212,20 +218,28 @@ class KinematicsClustering():
 			self.dunn_scores_2[key] = dunn_scores[1]
 			self.dunn_scores_3[key] = dunn_scores[2]
 
-
 	def cluster_changepoints(self):
 
 		print "Clustering changepoints..."
 
 		if constants.REMOTE == 1:
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
+		
 		gmm.fit(self.changepoints)
-
-		predictions = gmm.predict(self.changepoints)
+		predictions_gmm = gmm.predict(self.changepoints)
+		
+		predictions = []
+		while True:
+			print "Inside loop"
+			dpgmm.fit(self.changepoints)
+			predictions = dpgmm.predict(self.changepoints)
+			if len(set(predictions))>1:
+				break
 
 		self.save_cluster_metrics(self.changepoints, predictions, gmm.means_, 'level1', gmm)
 
@@ -443,7 +457,6 @@ class KinematicsClustering():
 def get_list_of_demo_combinations(list_of_demonstrations):
 	iterator = itertools.combinations(list_of_demonstrations, len(list_of_demonstrations) - 1)
 	demo_combinations = []
-
 	while (1):
 		try:
 			demo_combinations.append(iterator.next())
@@ -452,7 +465,7 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def post_evaluation(metrics, file, fname):
+def post_evaluation(metrics, file, fname, vision_mode):
 
 	mutual_information_1 = []
 	normalized_mutual_information_1 = []
@@ -517,6 +530,13 @@ def post_evaluation(metrics, file, fname):
 	utils.print_and_write_2("dunn3", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
 
 	list_of_dtw_values = []
+	list_of_norm_dtw_values = []
+	list_of_lengths = []
+
+	if vision_mode:
+		T = constants.N_COMPONENTS_TIME_Z
+	else:
+		T = constants.N_COMPONENTS_TIME_W
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
@@ -527,11 +547,15 @@ def post_evaluation(metrics, file, fname):
 		for i in range(len(list_of_frms_demonstration)):
 			data[i] = list_of_frms_demonstration[0]
 
-		dtw_score = broken_barh.plot_broken_barh(demonstration, data,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg")
+		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg", T)
 		list_of_dtw_values.append(dtw_score)
+		list_of_norm_dtw_values.append(normalized_dtw_score)
+		list_of_lengths.append(length)
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
+	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
+	utils.print_and_write(list_of_lengths, file)
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -548,6 +572,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
 
+
 		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
@@ -556,8 +581,10 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
@@ -595,6 +622,6 @@ if __name__ == "__main__":
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
-	post_evaluation(all_metrics, log, args.fname)
+	post_evaluation(all_metrics, log, args.fname, vision_mode)
 
 	log.close()

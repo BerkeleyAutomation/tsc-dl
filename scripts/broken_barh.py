@@ -145,7 +145,7 @@ def get_time_clusters(data, T_COMPONENTS):
 
 	labels_automatic, colors_automatic = setup_automatic_labels_2(list_time_clusters, "k")
 	labels_automatic_0, colors_automatic_0 = setup_automatic_labels(list_of_frms[0], "k")
-	return labels_automatic, colors_automatic, labels_automatic_0, colors_automatic_0, means
+	return labels_automatic, colors_automatic, labels_automatic_0, colors_automatic_0, means, list_of_frms
 
 def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = None, save_fname2 = None):
 	"""
@@ -165,9 +165,9 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 		end = end + 50
 
 	labels_manual, colors_manual = setup_manual_labels(segments)
-	labels_automatic_W, colors_automatic_W, labels_automatic_W_0, colors_automatic_W_0, means_W = get_time_clusters(data_W, constants.N_COMPONENTS_TIME_W)
-	labels_automatic_Z, colors_automatic_Z, labels_automatic_Z_0, colors_automatic_Z_0, means_Z = get_time_clusters(data_Z, constants.N_COMPONENTS_TIME_Z)
-	labels_automatic_ZW, colors_automatic_ZW, labels_automatic_ZW_0, colors_automatic_ZW_0, means_ZW = get_time_clusters(data_ZW, constants.N_COMPONENTS_TIME_ZW)
+	labels_automatic_W, colors_automatic_W, labels_automatic_W_0, colors_automatic_W_0, means_W, list_of_frms_W = get_time_clusters(data_W, constants.N_COMPONENTS_TIME_W)
+	labels_automatic_Z, colors_automatic_Z, labels_automatic_Z_0, colors_automatic_Z_0, means_Z, list_of_frms_Z = get_time_clusters(data_Z, constants.N_COMPONENTS_TIME_Z)
+	labels_automatic_ZW, colors_automatic_ZW, labels_automatic_ZW_0, colors_automatic_ZW_0, means_ZW, list_of_frms_ZW = get_time_clusters(data_ZW, constants.N_COMPONENTS_TIME_ZW)
 
 	fig, ax = plt.subplots()
 	ax.broken_barh(labels_manual, (17, 2), facecolors = colors_manual)
@@ -221,7 +221,7 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	return dtw_score_W, dtw_score_Z, dtw_score_ZW
 
 
-def plot_broken_barh(demonstration, data, save_fname = None):
+def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 	"""
 	Parameters:
 	-----------
@@ -232,77 +232,21 @@ def plot_broken_barh(demonstration, data, save_fname = None):
 
 	* For now, the list_of_frms are constrained to 4 for visualization sanity sake.
 	"""
-	# k-fold validation (Leave one out)
+
 	numDemos = min(5, len(data.keys()) + 1)
 	sizeTestSet = numDemos - 1
 
-	list_of_frms = []
-	all_frms = []
-	for key in data.keys():
-		elem = data[key]
-		list_of_frms.append(elem)
-		all_frms += elem
-	
-	N_COMPONENTS = min(constants.N_COMPONENTS_TIME, len(all_frms))
-	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=5000, thresh = 5e-5, min_covar = 0.001)
-	X = np.array(all_frms)
-	X = X.reshape(len(all_frms), 1)
-	time_cluster.fit(X)
-	Y = time_cluster.predict(X)
-
-	means = time_cluster.means_
-	covars = time_cluster.covars_
-	
-	list_of_elem = []	
-	
-	for i in range(len(Y)):
-		list_of_elem.append((Y[i], X[i], means[Y[i]][0], np.sqrt(covars[Y[i]][0][0])))
-	
-	list_of_elem = sorted(list_of_elem, key = lambda x:x[1][0] )	
-
-	dict_time_clusters = {}
-	for elem in list_of_elem:
-		utils.dict_insert_list(elem[0], elem[1], dict_time_clusters)
-
-	list_time_clusters = []
-	list_time_clusters_noPrune = []
-	for cluster in dict_time_clusters.keys():
-		# get all frames in this cluster
-		cluster_frames = dict_time_clusters[cluster]
-		setClusterFrames = set([elem[0] for elem in cluster_frames])
-		# test if frames in cluster are representative of the test set
-		rep = []
-		for id in range(sizeTestSet):
-			elemSet = set(list_of_frms[id])					
-			commonElem = elemSet.intersection(setClusterFrames)
-			id_in_cluster = 1. if len(commonElem)>0 else 0.
-			rep.append(id_in_cluster)
-
-		pruneCluster = True if sum(rep)/sizeTestSet < constants.PRUNING_FACTOR else False
-		
-		min_frm = min(cluster_frames)
-		max_frm = max(cluster_frames)
-		
-		mean = means[cluster][0]
-		std = np.sqrt(covars[cluster][0][0])
-		
-		leftFrame = max(min_frm[0], mean - std)
-		rightFrame = min(max_frm[0], mean + std)
-
-		list_time_clusters_noPrune.append((leftFrame, rightFrame))
-		# keep for plotting is pruneFlag = 0
-		if not(pruneCluster):			
-			# list_time_clusters.append((min_frm[0], max_frm[0]))
-			list_time_clusters.append((leftFrame, rightFrame))
-
-	print "Number of Clusters pruned in Time Clustering: ",  len(list_time_clusters_noPrune) - len(list_time_clusters)  
-
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
 	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
+	length = end - start
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 
 	fig, ax = plt.subplots()
 	# Generate labels for 1) Manual 2) Time clusters
+
+	
+	labels_automatic_0, colors_automatic_0, labels_automatic_1, colors_automatic_1, means, list_of_frms = get_time_clusters(data, T)
+
 	labels_manual, colors_manual = setup_manual_labels(segments)
 	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
 
@@ -338,11 +282,12 @@ def plot_broken_barh(demonstration, data, save_fname = None):
 		plt.show()
 	pass
 
-	time_sequence_1 = [elem[0] + elem[1] for elem in manual_labels ]
+	time_sequence_1 = [elem[0] + elem[1] for elem in labels_manual ]
 	time_sequence_2 = [int(elem) for elem in means]
 
 	dtw_score = compute_dtw(time_sequence_1, time_sequence_2)
-	return dtw_score
+	normalized_dtw_score = dtw_score/float(length)
+	return dtw_score, normalized_dtw_score, length
 
 if __name__ == "__main__":
 	#Needle passing examples
