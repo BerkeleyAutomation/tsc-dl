@@ -384,6 +384,33 @@ def make_transition_feature(matrix, temporal_window, index):
 def only_X(W):
 	return W.T[:1].T
 
+def quaternion2rotation(q):
+	"""
+	Transform a unit quaternion into its corresponding rotation matrix (to
+	be applied on the right side).
+	"""
+	(x, y, z, w) = q
+	xx2 = 2 * x * x
+	yy2 = 2 * y * y
+	zz2 = 2 * z * z
+	xy2 = 2 * x * y
+	wz2 = 2 * w * z
+	zx2 = 2 * z * x
+	wy2 = 2 * w * y
+	yz2 = 2 * y * z
+	wx2 = 2 * w * x
+	rmat = np.empty((3, 3), float)
+	rmat[0,0] = 1. - yy2 - zz2
+	rmat[0,1] = xy2 - wz2
+	rmat[0,2] = zx2 + wy2
+	rmat[1,0] = xy2 + wz2
+	rmat[1,1] = 1. - xx2 - zz2
+	rmat[1,2] = yz2 - wx2
+	rmat[2,0] = zx2 - wy2
+	rmat[2,1] = yz2 + wx2
+	rmat[2,2] = 1. - xx2 - yy2
+	return rmat.flatten()
+
 def binary_search(ranges, val):
 	"""
     Performs binary search to find which segment [start:end]

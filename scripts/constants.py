@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/suturing.yaml")
+config = parse_yaml("../config/100.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -19,7 +19,17 @@ PATH_TO_KINEMATICS = config['PATH_TO_KINEMATICS']
 
 PATH_TO_OPENCV_2_4_9 = "~/opencv_2.4.9/opencv-2.4.9/lib/"
 
-color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
+# Old Color Map with default values from Mathplotlib
+# color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
+
+# Nicer color map
+# color_map = {1:'#00b5e2', 2:'#B9D3B6', 3:'#CFDD45', 4:'#859438', 5: '#e04e39', 6:'#00A598', 7:'k', 8:'#ffc72c', 9: '#9932CC', 10: '#E9967A', 11: '#584F29', 12: '#008080'}
+
+# Even Nicer color map
+if TASK_NAME in ["100", "010", "011", "plane", "lego", "people"]:
+	color_map = {1:'#00A598', 2:'#ffc72c', 3:'#e04e39', 4:'#00b5e2', 5: '#B9D3B6', 6:'#00b2a9', 7:'k', 8:'#ffc72c', 9: '#9932CC', 10: '#E9967A', 11: '#584F29', 12: '#008080'}
+else:
+	color_map = {1:'#00A598', 2:'#00b2a9', 3:'#e04e39', 4:'#ffc72c', 5: '#B9D3B6', 6:'#00b5e2', 7:'k', 8:'#ffc72c', 9: '#9932CC', 10: '#E9967A', 11: '#584F29', 12: '#008080'}
 
 alphabet_map = {}
 for i in range(200):
@@ -111,7 +121,7 @@ N_COMPONENTS_TIME_Z = config["N_COMPONENTS_TIME_Z"]
 
 N_COMPONENTS_TIME_ZW = config["N_COMPONENTS_TIME_ZW"]
 
-TEMPORAL_WINDOW = config["TEMPORAL_WINDOW"]
+TEMPORAL_WINDOW_ZW = config["TEMPORAL_WINDOW_ZW"]
 
 TEMPORAL_WINDOW_W = config["TEMPORAL_WINDOW_W"]
 
@@ -122,6 +132,8 @@ ALPHA_W_CP = config["ALPHA_W_CP"]
 ALPHA_Z_CP = config["ALPHA_Z_CP"]
 
 ALPHA_ZW_CP = config["ALPHA_ZW_CP"]
+
+DPGMM_DIVISOR = config["DPGMM_DIVISOR"]
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}

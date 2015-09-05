@@ -8,6 +8,7 @@ import argparse
 import sys
 import IPython
 import itertools
+import time
 
 import constants
 import parser
@@ -68,14 +69,14 @@ class MilestonesClustering():
 		self.label_based_scores_2 = {}
 
 		self.sr = constants.SR
-		self.representativeness = constants.PRUNING_FACTOR
+		self.representativeness = constants.PRUNING_FACTOR_ZW
 
 		# Components for Mixture model at each level
 		self.n_components_cp = constants.N_COMPONENTS_CP
 		self.n_components_L1 = constants.N_COMPONENTS_L1
 		self.n_components_L2 = constants.N_COMPONENTS_L2
 
-		self.temporal_window = constants.TEMPORAL_WINDOW
+		self.temporal_window = constants.TEMPORAL_WINDOW_ZW
 
 	def loads_features(self):
 		"""
@@ -107,7 +108,9 @@ class MilestonesClustering():
 		Independently loads/sets-up the kinematics in self.data_W.
 		"""
 		for demonstration in self.list_of_demonstrations:
-			self.data_W[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			W = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			scaler = preprocessing.StandardScaler().fit(W)
+			self.data_W[demonstration] = scaler.transform(W)
 
 	def loads_features_split(self):
 		"""
@@ -119,10 +122,13 @@ class MilestonesClustering():
 
 		for demonstration in self.list_of_demonstrations:
 			W = self.data_W[demonstration]
-			Z = self.data_W[demonstration]
+			Z = self.data_Z[demonstration]
+
+			print "XXXXXX W.shape[1] ", W.shape[1]
+			print "XXXXXX Z.shape[1] ", Z.shape[1]
 
 			assert W.shape[0] == Z.shape[0]
-			assert W.shape[1] == constants.KINEMATICS_DIM
+			# assert W.shape[1] == constants.KINEMATICS_DIM
 
 			self.data_X[demonstration] = utils.safe_concatenate(W, Z, axis = 1)
 
@@ -202,19 +208,38 @@ class MilestonesClustering():
 
 		if constants.REMOTE == 1:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
-			dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
+			# dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
+
+			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT :)
+			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+			print DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
+			# IPython.embed()
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
+
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 
+		start = time.time()
 		gmm.fit(big_N)
+		end = time.time()
+		"GMM time taken: ", str(end - start)
 		Y_gmm = gmm.predict(big_N)
 
+		start = time.time()
 		dpgmm.fit(big_N)
+		end = time.time()
+		"DP-GMM time taken: ", str(end - start)		
 		Y_dpgmm = dpgmm.predict(big_N)
 
 		Y = Y_dpgmm
+
+		print "L0: Clusters in DP-GMM", len(set(Y))
+		print "L0: Clusters in GMM", len(set(Y_gmm))
+
+		# IPython.embed()
 
 		for w in range(len(Y) - 1):
 
@@ -276,7 +301,8 @@ class MilestonesClustering():
 
 		if constants.REMOTE == 1:
 			print "DPGMM L1 - start"
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
+			# Previously, when L0 was GMM, alpha = 0.4
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
 			print "DPGMM L1 - end"
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
 			print "GMM L1 - end"
@@ -290,6 +316,7 @@ class MilestonesClustering():
 
 		Y = []
 		i = 0
+
 		while True:
 			print "In DPGMM Fit loop"
 			dpgmm.fit(self.change_pts_Z)
@@ -371,7 +398,8 @@ class MilestonesClustering():
 
 			if constants.REMOTE == 1:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
-				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 10000, alpha = 1, thresh= 1e-7)
+				# Alpha didn't change between using GMM or DP-GMM for L0
+				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 1000, alpha = 1, thresh= 1e-7)
 			if constants.REMOTE == 2:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 			else:
@@ -383,11 +411,8 @@ class MilestonesClustering():
 			except ValueError as e:
 				continue
 
-			Y_gmm = gmm.predict(matrix)
-			Y_dpgmm = dpgmm.predict(matrix)
-			Y = Y_gmm
-		 	# if len(set(Y_gmm)) > len(set(Y)):
-				# IPython.embed()
+			Y = dpgmm.predict(matrix)
+			Y = gmm.predict(matrix)
 
 			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
 
@@ -863,7 +888,6 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-
 
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]

@@ -15,7 +15,7 @@ import cluster_evaluation
 import broken_barh
 import time
 
-from sklearn import (mixture, neighbors, metrics)
+from sklearn import (mixture, neighbors, metrics, preprocessing)
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 
@@ -72,7 +72,8 @@ class KinematicsClustering():
 			self.temporal_window = constants.TEMPORAL_WINDOW_Z
 			self.representativeness = constants.PRUNING_FACTOR_Z
 			self.ALPHA_CP = constants.ALPHA_Z_CP
-
+			if (constants.TASK_NAME in ["000", "010", "011", "100"]):
+				self.ALPHA_CP = constants.ALPHA_W_CP
 		else:
 			self.n_components_cp = constants.N_COMPONENTS_CP_W
 			self.n_components_L1 = constants.N_COMPONENTS_L1_W
@@ -98,8 +99,10 @@ class KinematicsClustering():
 	def construct_features_kinematics(self):
 
 		for demonstration in self.list_of_demonstrations:
-			self.data_X[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
-			print self.data_X[demonstration].shape
+			W = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			scaler = preprocessing.StandardScaler().fit(W)
+			self.data_X[demonstration] = scaler.transform(W)
+			print "Kinematics ", demonstration, self.data_X[demonstration].shape
 
 	def generate_transition_features(self):
 
@@ -180,13 +183,14 @@ class KinematicsClustering():
 			print "Init DPGMM"
 			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-			DP_GMM_COMPONENTS = int(avg_len/25) #tuned with suturing experts only for kinematics
+			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+			# IPython.embed()
 			print DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = self.ALPHA_CP, thresh= 1e-7)
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
 
 			# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video			
-			# print DP_GMM_COMPONENTS			
+			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
+			# print DP_GMM_COMPONENTS
 			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
 
 
@@ -216,8 +220,8 @@ class KinematicsClustering():
 		# IPython.embed()
 		Y = Y_dpgmm
 
-		print "Num clusters in Changepoint clusters, DPGMM: ", len(set(Y)), " GMM: ", len(set(Y_gmm))
-		print "Done fitting GMM..."
+		print "L0: Clusters in DP-GMM", len(set(Y))
+		print "L0: Clusters in GMM", len(set(Y_gmm))
 
 		for w in range(len(Y) - 1):
 
@@ -271,8 +275,11 @@ class KinematicsClustering():
 			dpgmm.fit(self.changepoints)
 			predictions = dpgmm.predict(self.changepoints)
 			# IPython.embed()
-			if len(set(predictions))>1:
+			if len(set(predictions)) > 1:
 				break
+
+		print "L1: Clusters in DP-GMM", len(set(predictions))
+		print "L1: Clusters in GMM", len(set(predictions_gmm))
 
 		self.save_cluster_metrics(self.changepoints, predictions, gmm.means_, 'level1', gmm)
 
