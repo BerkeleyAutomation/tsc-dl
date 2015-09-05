@@ -32,16 +32,16 @@ def get_cnn_features_pickle_dump(net, fname, PATH_TO_DATA, annotations, net_name
 		pickle.dump(Z[key], open(constants.PATH_TO_DATA + features_folder[net_name] + key + "_" + net_name + "_" + fname + ".p", "wb"))
 
 if __name__ == "__main__":
-	# list_of_demonstrations = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-	# 'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+	list_of_demonstrations = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+	'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 	# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 	# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 	# list_of_demonstrations = ["1001_01", "1001_02", "1001_03", "1001_04", "1001_05"]
 
-	list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-		"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+	# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+	# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 	forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", constants.CAMERA)
 	# forward_pass_entire_dataset(list_of_demonstrations, "VGG", constants.CAMERA)

@@ -24,11 +24,7 @@ import sift
 # 5 - conv5_3 VGG
 # 6 - conv5_1 VGG
 # 7 - VGG conv5_1 + LCD + VLAD-k (each batch is 30 frames)
-# 8 - Hypercolumns (AlexNet conv 3,4,5)
-# 9 - Background Subtraction (conv4 AlexNet)
-# 10 - Background Subtraction (conv5_3 VGG)
-# 11 - HOG
-# 12 - SIFT v2
+# 8 - AlexNet conv_4 + LCD + VLAD-k
 
 PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
@@ -42,15 +38,15 @@ def main(DEBUG = False):
 		list_of_demonstrations = ['Suturing_E005',]
 	else:
 
-		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
@@ -68,12 +64,13 @@ def main(DEBUG = False):
 	sr = constants.SR
 	# featurize_sift(list_of_demonstrations, kinematics, sr)
 	# featurize_1(list_of_demonstrations, kinematics, sr)
-	featurize_2(list_of_demonstrations, kinematics, sr)
-	featurize_3(list_of_demonstrations, kinematics, sr)
-	featurize_4(list_of_demonstrations, kinematics, sr)
+	# featurize_2(list_of_demonstrations, kinematics, sr)
+	# featurize_3(list_of_demonstrations, kinematics, sr)
+	# featurize_4(list_of_demonstrations, kinematics, sr)
 	# featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
-	# featurize_7(list_of_demonstrations, kinematics)
+	featurize_8(list_of_demonstrations, kinematics, sr)
+	featurize_7(list_of_demonstrations, kinematics, sr)
 	pass
 
 
@@ -179,15 +176,42 @@ def featurize_6(list_of_demonstrations, kinematics, sr):
 		constants.VGG_FEATURES_FOLDER, 6, "VGG", sr)
 
 # Featurize - VGG conv5_3 + LCD + VLAD
-def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True]):
+def featurize_7(list_of_demonstrations, kinematics, sr, config = [True, True, True]):
 	print "FEATURIZATION 7"
-	a = 14 # Need to find the original values!!
-	M = 512
+	layer = "conv5_3"
+	net_name = "vgg"
+	conv_dimensions = constants.caffe_conv_dimensions[layer]
+	folder = constants.VGG_FEATURES_FOLDER
+	FPS = 30
+	# Batch size approximately captures 1 second of activity
+	batch_size = int(FPS / float(sr))
+	fname = "7"
+	featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, folder, conv_dimensions, batch_size, fname, config = [True, True, True])
+
+# Featurize - AlexNet conv4 + LCD + VLAD
+def featurize_8(list_of_demonstrations, kinematics, sr, config = [True, True, True]):
+	print "FEATURIZATION 8"
+	layer = "conv4"
+	net_name = "alexnet"
+	conv_dimensions = constants.caffe_conv_dimensions[layer]
+	folder = constants.ALEXNET_FEATURES_FOLDER
+	FPS = 30
+	# Batch size approximately captures 1 second of activity
+	batch_size = int(FPS / float(sr))
+	fname = "8"
+	featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, folder, conv_dimensions, batch_size, fname, config = [True, True, True])
+
+
+def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, folder, dimensions, batch_size, fname, config = [True, True, True]):
+	M = dimensions[0]
+	a = dimensions[1]
+
+	print "Featurizing LCD + VLAD: ", layer, net_name, folder, M, a, batch_size
+
+	BATCH_SIZE = batch_size
 
 	if constants.SIMULATION:
 		BATCH_SIZE = 5
-	else:
-		BATCH_SIZE = 30
 
 	data_X_PCA = {}
 	data_X_CCA = {}
@@ -195,10 +219,12 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True])
 
 	size_sampled_matrices = [utils.sample_matrix(kinematics[demo], sampling_rate = BATCH_SIZE).shape[0] for demo in list_of_demonstrations]
 	PC = min(100, min(size_sampled_matrices))
+	print "PC: ", PC
 
 	for demonstration in list_of_demonstrations:
+		print demonstration
 		W = kinematics[demonstration]
-		Z = load_cnn_features(demonstration, "conv5_3", constants.VGG_FEATURES_FOLDER, "VGG")
+		Z = load_cnn_features(demonstration, layer, folder, net_name)
 		W_new = utils.sample_matrix(W, sampling_rate = BATCH_SIZE)
 
 		Z_batch = None
@@ -230,9 +256,11 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True])
 			j += 1
 
 		# tail case
-		print "NEW BATCH", str(i)
-		Z_batch_VLAD = encoding.encode_VLAD(Z_batch)
-		Z_new = utils.safe_concatenate(Z_new, Z_batch_VLAD)
+		if Z_batch is not None:
+			print "TAIL CASE"
+			print "NEW BATCH", str(i)
+			Z_batch_VLAD = encoding.encode_VLAD(Z_batch)
+			Z_new = utils.safe_concatenate(Z_new, Z_batch_VLAD)
 
 		if config[0]:
 			Z_new_pca = utils.pca_incremental(Z_new, PC = PC)
@@ -256,11 +284,11 @@ def featurize_7(list_of_demonstrations, kinematics, config = [True, True, True])
 			data_X_GRP[demonstration] = X_GRP
 
 	if config[0]:
-		pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(7) + "_PCA" + ".p", "wb"))
+		pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + fname + "_PCA" + ".p", "wb"))
 	if config[1]:
-		pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(7) + "_CCA" + ".p", "wb"))
+		pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + fname + "_CCA" + ".p", "wb"))
 	if config[2]:
-		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(7) + "_GRP" + ".p", "wb"))
+		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + fname + "_GRP" + ".p", "wb"))
 
 def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, True, True]):
 
