@@ -55,7 +55,8 @@ class MilestonesClustering():
 		self.pruned_L1_clusters = []
 		self.pruned_L2_clusters = []
 
-		self.silhouette_scores = {}
+		self.silhouette_scores_global = {}
+		self.silhouette_scores_weighted = {}
 		self.dunn_scores_1 = {}
 		self.dunn_scores_2 = {}
 		self.dunn_scores_3 = {}
@@ -63,7 +64,8 @@ class MilestonesClustering():
 		self.level2_dunn_1 = []
 		self.level2_dunn_2 = []
 		self.level2_dunn_3 = []
-		self.level2_silhoutte = []
+		self.level2_silhoutte_global = []
+		self.level2_silhoutte_weighted = []
 
 		self.label_based_scores_1 = {}
 		self.label_based_scores_2 = {}
@@ -272,10 +274,15 @@ class MilestonesClustering():
 	def save_cluster_metrics(self, points, predictions, means, key, model, level2_mode = False):
 
 		try:
-			silhoutte = metrics.silhouette_score(points, predictions, metric='euclidean')
-			self.silhouette_scores[key] = silhoutte
+			silhoutte_global = metrics.silhouette_score(points, predictions, metric='euclidean')
+			silhoutte_weighted = utils.silhoutte_weighted(points, predictions)
+
+			self.silhouette_scores_global[key] = silhoutte_global
+			self.silhouette_scores_weighted[key] = silhoutte_weighted
+
 			if level2_mode:
-				self.level2_silhoutte.append(silhoutte)
+				self.level2_silhoutte_global.append(silhoutte_global)
+				self.level2_silhoutte_weighted.append(silhoutte_weighted)
 
 		except ValueError as e:
 			pass
@@ -634,12 +641,20 @@ class MilestonesClustering():
 			print "Pruning error"
 			sys.exit()
 
-		self.file.write("\nSilhouette Scores\n")
+		self.file.write("\nSilhouette Scores Global\n")
 
 		# ------ Silhouette Scores ------
-		for layer in sorted(self.silhouette_scores):
-			score = self.silhouette_scores[layer]
+		for layer in sorted(self.silhouette_scores_global):
+			score = self.silhouette_scores_global[layer]
 			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+
+		self.file.write("\nSilhouette Scores Weighted\n")
+
+		# ------ Silhouette Scores ------
+		for layer in sorted(self.silhouette_scores_weighted):
+			score = self.silhouette_scores_weighted[layer]
+			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+
 
 		self.file.write("\nDunn Scores1\n")
 
@@ -670,8 +685,9 @@ class MilestonesClustering():
 			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
 
 		data = [self.label_based_scores_1, self.label_based_scores_2,
-		self.silhouette_scores, self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3,
-		self.level2_silhoutte, self.level2_dunn_1, self.level2_dunn_2, self.level2_dunn_3, viz]
+		self.silhouette_scores_global, self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3,
+		self.level2_silhoutte_global, self.level2_dunn_1, self.level2_dunn_2, self.level2_dunn_3, viz,
+		self.silhouette_scores_weighted, self.level2_silhoutte_weighted]
 
 		pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
@@ -737,12 +753,14 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	precision_2_weighted = []
 	recall_2_weighted = []
 
-	silhoutte_level_1 = []
+	silhoutte_level_1_global = []
+	silhoutte_level_1_weighted = []
 	dunn1_level_1 = []
 	dunn2_level_1 = []
 	dunn3_level_1 = []
 
-	silhoutte_level_2 = []
+	silhoutte_level_2_global = []
+	silhoutte_level_2_weighted = []
 	dunn1_level_2 = []
 	dunn2_level_2 = []
 	dunn3_level_2 = []
@@ -780,12 +798,12 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 		homogeneity_2.append(elem[1]["homogeneity_score"])
 
-		silhoutte_level_1.append(elem[2]["level1"])
+		silhoutte_level_1_global.append(elem[2]["level1"])
 		dunn1_level_1.append(elem[3]["level1"])
 		dunn2_level_1.append(elem[4]["level1"])
 		dunn3_level_1.append(elem[5]["level1"])
 
-		silhoutte_level_2 += elem[6]
+		silhoutte_level_2_global += elem[6]
 		dunn1_level_2 += elem[7]
 		dunn2_level_2 += elem[8]
 		dunn3_level_2 += elem[9]
@@ -793,6 +811,9 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		viz = elem[10]
 		for demonstration in viz.keys():
 			utils.dict_insert_list(demonstration, viz[demonstration], list_of_frms)
+
+		silhoutte_level_1_weighted.append(elem[11]["level1"])
+		silhoutte_level_2_weighted += elem[12]
 
 	file = open(constants.PATH_TO_CLUSTERING_RESULTS + filename + ".txt", "wb")
 
@@ -826,8 +847,11 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	utils.print_and_write_2("homogeneity_1", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 	utils.print_and_write_2("homogeneity_2", np.mean(homogeneity_2), np.std(homogeneity_2), file)
 
-	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
-	utils.print_and_write_2("silhoutte_level_2", np.mean(silhoutte_level_2), np.std(silhoutte_level_2), file)
+	utils.print_and_write_2("silhoutte_level_1_global", np.mean(silhoutte_level_1_global), np.std(silhoutte_level_1_global), file)
+	utils.print_and_write_2("silhoutte_level_2_global", np.mean(silhoutte_level_2_global), np.std(silhoutte_level_2_global), file)
+
+	utils.print_and_write_2("silhoutte_level_1_weighted", np.mean(silhoutte_level_1_weighted), np.std(silhoutte_level_1_weighted), file)
+	utils.print_and_write_2("silhoutte_level_2_weighted", np.mean(silhoutte_level_2_weighted), np.std(silhoutte_level_2_weighted), file)
 
 	utils.print_and_write_2("dunn1_level1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
 	utils.print_and_write_2("dunn2_level1", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)

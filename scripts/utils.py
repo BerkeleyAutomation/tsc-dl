@@ -4,7 +4,7 @@ import IPython
 import pylab as pl
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import (manifold, datasets, decomposition, ensemble, lda,
+from sklearn import (metrics, manifold, datasets, decomposition, ensemble, lda,
 	random_projection, preprocessing, covariance, cluster, neighbors)
 import random
 import os
@@ -410,6 +410,27 @@ def quaternion2rotation(q):
 	rmat[2,1] = yz2 + wx2
 	rmat[2,2] = 1. - xx2 - yy2
 	return rmat.flatten()
+
+def silhoutte_weighted(points, labels):
+	"""
+	Returns weighted silhoutte scores.
+	"""
+	silhoutte_scores = metrics.silhouette_samples(points, labels, metric='euclidean')
+	map_label2score = {}
+	N = points.shape[0]
+
+	for i in range(N):
+		score = silhoutte_scores[i]
+		label = labels[i]
+		dict_insert_list(label, score, map_label2score)
+	list_weighted_scores = []
+
+	for label in map_label2score.keys():
+		list_weighted_scores.append(np.mean(map_label2score[label]))
+
+	num_labels = len(map_label2score.keys())
+
+	return np.sum(list_weighted_scores)/float(num_labels)
 
 def binary_search(ranges, val):
 	"""

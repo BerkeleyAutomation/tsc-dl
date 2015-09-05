@@ -56,7 +56,9 @@ class KinematicsClustering():
 		self.cp_surgemes = []
 		self.pruned_L1_clusters = []
 
-		self.silhouette_score = None
+		self.silhouette_score_global = None
+		self.silhouette_score_weighted = None
+
 		self.dunn_scores_1 = {}
 		self.dunn_scores_2 = {}
 		self.dunn_scores_3 = {}
@@ -242,7 +244,8 @@ class KinematicsClustering():
 	def save_cluster_metrics(self, points, predictions, means, key, model):
 
 		if key == 'level1':
-			self.silhouette_score = metrics.silhouette_score(points, predictions, metric='euclidean')
+			self.silhouette_score_global = metrics.silhouette_score(points, predictions, metric='euclidean')
+			self.silhouette_score_weighted = utils.silhoutte_weighted(points, predictions)
 
 		# dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
 
@@ -279,7 +282,7 @@ class KinematicsClustering():
 				break
 
 		print "L1: Clusters in DP-GMM", len(set(predictions))
-		print "L1: Clusters in GMM", len(set(predictions_gmm))
+		print "L1: Clusters in GMM",len(set(predictions_gmm))
 
 		self.save_cluster_metrics(self.changepoints, predictions, gmm.means_, 'level1', gmm)
 
@@ -465,8 +468,8 @@ class KinematicsClustering():
 		for cp in self.list_of_cp:
 			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
 
-		data = [self.label_based_scores_1, self.silhouette_score, self.dunn_scores_1,
-		self.dunn_scores_2, self.dunn_scores_3, viz]
+		data = [self.label_based_scores_1, self.silhouette_score_global, self.dunn_scores_1,
+		self.dunn_scores_2, self.dunn_scores_3, viz, self.silhouette_score_weighted]
 
 		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
@@ -517,7 +520,8 @@ def post_evaluation(metrics, file, fname, vision_mode):
 	recall_1_macro = []
 	precision_1_weighted = []
 	recall_1_weighted = []
-	silhouette_scores = []
+	silhouette_scores_global = []
+	silhouette_scores_weighted = []
 
 	dunn1_level_1 = []
 	dunn2_level_1 = []
@@ -532,7 +536,8 @@ def post_evaluation(metrics, file, fname, vision_mode):
 		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 
-		silhouette_scores.append(elem[1])
+		silhouette_scores_global.append(elem[1])
+		silhouette_scores_weighted.append(elem[6])
 
 		dunn1_level_1.append(elem[2]["level1"])
 		dunn2_level_1.append(elem[3]["level1"])
@@ -561,7 +566,8 @@ def post_evaluation(metrics, file, fname, vision_mode):
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
 	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
-	utils.print_and_write_2("silhouette_scores", np.mean(silhouette_scores), np.std(silhouette_scores), file)
+	utils.print_and_write_2("silhouette_scores_global", np.mean(silhouette_scores_global), np.std(silhouette_scores_global), file)
+	utils.print_and_write_2("silhouette_scores_weighted", np.mean(silhouette_scores_weighted), np.std(silhouette_scores_weighted), file)
 
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 
