@@ -202,12 +202,19 @@ class MilestonesClustering():
 
 		if constants.REMOTE == 1:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
+			dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+
 		gmm.fit(big_N)
-		Y = gmm.predict(big_N)
+		Y_gmm = gmm.predict(big_N)
+
+		dpgmm.fit(big_N)
+		Y_dpgmm = dpgmm.predict(big_N)
+
+		Y = Y_dpgmm
 
 		for w in range(len(Y) - 1):
 
@@ -377,9 +384,10 @@ class MilestonesClustering():
 				continue
 
 			Y_gmm = gmm.predict(matrix)
-			Y = dpgmm.predict(matrix)
-		 	if len(set(Y_gmm)) > len(set(Y)):
-				IPython.embed()
+			Y_dpgmm = dpgmm.predict(matrix)
+			Y = Y_gmm
+		 	# if len(set(Y_gmm)) > len(set(Y)):
+				# IPython.embed()
 
 			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
 
@@ -825,7 +833,7 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
 	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
-	utils.print_and_write(list_of_lengths, file)
+	utils.print_and_write(str(list_of_lengths), file)
 	file.close()
 
 if __name__ == "__main__":
@@ -843,16 +851,16 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 

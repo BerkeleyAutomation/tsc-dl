@@ -227,6 +227,10 @@ def post_evaluation_all(metrics_W, metrics_Z, metrics_ZW, file, fname, list_of_d
 	list_of_dtw_values_W = []
 	list_of_dtw_values_Z = []
 	list_of_dtw_values_ZW = []
+	list_of_dtw_values_W_normalized = []
+	list_of_dtw_values_Z_normalized = []
+	list_of_dtw_values_ZW_normalized = []
+	list_of_lengths = []
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration_W = list_of_frms_W[demonstration]
@@ -248,14 +252,23 @@ def post_evaluation_all(metrics_W, metrics_Z, metrics_ZW, file, fname, list_of_d
 		save_fig = constants.PATH_TO_CLUSTERING_RESULTS + demonstration + "_" + fname + "_A.jpg"
 		save_fig2 = constants.PATH_TO_CLUSTERING_RESULTS + demonstration + "_" + fname + "_B.jpg"
 
-		dtw_score_W, dtw_score_Z, dtw_score_ZW = broken_barh.plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fig, save_fig2)
+		dtw_score_W, dtw_score_Z, dtw_score_ZW, dtw_score_W_normalized, dtw_score_Z_normalized, dtw_score_ZW_normalized, length = broken_barh.plot_broken_barh_all(demonstration,
+			data_W, data_Z, data_ZW, save_fig, save_fig2)
 		list_of_dtw_values_W.append(dtw_score_W)
 		list_of_dtw_values_Z.append(dtw_score_Z)
 		list_of_dtw_values_ZW.append(dtw_score_ZW)
+		list_of_dtw_values_W_normalized.append(dtw_score_W_normalized)
+		list_of_dtw_values_Z_normalized.append(dtw_score_Z_normalized)
+		list_of_dtw_values_ZW_normalized.append(dtw_score_ZW_normalized)
+		list_of_lengths.append(length)
 
 	utils.print_and_write_2("dtw_score_W", np.mean(list_of_dtw_values_W), np.std(list_of_dtw_values_W), file)
 	utils.print_and_write_2("dtw_score_Z", np.mean(list_of_dtw_values_Z), np.std(list_of_dtw_values_Z), file)
 	utils.print_and_write_2("dtw_score_ZW", np.mean(list_of_dtw_values_ZW), np.std(list_of_dtw_values_ZW), file)
+	utils.print_and_write_2("dtw_score_W_normalized", np.mean(list_of_dtw_values_W_normalized), np.std(list_of_dtw_values_W_normalized), file)
+	utils.print_and_write_2("dtw_score_Z_normalized", np.mean(list_of_dtw_values_Z_normalized), np.std(list_of_dtw_values_Z_normalized), file)
+	utils.print_and_write_2("dtw_score_ZW_normalized", np.mean(list_of_dtw_values_ZW_normalized), np.std(list_of_dtw_values_ZW_normalized), file)
+	utils.print_and_write(str(list_of_lengths), file)
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -263,7 +276,11 @@ if __name__ == "__main__":
 	argparser.add_argument("fname", help = "File name", default = 4)
 	args = argparser.parse_args()
 
-	list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+	# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+	# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+	list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+
 	combinations = clustering.get_list_of_demo_combinations(list_of_demonstrations)
 
 	feat_fname = args.visual

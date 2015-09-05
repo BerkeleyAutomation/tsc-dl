@@ -79,7 +79,7 @@ def setup_automatic_labels(list_of_frms, color):
 
 def get_time_clusters(data, T_COMPONENTS):
 	# k-fold validation (Leave one out)
-	numDemos = min(5, len(data.keys()) + 1)
+	numDemos = len(data.keys()) + 1
 	sizeTestSet = numDemos - 1
 
 	list_of_frms = []
@@ -91,6 +91,7 @@ def get_time_clusters(data, T_COMPONENTS):
 	
 	N_COMPONENTS = min(T_COMPONENTS, len(all_frms))
 	time_cluster = mixture.GMM(n_components=N_COMPONENTS, covariance_type='full', n_iter=5000, thresh = 5e-5, min_covar = 0.001)
+
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
 	time_cluster.fit(X)
@@ -98,8 +99,13 @@ def get_time_clusters(data, T_COMPONENTS):
 
 	means = time_cluster.means_
 	covars = time_cluster.covars_
-	
-	list_of_elem = []	
+
+	# dpgmm = mixture.DPGMM(n_components = numDemos, covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
+	# dpgmm.fit(X)
+	# Y_dpgmm = dpgmm.predict(X)
+	# means_dpgmm = dpgmm.means_
+
+	list_of_elem = []
 	
 	for i in range(len(Y)):
 		list_of_elem.append((Y[i], X[i], means[Y[i]][0], np.sqrt(covars[Y[i]][0][0])))
@@ -119,12 +125,12 @@ def get_time_clusters(data, T_COMPONENTS):
 		# test if frames in cluster are representative of the test set
 		rep = []
 		for id in range(sizeTestSet):
-			elemSet = set(list_of_frms[id])					
+			elemSet = set(list_of_frms[id])
 			commonElem = elemSet.intersection(setClusterFrames)
-			id_in_cluster = 1. if len(commonElem)>0 else 0.
+			id_in_cluster = 1. if len(commonElem) > 0 else 0.
 			rep.append(id_in_cluster)
 
-		pruneCluster = True if sum(rep)/sizeTestSet < constants.PRUNING_FACTOR else False
+		pruneCluster = True if sum(rep)/sizeTestSet < constants.PRUNING_FACTOR_W else False
 		
 		min_frm = min(cluster_frames)
 		max_frm = max(cluster_frames)
@@ -154,6 +160,7 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
 	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
+	length = end - start
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 
 	TASK = constants.TASK_NAME
@@ -216,9 +223,11 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	time_sequence_2 = [int(elem) for elem in means_ZW]
 	dtw_score_ZW = compute_dtw(time_sequence_1, time_sequence_2)
 
-	IPython.embed()
+	dtw_score_W_normalized = dtw_score_W/float(length) * 1000
+	dtw_score_Z_normalized = dtw_score_Z/float(length) * 1000
+	dtw_score_ZW_normalized = dtw_score_ZW/float(length) * 1000
 
-	return dtw_score_W, dtw_score_Z, dtw_score_ZW
+	return dtw_score_W, dtw_score_Z, dtw_score_ZW, dtw_score_W_normalized, dtw_score_Z_normalized, dtw_score_ZW_normalized, length
 
 
 def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
@@ -248,7 +257,6 @@ def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 	labels_automatic_0, colors_automatic_0, labels_automatic_1, colors_automatic_1, means, list_of_frms = get_time_clusters(data, T)
 
 	labels_manual, colors_manual = setup_manual_labels(segments)
-	labels_automatic_0, colors_automatic_0 = setup_automatic_labels_2(list_time_clusters, "k")
 
 	# Plot 1) Manual 2) Time clusters
 	ax.broken_barh(labels_manual, (25, 2), facecolors = colors_manual)
@@ -286,7 +294,7 @@ def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 	time_sequence_2 = [int(elem) for elem in means]
 
 	dtw_score = compute_dtw(time_sequence_1, time_sequence_2)
-	normalized_dtw_score = dtw_score/float(length)
+	normalized_dtw_score = dtw_score/float(length) * 1000
 	return dtw_score, normalized_dtw_score, length
 
 if __name__ == "__main__":
