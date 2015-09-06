@@ -8,6 +8,7 @@ import argparse
 import sys
 import IPython
 import itertools
+import time
 
 import constants
 import parser
@@ -54,7 +55,8 @@ class MilestonesClustering():
 		self.pruned_L1_clusters = []
 		self.pruned_L2_clusters = []
 
-		self.silhouette_scores = {}
+		self.silhouette_scores_global = {}
+		self.silhouette_scores_weighted = {}
 		self.dunn_scores_1 = {}
 		self.dunn_scores_2 = {}
 		self.dunn_scores_3 = {}
@@ -62,20 +64,21 @@ class MilestonesClustering():
 		self.level2_dunn_1 = []
 		self.level2_dunn_2 = []
 		self.level2_dunn_3 = []
-		self.level2_silhoutte = []
+		self.level2_silhoutte_global = []
+		self.level2_silhoutte_weighted = []
 
 		self.label_based_scores_1 = {}
 		self.label_based_scores_2 = {}
 
 		self.sr = constants.SR
-		self.representativeness = constants.PRUNING_FACTOR
+		self.representativeness = constants.PRUNING_FACTOR_ZW
 
 		# Components for Mixture model at each level
 		self.n_components_cp = constants.N_COMPONENTS_CP
 		self.n_components_L1 = constants.N_COMPONENTS_L1
 		self.n_components_L2 = constants.N_COMPONENTS_L2
 
-		self.temporal_window = constants.TEMPORAL_WINDOW
+		self.temporal_window = constants.TEMPORAL_WINDOW_ZW
 
 	def loads_features(self):
 		"""
@@ -83,7 +86,6 @@ class MilestonesClustering():
 		"""
 		self.data_X = pickle.load(open(PATH_TO_FEATURES + str(self.featfile),"rb"))
 
-		IPython.embed()
 		for demonstration in self.list_of_demonstrations:
 			if demonstration not in self.data_X.keys():
 				print "[ERROR] Missing demonstrations"
@@ -108,7 +110,9 @@ class MilestonesClustering():
 		Independently loads/sets-up the kinematics in self.data_W.
 		"""
 		for demonstration in self.list_of_demonstrations:
-			self.data_W[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			W = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			scaler = preprocessing.StandardScaler().fit(W)
+			self.data_W[demonstration] = scaler.transform(W)
 
 	def loads_features_split(self):
 		"""
@@ -120,10 +124,13 @@ class MilestonesClustering():
 
 		for demonstration in self.list_of_demonstrations:
 			W = self.data_W[demonstration]
-			Z = self.data_W[demonstration]
+			Z = self.data_Z[demonstration]
+
+			print "XXXXXX W.shape[1] ", W.shape[1]
+			print "XXXXXX Z.shape[1] ", Z.shape[1]
 
 			assert W.shape[0] == Z.shape[0]
-			assert W.shape[1] == constants.KINEMATICS_DIM
+			# assert W.shape[1] == constants.KINEMATICS_DIM
 
 			self.data_X[demonstration] = utils.safe_concatenate(W, Z, axis = 1)
 
@@ -203,12 +210,38 @@ class MilestonesClustering():
 
 		if constants.REMOTE == 1:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
+			# dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
+
+			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT :)
+			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+			print DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
+			# IPython.embed()
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
+
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
+
+		start = time.time()
 		gmm.fit(big_N)
-		Y = gmm.predict(big_N)
+		end = time.time()
+		"GMM time taken: ", str(end - start)
+		Y_gmm = gmm.predict(big_N)
+
+		start = time.time()
+		dpgmm.fit(big_N)
+		end = time.time()
+		"DP-GMM time taken: ", str(end - start)		
+		Y_dpgmm = dpgmm.predict(big_N)
+
+		Y = Y_dpgmm
+
+		print "L0: Clusters in DP-GMM", len(set(Y))
+		print "L0: Clusters in GMM", len(set(Y_gmm))
+
+		# IPython.embed()
 
 		for w in range(len(Y) - 1):
 
@@ -238,19 +271,25 @@ class MilestonesClustering():
 			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:constants.KINEMATICS_DIM])), axis = 0)
 			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[constants.KINEMATICS_DIM:])), axis = 0)
 
-
 	def save_cluster_metrics(self, points, predictions, means, key, model, level2_mode = False):
 
 		try:
-			silhoutte = metrics.silhouette_score(points, predictions, metric='euclidean')
-			self.silhouette_scores[key] = silhoutte
+			silhoutte_global = metrics.silhouette_score(points, predictions, metric='euclidean')
+			silhoutte_weighted = utils.silhoutte_weighted(points, predictions)
+
+			self.silhouette_scores_global[key] = silhoutte_global
+			self.silhouette_scores_weighted[key] = silhoutte_weighted
+
 			if level2_mode:
-				self.level2_silhoutte.append(silhoutte)
+				self.level2_silhoutte_global.append(silhoutte_global)
+				self.level2_silhoutte_weighted.append(silhoutte_weighted)
 
 		except ValueError as e:
 			pass
 
-		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+		# dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+
+		dunn_scores = [0, 0, 0]
 
 		if (dunn_scores[0] is not None) and (dunn_scores[1] is not None) and (dunn_scores[2] is not None):
 
@@ -265,19 +304,35 @@ class MilestonesClustering():
 
 	def cluster_changepoints_level1(self):
 
-		# print "Level1 : Clustering changepoints in Z(t)"
+		print "Level1 : Clustering changepoints in Z(t)"
 
 		if constants.REMOTE == 1:
+			print "DPGMM L1 - start"
+			# Previously, when L0 was GMM, alpha = 0.4
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
+			print "DPGMM L1 - end"
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
+			print "GMM L1 - end"
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 
 		gmm.fit(self.change_pts_Z)
+		Y_gmm = gmm.predict(self.change_pts_Z)
 
-		Y = gmm.predict(self.change_pts_Z)
+		Y = []
+		i = 0
 
+		while True:
+			print "In DPGMM Fit loop"
+			dpgmm.fit(self.change_pts_Z)
+			Y = dpgmm.predict(self.change_pts_Z)
+			if len(set(Y)) > 1:
+				break
+			i += 1
+			if i > 100:
+				break
 		self.save_cluster_metrics(self.change_pts_Z, Y, gmm.means_, 'level1', gmm)
 
 		for i in range(len(Y)):
@@ -307,7 +362,7 @@ class MilestonesClustering():
 
 	def cluster_changepoints_level2(self):
 
-		# print "Level2 : Clustering changepoints in W(t)"
+		print "Level2 : Clustering changepoints in W(t)"
 
 		mkdir_path = constants.PATH_TO_CLUSTERING_RESULTS + self.trial
 		os.mkdir(mkdir_path)
@@ -350,6 +405,8 @@ class MilestonesClustering():
 
 			if constants.REMOTE == 1:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
+				# Alpha didn't change between using GMM or DP-GMM for L0
+				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 1000, alpha = 1, thresh= 1e-7)
 			if constants.REMOTE == 2:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 			else:
@@ -357,10 +414,13 @@ class MilestonesClustering():
 
 			try:
 				gmm.fit(matrix)
+				dpgmm.fit(matrix)
 			except ValueError as e:
 				continue
 
+			Y = dpgmm.predict(matrix)
 			Y = gmm.predict(matrix)
+
 			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
 
 			for i in range(len(Y)):
@@ -581,12 +641,20 @@ class MilestonesClustering():
 			print "Pruning error"
 			sys.exit()
 
-		self.file.write("\nSilhouette Scores\n")
+		self.file.write("\nSilhouette Scores Global\n")
 
 		# ------ Silhouette Scores ------
-		for layer in sorted(self.silhouette_scores):
-			score = self.silhouette_scores[layer]
+		for layer in sorted(self.silhouette_scores_global):
+			score = self.silhouette_scores_global[layer]
 			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+
+		self.file.write("\nSilhouette Scores Weighted\n")
+
+		# ------ Silhouette Scores ------
+		for layer in sorted(self.silhouette_scores_weighted):
+			score = self.silhouette_scores_weighted[layer]
+			self.file.write("%3.3f        %s\n" % (round(Decimal(score), 2), layer))
+
 
 		self.file.write("\nDunn Scores1\n")
 
@@ -617,8 +685,9 @@ class MilestonesClustering():
 			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
 
 		data = [self.label_based_scores_1, self.label_based_scores_2,
-		self.silhouette_scores, self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3,
-		self.level2_silhoutte, self.level2_dunn_1, self.level2_dunn_2, self.level2_dunn_3, viz]
+		self.silhouette_scores_global, self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3,
+		self.level2_silhoutte_global, self.level2_dunn_1, self.level2_dunn_2, self.level2_dunn_3, viz,
+		self.silhouette_scores_weighted, self.level2_silhoutte_weighted]
 
 		pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
@@ -684,12 +753,14 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	precision_2_weighted = []
 	recall_2_weighted = []
 
-	silhoutte_level_1 = []
+	silhoutte_level_1_global = []
+	silhoutte_level_1_weighted = []
 	dunn1_level_1 = []
 	dunn2_level_1 = []
 	dunn3_level_1 = []
 
-	silhoutte_level_2 = []
+	silhoutte_level_2_global = []
+	silhoutte_level_2_weighted = []
 	dunn1_level_2 = []
 	dunn2_level_2 = []
 	dunn3_level_2 = []
@@ -727,12 +798,12 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 		homogeneity_2.append(elem[1]["homogeneity_score"])
 
-		silhoutte_level_1.append(elem[2]["level1"])
+		silhoutte_level_1_global.append(elem[2]["level1"])
 		dunn1_level_1.append(elem[3]["level1"])
 		dunn2_level_1.append(elem[4]["level1"])
 		dunn3_level_1.append(elem[5]["level1"])
 
-		silhoutte_level_2 += elem[6]
+		silhoutte_level_2_global += elem[6]
 		dunn1_level_2 += elem[7]
 		dunn2_level_2 += elem[8]
 		dunn3_level_2 += elem[9]
@@ -740,6 +811,9 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		viz = elem[10]
 		for demonstration in viz.keys():
 			utils.dict_insert_list(demonstration, viz[demonstration], list_of_frms)
+
+		silhoutte_level_1_weighted.append(elem[11]["level1"])
+		silhoutte_level_2_weighted += elem[12]
 
 	file = open(constants.PATH_TO_CLUSTERING_RESULTS + filename + ".txt", "wb")
 
@@ -773,8 +847,11 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	utils.print_and_write_2("homogeneity_1", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 	utils.print_and_write_2("homogeneity_2", np.mean(homogeneity_2), np.std(homogeneity_2), file)
 
-	utils.print_and_write_2("silhoutte_level_1", np.mean(silhoutte_level_1), np.std(silhoutte_level_1), file)
-	utils.print_and_write_2("silhoutte_level_2", np.mean(silhoutte_level_2), np.std(silhoutte_level_2), file)
+	utils.print_and_write_2("silhoutte_level_1_global", np.mean(silhoutte_level_1_global), np.std(silhoutte_level_1_global), file)
+	utils.print_and_write_2("silhoutte_level_2_global", np.mean(silhoutte_level_2_global), np.std(silhoutte_level_2_global), file)
+
+	utils.print_and_write_2("silhoutte_level_1_weighted", np.mean(silhoutte_level_1_weighted), np.std(silhoutte_level_1_weighted), file)
+	utils.print_and_write_2("silhoutte_level_2_weighted", np.mean(silhoutte_level_2_weighted), np.std(silhoutte_level_2_weighted), file)
 
 	utils.print_and_write_2("dunn1_level1", np.mean(dunn1_level_1), np.std(dunn1_level_1), file)
 	utils.print_and_write_2("dunn2_level1", np.mean(dunn2_level_1), np.std(dunn2_level_1), file)
@@ -785,6 +862,8 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	utils.print_and_write_2("dunn3_level2", np.mean(dunn3_level_2), np.std(dunn3_level_2), file)
 
 	list_of_dtw_values = []
+	list_of_norm_dtw_values = []
+	list_of_lengths = []
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
@@ -795,11 +874,15 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		for i in range(len(list_of_frms_demonstration)):
 			data[i] = list_of_frms_demonstration[0]
 
-		dtw_score = broken_barh.plot_broken_barh(demonstration, data,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg")
+		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg", constants.N_COMPONENTS_TIME_ZW)
 		list_of_dtw_values.append(dtw_score)
+		list_of_norm_dtw_values.append(normalized_dtw_score)
+		list_of_lengths.append(length)
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
+	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
+	utils.print_and_write(str(list_of_lengths), file)
 	file.close()
 
 if __name__ == "__main__":
@@ -826,8 +909,9 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
+		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]

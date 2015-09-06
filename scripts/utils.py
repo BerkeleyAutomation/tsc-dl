@@ -4,7 +4,7 @@ import IPython
 import pylab as pl
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import (manifold, datasets, decomposition, ensemble, lda,
+from sklearn import (metrics, manifold, datasets, decomposition, ensemble, lda,
 	random_projection, preprocessing, covariance, cluster, neighbors)
 import random
 import os
@@ -383,6 +383,54 @@ def make_transition_feature(matrix, temporal_window, index):
 
 def only_X(W):
 	return W.T[:1].T
+
+def quaternion2rotation(q):
+	"""
+	Transform a unit quaternion into its corresponding rotation matrix (to
+	be applied on the right side).
+	"""
+	(x, y, z, w) = q
+	xx2 = 2 * x * x
+	yy2 = 2 * y * y
+	zz2 = 2 * z * z
+	xy2 = 2 * x * y
+	wz2 = 2 * w * z
+	zx2 = 2 * z * x
+	wy2 = 2 * w * y
+	yz2 = 2 * y * z
+	wx2 = 2 * w * x
+	rmat = np.empty((3, 3), float)
+	rmat[0,0] = 1. - yy2 - zz2
+	rmat[0,1] = xy2 - wz2
+	rmat[0,2] = zx2 + wy2
+	rmat[1,0] = xy2 + wz2
+	rmat[1,1] = 1. - xx2 - zz2
+	rmat[1,2] = yz2 - wx2
+	rmat[2,0] = zx2 - wy2
+	rmat[2,1] = yz2 + wx2
+	rmat[2,2] = 1. - xx2 - yy2
+	return rmat.flatten()
+
+def silhoutte_weighted(points, labels):
+	"""
+	Returns weighted silhoutte scores.
+	"""
+	silhoutte_scores = metrics.silhouette_samples(points, labels, metric='euclidean')
+	map_label2score = {}
+	N = points.shape[0]
+
+	for i in range(N):
+		score = silhoutte_scores[i]
+		label = labels[i]
+		dict_insert_list(label, score, map_label2score)
+	list_weighted_scores = []
+
+	for label in map_label2score.keys():
+		list_weighted_scores.append(np.mean(map_label2score[label]))
+
+	num_labels = len(map_label2score.keys())
+
+	return np.sum(list_weighted_scores)/float(num_labels)
 
 def binary_search(ranges, val):
 	"""

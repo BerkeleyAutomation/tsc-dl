@@ -13,8 +13,9 @@ import parser
 import utils
 import cluster_evaluation
 import broken_barh
+import time
 
-from sklearn import (mixture, neighbors, metrics)
+from sklearn import (mixture, neighbors, metrics, preprocessing)
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
 mutual_info_score, homogeneity_score, completeness_score, recall_score, precision_score)
 
@@ -55,7 +56,9 @@ class KinematicsClustering():
 		self.cp_surgemes = []
 		self.pruned_L1_clusters = []
 
-		self.silhouette_score = None
+		self.silhouette_score_global = None
+		self.silhouette_score_weighted = None
+
 		self.dunn_scores_1 = {}
 		self.dunn_scores_2 = {}
 		self.dunn_scores_3 = {}
@@ -63,17 +66,22 @@ class KinematicsClustering():
 		self.label_based_scores_1 = {}
 
 		self.sr = constants.SR
-		self.representativeness = constants.PRUNING_FACTOR
 
 		# Components for Mixture model at each level
 		if self.vision_mode:
 			self.n_components_cp = constants.N_COMPONENTS_CP_Z
 			self.n_components_L1 = constants.N_COMPONENTS_L1_Z
 			self.temporal_window = constants.TEMPORAL_WINDOW_Z
+			self.representativeness = constants.PRUNING_FACTOR_Z
+			self.ALPHA_CP = constants.ALPHA_Z_CP
+			if (constants.TASK_NAME in ["000", "010", "011", "100"]):
+				self.ALPHA_CP = constants.ALPHA_W_CP
 		else:
 			self.n_components_cp = constants.N_COMPONENTS_CP_W
 			self.n_components_L1 = constants.N_COMPONENTS_L1_W
 			self.temporal_window = constants.TEMPORAL_WINDOW_W
+			self.representativeness = constants.PRUNING_FACTOR_W
+			self.ALPHA_CP = constants.ALPHA_W_CP
 
 	def construct_features_visual(self):
 
@@ -93,8 +101,10 @@ class KinematicsClustering():
 	def construct_features_kinematics(self):
 
 		for demonstration in self.list_of_demonstrations:
-			self.data_X[demonstration] = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
-			print self.data_X[demonstration].shape
+			W = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			scaler = preprocessing.StandardScaler().fit(W)
+			self.data_X[demonstration] = scaler.transform(W)
+			print "Kinematics ", demonstration, self.data_X[demonstration].shape
 
 	def generate_transition_features(self):
 
@@ -172,15 +182,48 @@ class KinematicsClustering():
 		print "Generating Changepoints. Fitting GMM ..."
 
 		if constants.REMOTE == 1:
+			print "Init DPGMM"
+			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
+			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+			# IPython.embed()
+			print DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
+
+			# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
+			# print DP_GMM_COMPONENTS
+			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
+
+
+			print "Init GMM"
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, thresh = 5e-5)
+
 		if constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
-		gmm.fit(big_N)
-		Y = gmm.predict(big_N)
 
-		print "Done fitting GMM..."
+		print "Fitting GMM"
+		start = time.time()
+		gmm.fit(big_N)
+		end = time.time()
+		print "GMM Time:", end - start
+		print "Fitting DPGMM"
+		start = time.time()
+		dpgmm.fit(big_N)
+		end = time.time()
+		print "DPGMM Time:", end - start
+
+		Y_gmm = gmm.predict(big_N)
+		Y_dpgmm = dpgmm.predict(big_N)
+
+		# IPython.embed()
+		Y = Y_dpgmm
+
+		print "L0: Clusters in DP-GMM", len(set(Y))
+		print "L0: Clusters in GMM", len(set(Y_gmm))
 
 		for w in range(len(Y) - 1):
 
@@ -195,16 +238,18 @@ class KinematicsClustering():
 
 		print "Done with generating change points, " + str(cp_index)
 
-
 	def append_cp_array(self, cp):
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
 	def save_cluster_metrics(self, points, predictions, means, key, model):
 
 		if key == 'level1':
-			self.silhouette_score = metrics.silhouette_score(points, predictions, metric='euclidean')
+			self.silhouette_score_global = metrics.silhouette_score(points, predictions, metric='euclidean')
+			self.silhouette_score_weighted = utils.silhoutte_weighted(points, predictions)
 
-		dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+		# dunn_scores = cluster_evaluation.dunn_index(points, predictions, means)
+
+		dunn_scores = [0,0,0]
 
 		if (dunn_scores[0] is not None) and (dunn_scores[1] is not None) and (dunn_scores[2] is not None):
 
@@ -212,20 +257,32 @@ class KinematicsClustering():
 			self.dunn_scores_2[key] = dunn_scores[1]
 			self.dunn_scores_3[key] = dunn_scores[2]
 
-
 	def cluster_changepoints(self):
 
 		print "Clustering changepoints..."
 
 		if constants.REMOTE == 1:
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
+		
 		gmm.fit(self.changepoints)
+		predictions_gmm = gmm.predict(self.changepoints)
+		
+		predictions = []
+		while True:
+			print "Inside loop"
+			dpgmm.fit(self.changepoints)
+			predictions = dpgmm.predict(self.changepoints)
+			# IPython.embed()
+			if len(set(predictions)) > 1:
+				break
 
-		predictions = gmm.predict(self.changepoints)
+		print "L1: Clusters in DP-GMM", len(set(predictions))
+		print "L1: Clusters in GMM",len(set(predictions_gmm))
 
 		self.save_cluster_metrics(self.changepoints, predictions, gmm.means_, 'level1', gmm)
 
@@ -251,7 +308,7 @@ class KinematicsClustering():
 				cluster_demonstrations.append(self.map_cp2demonstrations[cp])
 			data_representation = float(len(set(cluster_demonstrations))) / float(len(self.list_of_demonstrations))
 			print str(cluster) + ": " + str(data_representation), " " + str(len(cluster_list_of_cp))
-			if data_representation <= constants.PRUNING_FACTOR:
+			if data_representation <= self.representativeness:
 				new_cluster_list = cluster_list_of_cp[:]
 				for cp in cluster_list_of_cp:
 					print "Pruning " + str(cluster) + " " + str(data_representation) +  ": " + str(cp)
@@ -411,8 +468,8 @@ class KinematicsClustering():
 		for cp in self.list_of_cp:
 			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
 
-		data = [self.label_based_scores_1, self.silhouette_score, self.dunn_scores_1,
-		self.dunn_scores_2, self.dunn_scores_3, viz]
+		data = [self.label_based_scores_1, self.silhouette_score_global, self.dunn_scores_1,
+		self.dunn_scores_2, self.dunn_scores_3, viz, self.silhouette_score_weighted]
 
 		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
 
@@ -443,7 +500,6 @@ class KinematicsClustering():
 def get_list_of_demo_combinations(list_of_demonstrations):
 	iterator = itertools.combinations(list_of_demonstrations, len(list_of_demonstrations) - 1)
 	demo_combinations = []
-
 	while (1):
 		try:
 			demo_combinations.append(iterator.next())
@@ -452,7 +508,7 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def post_evaluation(metrics, file, fname):
+def post_evaluation(metrics, file, fname, vision_mode):
 
 	mutual_information_1 = []
 	normalized_mutual_information_1 = []
@@ -464,7 +520,8 @@ def post_evaluation(metrics, file, fname):
 	recall_1_macro = []
 	precision_1_weighted = []
 	recall_1_weighted = []
-	silhouette_scores = []
+	silhouette_scores_global = []
+	silhouette_scores_weighted = []
 
 	dunn1_level_1 = []
 	dunn2_level_1 = []
@@ -479,7 +536,8 @@ def post_evaluation(metrics, file, fname):
 		adjusted_mutual_information_1.append(elem[0]["adjusted_mutual_info_score"])
 		homogeneity_1.append(elem[0]["homogeneity_score"])
 
-		silhouette_scores.append(elem[1])
+		silhouette_scores_global.append(elem[1])
+		silhouette_scores_weighted.append(elem[6])
 
 		dunn1_level_1.append(elem[2]["level1"])
 		dunn2_level_1.append(elem[3]["level1"])
@@ -508,7 +566,8 @@ def post_evaluation(metrics, file, fname):
 	utils.print_and_write_2("mutual_info", np.mean(mutual_information_1), np.std(mutual_information_1), file)
 	utils.print_and_write_2("normalized_mutual_info", np.mean(normalized_mutual_information_1), np.std(normalized_mutual_information_1), file)
 	utils.print_and_write_2("adjusted_mutual_info", np.mean(adjusted_mutual_information_1), np.std(adjusted_mutual_information_1), file)
-	utils.print_and_write_2("silhouette_scores", np.mean(silhouette_scores), np.std(silhouette_scores), file)
+	utils.print_and_write_2("silhouette_scores_global", np.mean(silhouette_scores_global), np.std(silhouette_scores_global), file)
+	utils.print_and_write_2("silhouette_scores_weighted", np.mean(silhouette_scores_weighted), np.std(silhouette_scores_weighted), file)
 
 	utils.print_and_write_2("homogeneity", np.mean(homogeneity_1), np.std(homogeneity_1), file)
 
@@ -517,6 +576,13 @@ def post_evaluation(metrics, file, fname):
 	utils.print_and_write_2("dunn3", np.mean(dunn3_level_1), np.std(dunn3_level_1), file)
 
 	list_of_dtw_values = []
+	list_of_norm_dtw_values = []
+	list_of_lengths = []
+
+	if vision_mode:
+		T = constants.N_COMPONENTS_TIME_Z
+	else:
+		T = constants.N_COMPONENTS_TIME_W
 
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
@@ -527,11 +593,15 @@ def post_evaluation(metrics, file, fname):
 		for i in range(len(list_of_frms_demonstration)):
 			data[i] = list_of_frms_demonstration[0]
 
-		dtw_score = broken_barh.plot_broken_barh(demonstration, data,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg")
+		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg", T)
 		list_of_dtw_values.append(dtw_score)
+		list_of_norm_dtw_values.append(normalized_dtw_score)
+		list_of_lengths.append(length)
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
+	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
+	utils.print_and_write(str(list_of_lengths), file)
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -548,7 +618,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
 
-		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
 
@@ -556,15 +626,17 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-			"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
+		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 
 		# list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
@@ -595,6 +667,6 @@ if __name__ == "__main__":
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
-	post_evaluation(all_metrics, log, args.fname)
+	post_evaluation(all_metrics, log, args.fname, vision_mode)
 
 	log.close()

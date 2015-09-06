@@ -8,6 +8,7 @@ import numpy as np
 import os
 import IPython
 import time
+import tf
 
 from geometry_msgs.msg import PoseStamped, PoseArray
 from sensor_msgs.msg import JointState, Image
@@ -42,6 +43,7 @@ class Recording(object):
 
         # Preparing folders
         self.task_name = constants.TASK_NAME
+        self.listener = tf.TransformListener()
 
         self.trial_name = trial_name
         self.kinematics_folder = constants.PATH_TO_KINEMATICS
@@ -71,13 +73,13 @@ class Recording(object):
         # Subscribers for images
         rospy.Subscriber("/wide_stereo/left/image_rect_color", Image, self.left_image_callback, queue_size=1)
         rospy.Subscriber("/wide_stereo/right/image_rect_color", Image, self.right_image_callback, queue_size=1)
-        
+
         # Subscribers for kinematics
         rospy.Subscriber("/joint_states", JointState, self.joint_state_callback)
 
         self.bridge = cv_bridge.CvBridge()
         self.isRecording = True
-        
+
         signal.signal(signal.SIGINT, self.signal_handler)
 
 
@@ -119,6 +121,8 @@ class Recording(object):
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture1/" + str(get_frame_fig_name(frm)), self.left_image)
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture2/" + str(get_frame_fig_name(frm)), self.right_image)
 
+            (trans,rot) = listener.lookupTransform('/turtle2', '/turtle1', rospy.Time(0))
+            # Gripper angle is r_gripper_joint
             self.data.append(self.joint_state)
             frm += 1
 
