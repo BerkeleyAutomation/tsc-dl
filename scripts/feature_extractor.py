@@ -32,8 +32,15 @@ def get_cnn_features_pickle_dump(net, fname, PATH_TO_DATA, annotations, net_name
 		pickle.dump(Z[key], open(constants.PATH_TO_DATA + features_folder[net_name] + key + "_" + net_name + "_" + fname + ".p", "wb"))
 
 if __name__ == "__main__":
-	list_of_demonstrations = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-	'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+	# list_of_demonstrations = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+	# 'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+	# list_of_demonstrations = ['Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005', 
+	# 'Suturing_G001', 'Suturing_G002', 'Suturing_G003', 'Suturing_G004', 'Suturing_G005',
+	# 'Suturing_H001','Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+	# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+
+	list_of_demonstrations = ['Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
 
 	# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 	# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
