@@ -168,8 +168,7 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
-	list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-		"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+	list_of_demonstrations = ["plane_5", "plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 	parse_annotations(list_of_demonstrations)
 

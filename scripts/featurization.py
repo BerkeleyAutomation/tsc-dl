@@ -41,6 +41,8 @@ def main(DEBUG = False):
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
@@ -69,8 +71,8 @@ def main(DEBUG = False):
 	# featurize_4(list_of_demonstrations, kinematics, sr)
 	# featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
-	featurize_8(list_of_demonstrations, kinematics, sr)
 	featurize_7(list_of_demonstrations, kinematics, sr)
+	featurize_8(list_of_demonstrations, kinematics, sr)
 	pass
 
 
@@ -233,7 +235,16 @@ def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, fold
 
 		Z_new = None
 
-		for i in range(len(Z)):
+		IPython.embed()
+
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
+		start, end = parser.get_start_end_annotations(PATH_TO_ANNOTATION)
+
+		Z = []
+
+		IPython.embed()
+
+		for i in range(Z):
 
 			vector_W = W[i]
 			W_batch = utils.safe_concatenate(W_batch, vector_W)
@@ -290,7 +301,7 @@ def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, fold
 	if config[2]:
 		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + fname + "_GRP" + ".p", "wb"))
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, True, True]):
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, False, True]):
 
 	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
 

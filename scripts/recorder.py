@@ -9,10 +9,12 @@ import os
 import IPython
 import time
 import tf
+import utils
+import time
 
-from geometry_msgs.msg import PoseStamped, PoseArray
 from sensor_msgs.msg import JointState, Image
 from std_msgs.msg import String, Float32
+from tf import transformations
 
 import cv
 import cv2
@@ -57,9 +59,10 @@ class Recording(object):
         print "mkdir " + command
         os.makedirs(command)
 
-        self.data = []
+        self.data = None
         self.images = []
         self.frequency = 10 # max save framerate is 10
+        self.period = 1.0/self.frequency
 
         # Data to record
         self.left_image = None
@@ -78,21 +81,25 @@ class Recording(object):
         rospy.Subscriber("/joint_states", JointState, self.joint_state_callback)
 
         self.bridge = cv_bridge.CvBridge()
-        self.isRecording = True
+        self.r_l = 0
+        self.r_r = 0
+        self.r_j = 0
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
-
     def left_image_callback(self, msg):
+        self.r_l += 1
         self.left_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
 
     def right_image_callback(self, msg):
+        self.r_r += 1
         self.right_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
 
     def joint_state_callback(self, msg):
+        self.r_j += 1
         self.joint_state = msg
 
-    def signal_handler(self, signum, something):
+    def save_and_quit(self):
         rospy.loginfo("Saving data to pickle file.")
         try:
             print "Saving pickle file to ", self.kinematics_folder + self.task_name +"_" + self.trial_name + ".p" 
@@ -104,27 +111,84 @@ class Recording(object):
             IPython.embed()
         sys.exit()
 
+    def signal_handler(self, signum, something):
+        self.save_and_quit()
+
     def start_recording(self):
 
         print "Recorder Loop"
-
         while self.left_image is None or self.right_image is None:
             pass
 
-        start = time.clock()
+        while (1):
+            try:
+                (trans,rot) = self.listener.lookupTransform('/r_gripper_tool_frame', '/base_link', rospy.Time(0))
+                break
+            except (tf.ExtrapolationException):
+                print "ExtrapolationException"
+                rospy.sleep(0.1)
+                continue
 
         frm = 0
+        wait_thresh = 0
+        prev_r_l = self.r_l
+        prev_r_r = self.r_r
+        prev_r_j = self.r_j
+
+        trans_vel = np.array([0.0, 0.0, 0.0])
+        rot_vel = np.array([0.0, 0.0, 0.0])
+
+        prev_trans = None
+        prev_rot = None
+
         for i in range(9999999):
             print frm
-            rospy.sleep(1.0/self.frequency)
+            rospy.sleep(self.period)
+
+            start = time.time()
 
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture1/" + str(get_frame_fig_name(frm)), self.left_image)
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture2/" + str(get_frame_fig_name(frm)), self.right_image)
 
-            (trans,rot) = listener.lookupTransform('/turtle2', '/turtle1', rospy.Time(0))
+            (trans, quaternion) = self.listener.lookupTransform('/r_gripper_tool_frame', '/base_link', rospy.Time(0))
+            r_matrix = utils.quaternion2rotation(quaternion)
+            rot = transformations.euler_from_matrix(r_matrix)
+            r_gripper_angle = self.joint_state.position[-17]
+
+            if frm != 0:
+                trans_vel = (trans - prev_trans) / self.period
+                rot_vel = (rot - prev_rot) / self.period
+
+            prev_trans = np.array(trans)
+            prev_rot = np.array(rot)
+
+            js_pos = self.joint_state.position[16:-12]
+            js_vel = self.joint_state.velocity[16:-12]
+
+            W = list(trans) + list(r_matrix.flatten()) + list(trans_vel) + list(rot_vel)
+
             # Gripper angle is r_gripper_joint
-            self.data.append(self.joint_state)
+            W.append(r_gripper_angle)
+
+            W = W + list(js_pos) + list(js_vel)
+
+            self.data = utils.safe_concatenate(self.data, utils.reshape(np.array(W)))
+
             frm += 1
+
+            if ((self.r_l == prev_r_l) and (self.r_r == prev_r_r) and (self.r_j == prev_r_j)):
+                print "Not recording anymore?"
+                wait_thresh += 1
+                if wait_thresh > 5:
+                    self.save_and_quit()
+
+            prev_r_l = self.r_l
+            prev_r_r = self.r_r
+            prev_r_j = self.r_j
+
+            end = time.time()
+
+            print end - start
 
 if __name__ == "__main__":
     rospy.init_node("recorder_node")

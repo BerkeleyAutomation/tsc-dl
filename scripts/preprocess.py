@@ -43,8 +43,7 @@ def preprocess(list_of_demonstrations):
 
 if __name__ == "__main__":
 
-	# list_of_demonstrations = ["plane_0",]
-	list_of_demonstrations = ["plane_1", "plane_2", "plane_3", "plane_4", "plane_5",
-		"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+	# list_of_demonstrations = ["plane_5",]
+	list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 	preprocess(list_of_demonstrations)
 	pass
