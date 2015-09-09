@@ -10,10 +10,13 @@ import random
 import os
 import yaml
 import pickle
+import time
 from decimal import Decimal
 
 import encoding
 import constants
+
+current_milli_time = lambda: int(round(time.time() * 1000))
 
 def cca(W, Z):
 	"""
@@ -409,7 +412,7 @@ def quaternion2rotation(q):
 	rmat[2,0] = zx2 - wy2
 	rmat[2,1] = yz2 + wx2
 	rmat[2,2] = 1. - xx2 - yy2
-	return rmat.flatten()
+	return rmat
 
 def silhoutte_weighted(points, labels):
 	"""

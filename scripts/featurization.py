@@ -41,17 +41,33 @@ def main(DEBUG = False):
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+		# list_of_demonstrations = ["people_0", "people_1", "people_2", "people_3", "people_4", "people_5", "people_6"]
+
+		# list_of_demonstrations = ['Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+		# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
+		'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+		'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005',
+		'Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005']
+
+		# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
+
+		# list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
 
 	# Parse Kinematic Features
 	print "Parsing Kinematic Features"
@@ -60,17 +76,18 @@ def main(DEBUG = False):
 		W = parser.get_kinematic_features(demonstration)
 		kinematics[demonstration] = W
 
-
 	sr = constants.SR
+	print "Sampling rate:",sr
 	# featurize_sift(list_of_demonstrations, kinematics, sr)
 	# featurize_1(list_of_demonstrations, kinematics, sr)
 	# featurize_2(list_of_demonstrations, kinematics, sr)
 	# featurize_3(list_of_demonstrations, kinematics, sr)
 	# featurize_4(list_of_demonstrations, kinematics, sr)
-	# featurize_5(list_of_demonstrations, kinematics, sr)
+	featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
-	featurize_8(list_of_demonstrations, kinematics, sr)
-	featurize_7(list_of_demonstrations, kinematics, sr)
+	# featurize_7(list_of_demonstrations, kinematics, sr)
+	# featurize_8(list_of_demonstrations, kinematics, sr)
+	# featurize_visual(list_of_demonstrations, sr)
 	pass
 
 
@@ -179,7 +196,7 @@ def featurize_6(list_of_demonstrations, kinematics, sr):
 def featurize_7(list_of_demonstrations, kinematics, sr, config = [True, True, True]):
 	print "FEATURIZATION 7"
 	layer = "conv5_3"
-	net_name = "vgg"
+	net_name = "VGG"
 	conv_dimensions = constants.caffe_conv_dimensions[layer]
 	folder = constants.VGG_FEATURES_FOLDER
 	FPS = 30
@@ -233,7 +250,16 @@ def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, fold
 
 		Z_new = None
 
-		for i in range(len(Z)):
+		IPython.embed()
+
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
+		start, end = parser.get_start_end_annotations(PATH_TO_ANNOTATION)
+
+		Z = []
+
+		IPython.embed()
+
+		for i in range(Z):
 
 			vector_W = W[i]
 			W_batch = utils.safe_concatenate(W_batch, vector_W)
@@ -290,7 +316,7 @@ def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, fold
 	if config[2]:
 		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + fname + "_GRP" + ".p", "wb"))
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, True, True]):
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, False, True]):
 
 	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
 
@@ -309,15 +335,23 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 	kinematics_sampled = {}
 	kinematics_sampled[init_demonstration] = utils.sample_matrix(kinematics[init_demonstration], sampling_rate = sr)
 
+	dimensions_of_PCA = demonstration_size[init_demonstration]
+
 	for demonstration in list_of_demonstrations[1:]:
 		print "Loading Visual Features for ", demonstration
 		Z = load_cnn_features(demonstration, layer, folder, net)
 		Z_sampled = utils.sample_matrix(Z, sampling_rate = sr)
+		print "Sampled visual", Z.shape, Z_sampled.shape
+
+		dimensions_of_PCA += Z_sampled.shape[0]
 
 		big_Z = np.concatenate((big_Z, Z_sampled), axis = 0)
 		demonstration_size[demonstration] = Z_sampled.shape[0]
 
 		kinematics_sampled[demonstration] = utils.sample_matrix(kinematics[demonstration], sampling_rate = sr)
+		print "Sampled kinematics", kinematics_sampled[demonstration].shape
+
+		print "PCA # of rows: ", dimensions_of_PCA
 
 	PC = min(100, min(demonstration_size.values()))
 
@@ -368,13 +402,81 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 		
 		start += size
 
-
-
 	if config[0]:
 		pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(feature_index) + "_PCA.p", "wb"))
 
 	if config[1]:
 		pickle.dump(data_X_CCA, open(PATH_TO_FEATURES + str(feature_index) + "_CCA.p", "wb"))
+
+	if config[2]:
+		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(feature_index) + "_GRP.p", "wb"))
+
+def featurize_visual(list_of_demonstrations, sr):
+	print "FEATURIZATION 2 - Visual"
+	featurize_cnn_features_no_kinematics(list_of_demonstrations, "conv4",
+		constants.ALEXNET_FEATURES_FOLDER, 2, "AlexNet", sr)
+	print "FEATURIZATION 5 - Visual"
+	featurize_cnn_features_no_kinematics(list_of_demonstrations, "conv5_3",
+		constants.VGG_FEATURES_FOLDER, 5, "VGG", sr)
+
+def featurize_cnn_features_no_kinematics(list_of_demonstrations, layer, folder, feature_index, net, sr = 3, config = [True, False, True]):
+
+	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
+
+	data_X_PCA = {}
+	data_X_GRP = {}
+
+	big_Z = None
+
+	# Initialization
+	demonstration_size = {}
+	init_demonstration = list_of_demonstrations[0]
+	big_Z = utils.sample_matrix(load_cnn_features(init_demonstration, layer, folder, net), sampling_rate = sr)
+	demonstration_size[init_demonstration] = big_Z.shape[0]
+
+	for demonstration in list_of_demonstrations[1:]:
+		print "Loading Visual Features for ", demonstration
+		Z = load_cnn_features(demonstration, layer, folder, net)
+		Z_sampled = utils.sample_matrix(Z, sampling_rate = sr)
+
+		big_Z = np.concatenate((big_Z, Z_sampled), axis = 0)
+		demonstration_size[demonstration] = Z_sampled.shape[0]
+
+	PC = min(100, min(demonstration_size.values()))
+
+	if config[0]:
+		big_Z_pca = utils.pca_incremental(big_Z, PC = PC)
+
+	if config[2]:
+		big_Z_grp = utils.grp(big_Z)
+
+	start = 0
+	end = 0
+
+	import matlab
+	import matlab.engine as mateng
+
+	eng = mateng.start_matlab()
+
+	for demonstration in list_of_demonstrations:
+
+		size = demonstration_size[demonstration]
+		end = start + size
+
+		# ------------- PCA ------------- 
+		if config[0]:
+			Z = big_Z_pca[start:end]
+			data_X_PCA[demonstration] = Z
+
+		# ------------- GRP -------------
+		if config[2]:
+			Z = big_Z_grp[start:end]
+			data_X_GRP[demonstration] = Z
+		
+		start += size
+
+	if config[0]:
+		pickle.dump(data_X_PCA, open(PATH_TO_FEATURES + str(feature_index) + "_PCA.p", "wb"))
 
 	if config[2]:
 		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + str(feature_index) + "_GRP.p", "wb"))

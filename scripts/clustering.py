@@ -126,9 +126,6 @@ class MilestonesClustering():
 			W = self.data_W[demonstration]
 			Z = self.data_Z[demonstration]
 
-			print "XXXXXX W.shape[1] ", W.shape[1]
-			print "XXXXXX Z.shape[1] ", Z.shape[1]
-
 			assert W.shape[0] == Z.shape[0]
 			# assert W.shape[1] == constants.KINEMATICS_DIM
 
@@ -306,7 +303,7 @@ class MilestonesClustering():
 		if constants.REMOTE == 1:
 			print "DPGMM L1 - start"
 			# Previously, when L0 was GMM, alpha = 0.4
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
 			print "DPGMM L1 - end"
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
 			print "GMM L1 - end"
@@ -415,8 +412,8 @@ class MilestonesClustering():
 			except ValueError as e:
 				continue
 
-			Y = dpgmm.predict(matrix)
 			Y = gmm.predict(matrix)
+			Y = dpgmm.predict(matrix)
 
 			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
 
@@ -905,7 +902,7 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 

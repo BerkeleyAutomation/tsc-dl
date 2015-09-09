@@ -168,8 +168,13 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
-	list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-		"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+	# list_of_demonstrations = ["plane_5", "plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+	# list_of_demonstrations = ["people_0", "people_1", "people_2", "people_3", "people_4", "people_5", "people_6"]
+
+	# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
+
+	list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
 
 	parse_annotations(list_of_demonstrations)
 

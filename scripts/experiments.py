@@ -278,9 +278,9 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 	# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
-	# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+	list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-	list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+	# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 	combinations = clustering.get_list_of_demo_combinations(list_of_demonstrations)
 
