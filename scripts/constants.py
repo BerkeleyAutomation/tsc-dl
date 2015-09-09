@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/100.yaml")
+config = parse_yaml("../config/suturing.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -32,7 +32,7 @@ else:
 	color_map = {1:'#00A598', 2:'#00b2a9', 3:'#e04e39', 4:'#ffc72c', 5: '#B9D3B6', 6:'#00b5e2', 7:'k', 8:'#ffc72c', 9: '#9932CC', 10: '#E9967A', 11: '#584F29', 12: '#008080'}
 
 alphabet_map = {}
-for i in range(200):
+for i in range(500):
 	alphabet_map[i] = "A" + str(i) + "_"
 
 # alphabet_map = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H", 9:"I", 10: "J",
@@ -134,6 +134,8 @@ ALPHA_Z_CP = config["ALPHA_Z_CP"]
 ALPHA_ZW_CP = config["ALPHA_ZW_CP"]
 
 DPGMM_DIVISOR = config["DPGMM_DIVISOR"]
+
+DPGMM_DIVISOR_L1 = config["DPGMM_DIVISOR_L1"]
 
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}

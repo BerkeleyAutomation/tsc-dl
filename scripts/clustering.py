@@ -216,7 +216,6 @@ class MilestonesClustering():
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
 			print DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
-			# IPython.embed()
 			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
 
 		elif constants.REMOTE == 2:
@@ -240,8 +239,6 @@ class MilestonesClustering():
 
 		print "L0: Clusters in DP-GMM", len(set(Y))
 		print "L0: Clusters in GMM", len(set(Y_gmm))
-
-		# IPython.embed()
 
 		for w in range(len(Y) - 1):
 
@@ -576,7 +573,6 @@ class MilestonesClustering():
 				milestone_label = self.map_cp2milestones[cp]
 			except KeyError:
 				print "Too Few elements inside cluster!!"
-				# IPython.embed()				
 				sys.exit()
 			labels_pred_1_.append(milestone_label)
 			labels_pred_2_.append(list(milestone_label)[0])
@@ -900,7 +896,7 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
+		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
@@ -911,7 +907,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]

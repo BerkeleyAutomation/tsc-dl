@@ -83,6 +83,8 @@ class KinematicsClustering():
 			self.representativeness = constants.PRUNING_FACTOR_W
 			self.ALPHA_CP = constants.ALPHA_W_CP
 
+		self.ALPHA_L1 = 0.4
+
 	def construct_features_visual(self):
 
 		data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
@@ -186,7 +188,6 @@ class KinematicsClustering():
 			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
-			# IPython.embed()
 			print DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
 			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
 
@@ -219,7 +220,6 @@ class KinematicsClustering():
 		Y_gmm = gmm.predict(big_N)
 		Y_dpgmm = dpgmm.predict(big_N)
 
-		# IPython.embed()
 		Y = Y_dpgmm
 
 		print "L0: Clusters in DP-GMM", len(set(Y))
@@ -262,22 +262,22 @@ class KinematicsClustering():
 		print "Clustering changepoints..."
 
 		if constants.REMOTE == 1:
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/3), covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, thresh= 1e-4)
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
-		
+
 		gmm.fit(self.changepoints)
+
 		predictions_gmm = gmm.predict(self.changepoints)
-		
+
 		predictions = []
 		while True:
 			print "Inside loop"
 			dpgmm.fit(self.changepoints)
 			predictions = dpgmm.predict(self.changepoints)
-			# IPython.embed()
 			if len(set(predictions)) > 1:
 				break
 
