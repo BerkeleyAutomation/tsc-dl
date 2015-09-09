@@ -130,7 +130,7 @@ class CNNFeatureExtractor:
 			print str(seg)
 			frm_num = seg[0]
 			while frm_num <= seg[1]:
-				print frm_num
+				print frm_num, annotations
 				im = caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num))
 				self.net.blobs['data'].data[...] = self.transformer.preprocess('data', im)
 				out = self.net.forward()

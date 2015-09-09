@@ -126,9 +126,6 @@ class MilestonesClustering():
 			W = self.data_W[demonstration]
 			Z = self.data_Z[demonstration]
 
-			print "XXXXXX W.shape[1] ", W.shape[1]
-			print "XXXXXX Z.shape[1] ", Z.shape[1]
-
 			assert W.shape[0] == Z.shape[0]
 			# assert W.shape[1] == constants.KINEMATICS_DIM
 
@@ -418,8 +415,8 @@ class MilestonesClustering():
 			except ValueError as e:
 				continue
 
-			Y = dpgmm.predict(matrix)
 			Y = gmm.predict(matrix)
+			Y = dpgmm.predict(matrix)
 
 			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
 

@@ -4,7 +4,8 @@ import utils
 import constants
 import IPython
 
-list_of_demonstrations = ["plane_5", "plane_6","plane_7","plane_8","plane_9", "plane_10"]
+# list_of_demonstrations = ["plane_5", "plane_6","plane_7","plane_8","plane_9", "plane_10"]
+list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
 
 POSE_DIM = 19
 JOINTS_DIM = 24

@@ -37,10 +37,11 @@ if __name__ == "__main__":
 	# list_of_demonstrations = ['Suturing_D005', 'Suturing_C001', 'Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
 	# 'Suturing_F001', 'Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
-	list_of_demonstrations = ['Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005', 
-	'Suturing_G001', 'Suturing_G002', 'Suturing_G003', 'Suturing_G004', 'Suturing_G005',
-	'Suturing_H001','Suturing_H003', 'Suturing_H004', 'Suturing_H005',
-	'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+	# list_of_demonstrations = ['Suturing_H001', 'Suturing_G003']
+
+	# list_of_demonstrations = ['Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+	# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+	# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
 
 	# list_of_demonstrations = ['Suturing_G003', 'Suturing_G004', 'Suturing_G005', 'Suturing_I004', 'Suturing_I005']
 
@@ -54,5 +55,11 @@ if __name__ == "__main__":
 	# list_of_demonstrations = ["plane_5",
 	# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
+	# list_of_demonstrations = ["people_0", "people_1", "people_2", "people_3", "people_4", "people_5", "people_6"]
+
+	# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
+
+	list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
+
 	forward_pass_entire_dataset(list_of_demonstrations, "VGG", constants.CAMERA)
-	# forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", constants.CAMERA)
+	forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", constants.CAMERA)

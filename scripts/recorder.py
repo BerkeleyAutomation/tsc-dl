@@ -45,7 +45,10 @@ class Recording(object):
 
         # Preparing folders
         self.task_name = constants.TASK_NAME
-        self.listener = tf.TransformListener()
+
+        self.record_kinematics = False
+        if self.task_name in ["plane", "lego"]:
+            self.record_kinematics = True
 
         self.trial_name = trial_name
         self.kinematics_folder = constants.PATH_TO_KINEMATICS
@@ -60,7 +63,6 @@ class Recording(object):
         os.makedirs(command)
 
         self.data = None
-        self.images = []
         self.frequency = 10 # max save framerate is 10
         self.period = 1.0/self.frequency
 
@@ -72,18 +74,19 @@ class Recording(object):
         self.psm1_pose = None
         self.psm2_pose = None
         self.joint_state = None
+        self.listener = tf.TransformListener()
 
         # Subscribers for images
         rospy.Subscriber("/wide_stereo/left/image_rect_color", Image, self.left_image_callback, queue_size=1)
         rospy.Subscriber("/wide_stereo/right/image_rect_color", Image, self.right_image_callback, queue_size=1)
 
-        # Subscribers for kinematics
-        rospy.Subscriber("/joint_states", JointState, self.joint_state_callback)
+        if self.record_kinematics:
+            # Subscribers for kinematics
+            rospy.Subscriber("/joint_states", JointState, self.joint_state_callback)
 
         self.bridge = cv_bridge.CvBridge()
         self.r_l = 0
         self.r_r = 0
-        self.r_j = 0
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -96,19 +99,19 @@ class Recording(object):
         self.right_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
 
     def joint_state_callback(self, msg):
-        self.r_j += 1
         self.joint_state = msg
 
     def save_and_quit(self):
-        rospy.loginfo("Saving data to pickle file.")
-        try:
-            print "Saving pickle file to ", self.kinematics_folder + self.task_name +"_" + self.trial_name + ".p" 
-            pickle.dump(self.data, open(self.kinematics_folder + self.task_name +"_" + self.trial_name + ".p", "wb"))
-
-        except Exception as e:
-            print "Exception: ", e
-            rospy.logwarn('Failed to save registration')
-            IPython.embed()
+        if self.record_kinematics:
+            rospy.loginfo("Saving data to pickle file.")
+            try:
+                print "Saving pickle file to ", self.kinematics_folder + self.task_name +"_" + self.trial_name + ".p" 
+                pickle.dump(self.data, open(self.kinematics_folder + self.task_name +"_" + self.trial_name + ".p", "wb"))
+            except Exception as e:
+                print "Exception: ", e
+                rospy.logwarn('Failed to save registration')
+                IPython.embed()
+        print "Fin"
         sys.exit()
 
     def signal_handler(self, signum, something):
@@ -120,20 +123,20 @@ class Recording(object):
         while self.left_image is None or self.right_image is None:
             pass
 
-        while (1):
-            try:
-                (trans,rot) = self.listener.lookupTransform('/r_gripper_tool_frame', '/base_link', rospy.Time(0))
-                break
-            except (tf.ExtrapolationException):
-                print "ExtrapolationException"
-                rospy.sleep(0.1)
-                continue
+        if self.record_kinematics:
+            while (1):
+                try:
+                    (trans,rot) = self.listener.lookupTransform('/r_gripper_tool_frame', '/base_link', rospy.Time(0))
+                    break
+                except (tf.ExtrapolationException):
+                    print "ExtrapolationException"
+                    rospy.sleep(0.1)
+                    continue
 
         frm = 0
         wait_thresh = 0
         prev_r_l = self.r_l
         prev_r_r = self.r_r
-        prev_r_j = self.r_j
 
         trans_vel = np.array([0.0, 0.0, 0.0])
         rot_vel = np.array([0.0, 0.0, 0.0])
@@ -150,33 +153,35 @@ class Recording(object):
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture1/" + str(get_frame_fig_name(frm)), self.left_image)
             cv2.imwrite(self.video_folder + self.task_name + "_" + self.trial_name + "_capture2/" + str(get_frame_fig_name(frm)), self.right_image)
 
-            (trans, quaternion) = self.listener.lookupTransform('/r_gripper_tool_frame', '/base_link', rospy.Time(0))
-            r_matrix = utils.quaternion2rotation(quaternion)
-            rot = transformations.euler_from_matrix(r_matrix)
-            r_gripper_angle = self.joint_state.position[-17]
+            if self.record_kinematics:
 
-            if frm != 0:
-                trans_vel = (trans - prev_trans) / self.period
-                rot_vel = (rot - prev_rot) / self.period
+                (trans, quaternion) = self.listener.lookupTransform('/r_gripper_tool_frame', '/base_link', rospy.Time(0))
+                r_matrix = utils.quaternion2rotation(quaternion)
+                rot = transformations.euler_from_matrix(r_matrix)
+                r_gripper_angle = self.joint_state.position[-17]
 
-            prev_trans = np.array(trans)
-            prev_rot = np.array(rot)
+                if frm != 0:
+                    trans_vel = (trans - prev_trans) / self.period
+                    rot_vel = (rot - prev_rot) / self.period
 
-            js_pos = self.joint_state.position[16:-12]
-            js_vel = self.joint_state.velocity[16:-12]
+                prev_trans = np.array(trans)
+                prev_rot = np.array(rot)
 
-            W = list(trans) + list(r_matrix.flatten()) + list(trans_vel) + list(rot_vel)
+                js_pos = self.joint_state.position[16:-12]
+                js_vel = self.joint_state.velocity[16:-12]
 
-            # Gripper angle is r_gripper_joint
-            W.append(r_gripper_angle)
+                W = list(trans) + list(r_matrix.flatten()) + list(trans_vel) + list(rot_vel)
 
-            W = W + list(js_pos) + list(js_vel)
+                # Gripper angle is r_gripper_joint
+                W.append(r_gripper_angle)
 
-            self.data = utils.safe_concatenate(self.data, utils.reshape(np.array(W)))
+                W = W + list(js_pos) + list(js_vel)
+
+                self.data = utils.safe_concatenate(self.data, utils.reshape(np.array(W)))
 
             frm += 1
 
-            if ((self.r_l == prev_r_l) and (self.r_r == prev_r_r) and (self.r_j == prev_r_j)):
+            if ((self.r_l == prev_r_l) and (self.r_r == prev_r_r)):
                 print "Not recording anymore?"
                 wait_thresh += 1
                 if wait_thresh > 5:
@@ -184,7 +189,6 @@ class Recording(object):
 
             prev_r_l = self.r_l
             prev_r_r = self.r_r
-            prev_r_j = self.r_j
 
             end = time.time()
 
