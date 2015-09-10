@@ -160,7 +160,7 @@ class MilestonesClustering():
 			gmm.fit(N)
 			Y = gmm.predict(N)
 	
-			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
+			self.save_cluster_metrics(N, Y, 'cpts_' + demonstration)
 
 			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_" + constants.CAMERA + ".p")
@@ -265,7 +265,7 @@ class MilestonesClustering():
 			self.change_pts_W = np.concatenate((self.change_pts_W, utils.reshape(cp[:constants.KINEMATICS_DIM])), axis = 0)
 			self.change_pts_Z = np.concatenate((self.change_pts_Z, utils.reshape(cp[constants.KINEMATICS_DIM:])), axis = 0)
 
-	def save_cluster_metrics(self, points, predictions, means, key, model, level2_mode = False):
+	def save_cluster_metrics(self, points, predictions, key, level2_mode = False):
 
 		try:
 			silhoutte_global = metrics.silhouette_score(points, predictions, metric='euclidean')
@@ -327,7 +327,7 @@ class MilestonesClustering():
 			i += 1
 			if i > 100:
 				break
-		self.save_cluster_metrics(self.change_pts_Z, Y, gmm.means_, 'level1', gmm)
+		self.save_cluster_metrics(self.change_pts_Z, Y, 'level1')
 
 		for i in range(len(Y)):
 			label = constants.alphabet_map[Y[i] + 1]
@@ -413,9 +413,9 @@ class MilestonesClustering():
 				continue
 
 			Y = gmm.predict(matrix)
-			Y = dpgmm.predict(matrix)
+			# Y = dpgmm.predict(matrix)
 
-			self.save_cluster_metrics(matrix, Y, gmm.means_, 'level2_' + str(key), gmm, level2_mode = True)
+			self.save_cluster_metrics(matrix, Y, 'level2_' + str(key), level2_mode = True)
 
 			for i in range(len(Y)):
 
@@ -675,7 +675,9 @@ class MilestonesClustering():
 		viz = {}
 
 		for cp in self.list_of_cp:
-			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
+			cp_all_data = (self.map_cp2frm[cp], self.map_cp2milestones[cp], self.map_cp2level1[cp],
+				self.map_cp2surgemes[cp], self.map_cp2surgemetransitions[cp])
+			utils.dict_insert_list(self.map_cp2demonstrations[cp], cp_all_data, viz)
 
 		data = [self.label_based_scores_1, self.label_based_scores_2,
 		self.silhouette_scores_global, self.dunn_scores_1, self.dunn_scores_2, self.dunn_scores_3,
@@ -858,6 +860,8 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	list_of_norm_dtw_values = []
 	list_of_lengths = []
 
+	pickle.dump(list_of_frms, open(constants.PATH_TO_CLUSTERING_RESULTS + filename + "_.p", "wb"))
+
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
 
@@ -865,7 +869,7 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		data = {}
 
 		for i in range(len(list_of_frms_demonstration)):
-			data[i] = list_of_frms_demonstration[0]
+			data[i] = [elem[0] for elem in list_of_frms_demonstration[i]]
 
 		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
 			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg", constants.N_COMPONENTS_TIME_ZW)
@@ -902,9 +906,12 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
+
+		list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
 
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
@@ -913,6 +920,8 @@ if __name__ == "__main__":
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
 		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 

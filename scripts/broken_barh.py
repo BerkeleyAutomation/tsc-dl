@@ -36,7 +36,7 @@ def setup_manual_labels(segments):
 		color = constants.color_map[key]
 
 		for elem in segments[key]:
-			list_of_start_end.append((elem[0], elem[1] - elem[0]))
+			list_of_start_end.append((elem[0] + constants.SR * 2, elem[1] - elem[0]))
 			list_of_colors.append(color)
 
 	return list_of_start_end, tuple(list_of_colors)
@@ -90,7 +90,7 @@ def get_time_clusters(data, T_COMPONENTS):
 		all_frms += elem
 	
 	N_COMPONENTS = min(T_COMPONENTS, len(all_frms))
-	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 5000, thresh = 5e-7, min_covar = 0.001)
+	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, thresh = 5e-7)
 
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
@@ -100,12 +100,14 @@ def get_time_clusters(data, T_COMPONENTS):
 	means = time_cluster.means_
 	covars = time_cluster.covars_
 
-	# dpgmm = mixture.DPGMM(n_components = numDemos, covariance_type='diag', n_iter = 10000, alpha = 0.4, thresh= 1e-4)
+	# dpgmm = mixture.DPGMM(n_components = numDemos, covariance_type='diag', n_iter = 10000, alpha = 1000, thresh= 1e-10)
 	# dpgmm.fit(X)
 	# Y_dpgmm = dpgmm.predict(X)
 	# means_dpgmm = dpgmm.means_
 
 	list_of_elem = []
+
+	list_of_means = []
 	
 	for i in range(len(Y)):
 		list_of_elem.append((Y[i], X[i], means[Y[i]][0], np.sqrt(covars[Y[i]][0][0])))
@@ -136,6 +138,7 @@ def get_time_clusters(data, T_COMPONENTS):
 		max_frm = max(cluster_frames)
 		
 		mean = means[cluster][0]
+		list_of_means.append(int(mean))
 		std = np.sqrt(covars[cluster][0][0])
 		
 		leftFrame = max(min_frm[0], mean - std)
@@ -147,11 +150,11 @@ def get_time_clusters(data, T_COMPONENTS):
 			# list_time_clusters.append((min_frm[0], max_frm[0]))
 			list_time_clusters.append((leftFrame, rightFrame))
 
-	print "Number of Clusters pruned in Time Clustering: ",  len(list_time_clusters_noPrune) - len(list_time_clusters)  
+	print "Number of Clusters pruned in Time Clustering: ",  len(list_time_clusters_noPrune) - len(list_time_clusters)
 
 	labels_automatic, colors_automatic = setup_automatic_labels_2(list_time_clusters, "k")
 	labels_automatic_0, colors_automatic_0 = setup_automatic_labels(list_of_frms[0], "k")
-	return labels_automatic, colors_automatic, labels_automatic_0, colors_automatic_0, means, list_of_frms
+	return labels_automatic, colors_automatic, labels_automatic_0, colors_automatic_0, list_of_means, list_of_frms
 
 def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = None, save_fname2 = None):
 	"""
@@ -214,18 +217,18 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 
 	time_sequence_1 = [elem[0] + elem[1] for elem in labels_manual]
 
-	time_sequence_2 = [int(elem) for elem in means_W]
+	time_sequence_2 = means_W
 	dtw_score_W = compute_dtw(time_sequence_1, time_sequence_2)
 
-	time_sequence_2 = [int(elem) for elem in means_Z]
+	time_sequence_2 = means_Z
 	dtw_score_Z = compute_dtw(time_sequence_1, time_sequence_2)
 
-	time_sequence_2 = [int(elem) for elem in means_ZW]
+	time_sequence_2 = means_ZW
 	dtw_score_ZW = compute_dtw(time_sequence_1, time_sequence_2)
 
-	dtw_score_W_normalized = dtw_score_W/float(length) * 1000
-	dtw_score_Z_normalized = dtw_score_Z/float(length) * 1000
-	dtw_score_ZW_normalized = dtw_score_ZW/float(length) * 1000
+	dtw_score_W_normalized = dtw_score_W/float(length) * 100
+	dtw_score_Z_normalized = dtw_score_Z/float(length) * 100
+	dtw_score_ZW_normalized = dtw_score_ZW/float(length) * 100
 
 	return dtw_score_W, dtw_score_Z, dtw_score_ZW, dtw_score_W_normalized, dtw_score_Z_normalized, dtw_score_ZW_normalized, length
 
@@ -291,10 +294,10 @@ def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 	pass
 
 	time_sequence_1 = [elem[0] + elem[1] for elem in labels_manual ]
-	time_sequence_2 = [int(elem) for elem in means]
+	time_sequence_2 = means
 
 	dtw_score = compute_dtw(time_sequence_1, time_sequence_2)
-	normalized_dtw_score = dtw_score/float(length) * 1000
+	normalized_dtw_score = dtw_score/float(length) * 100
 	return dtw_score, normalized_dtw_score, length
 
 if __name__ == "__main__":
