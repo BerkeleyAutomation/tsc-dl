@@ -126,7 +126,7 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 		X = mat['x_traj']
 		X = X.T
 		# X = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
-	elif constants.TASK_NAME == "plane" or constants.TASK_NAME == "lego":
+	elif constants.TASK_NAME in ["plane","lego"]:
 		print "-- Parsing Kinematics for ", fname
 		trajectory = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
 		for frm in range(start, end + 1):

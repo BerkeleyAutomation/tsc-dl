@@ -143,7 +143,7 @@ class KinematicsClustering():
 			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA +
 				constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
 	
-			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
+			self.save_cluster_metrics(N, Y, 'cpts_' + demonstration)
 
 			for i in range(len(Y) - 1):
 
@@ -189,7 +189,7 @@ class KinematicsClustering():
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
 			print DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = self.ALPHA_CP, thresh= 1e-7)
 
 			# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
@@ -241,7 +241,7 @@ class KinematicsClustering():
 	def append_cp_array(self, cp):
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
-	def save_cluster_metrics(self, points, predictions, means, key, model):
+	def save_cluster_metrics(self, points, predictions, key):
 
 		if key == 'level1':
 			self.silhouette_score_global = metrics.silhouette_score(points, predictions, metric='euclidean')
@@ -284,7 +284,7 @@ class KinematicsClustering():
 		print "L1: Clusters in DP-GMM", len(set(predictions))
 		print "L1: Clusters in GMM",len(set(predictions_gmm))
 
-		self.save_cluster_metrics(self.changepoints, predictions, gmm.means_, 'level1', gmm)
+		self.save_cluster_metrics(self.changepoints, predictions,'level1')
 
 		for i in range(len(predictions)):
 			label = constants.alphabet_map[predictions[i] + 1]
@@ -466,7 +466,8 @@ class KinematicsClustering():
 		viz = {}
 
 		for cp in self.list_of_cp:
-			utils.dict_insert_list(self.map_cp2demonstrations[cp], self.map_cp2frm[cp], viz)
+			cp_all_data = (self.map_cp2frm[cp], self.map_cp2cluster[cp], self.map_cp2surgemetransitions[cp], self.map_cp2surgemes[cp])
+			utils.dict_insert_list(self.map_cp2demonstrations[cp], cp_all_data, viz)
 
 		data = [self.label_based_scores_1, self.silhouette_score_global, self.dunn_scores_1,
 		self.dunn_scores_2, self.dunn_scores_3, viz, self.silhouette_score_weighted]
@@ -584,14 +585,15 @@ def post_evaluation(metrics, file, fname, vision_mode):
 	else:
 		T = constants.N_COMPONENTS_TIME_W
 
+	pickle.dump(list_of_frms, open(constants.PATH_TO_CLUSTERING_RESULTS + fname + "_.p", "wb"))
+
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
 
-		assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
 		data = {}
 
 		for i in range(len(list_of_frms_demonstration)):
-			data[i] = list_of_frms_demonstration[0]
+			data[i] = [elem[0] for elem in list_of_frms_demonstration[i]]
 
 		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
 			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg", T)
@@ -606,8 +608,8 @@ def post_evaluation(metrics, file, fname, vision_mode):
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
-	argparser.add_argument("--visual", help = "Debug mode?[y/n]", default = False)
-	argparser.add_argument("fname", help = "Pickle file of visual features", default = 4)
+	argparser.add_argument("--visual", help = "Name of pickle file", default = False)
+	argparser.add_argument("fname", help = "Name of experiment", default = 4)
 	args = argparser.parse_args()
 
 	if args.debug == 'y':
@@ -629,7 +631,7 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
@@ -638,15 +640,26 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
-
 		# list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 
+		# Experts (Suturing)
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
+
+		# Experts +Intermediates (Suturing)
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
 		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
+		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
+
+		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+		# list_of_demonstrations = ['people_2', 'people_3', 'people_4', 'people_5', 'people_6']
+
+		list_of_demonstrations = ['people2_2', 'people2_3', 'people2_4', 'people2_5', 'people2_6']
 
 	vision_mode = False
 	feat_fname = None
