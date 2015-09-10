@@ -34,9 +34,9 @@ def convert_video_to_frames(list_of_videos):
 			print "cd " + command
 			os.chdir(constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + video_file_name)
 
-			# command = "ffmpeg -i " + video_file_name + ".avi -filter:v " + constant.CROP_PARAMS[camera] + " cropped.avi"
-			# print command
-			# os.system(command) 
+			command = "ffmpeg -i " + video_file_name + ".avi -filter:v " + constant.CROP_PARAMS[camera] + " cropped.avi"
+			print command
+			os.system(command)
 
 			command = "ffmpeg -i cropped.avi -vf scale=640:480 cropped_scaled.avi"
 			print command

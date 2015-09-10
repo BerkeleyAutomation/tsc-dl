@@ -59,7 +59,11 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
 
-	list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
+	# list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
+
+	list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002",
+	"Needle_Passing_D003","Needle_Passing_D004", "Needle_Passing_D005",
+"Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004", "Needle_Passing_I005"]
 
 	forward_pass_entire_dataset(list_of_demonstrations, "VGG", constants.CAMERA)
-	forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", constants.CAMERA)
+	# forward_pass_entire_dataset(list_of_demonstrations, "AlexNet", constants.CAMERA)
