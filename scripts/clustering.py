@@ -156,7 +156,7 @@ class MilestonesClustering():
 
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=1000, thresh = 5e-5)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=10000, thresh = 5e-5)
 			gmm.fit(N)
 			Y = gmm.predict(N)
 	
@@ -213,7 +213,7 @@ class MilestonesClustering():
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
 			print DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
 
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
@@ -303,7 +303,7 @@ class MilestonesClustering():
 		if constants.REMOTE == 1:
 			print "DPGMM L1 - start"
 			# Previously, when L0 was GMM, alpha = 0.4
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 10000, alpha = 10, thresh= 1e-7)
 			print "DPGMM L1 - end"
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
 			print "GMM L1 - end"
@@ -398,7 +398,7 @@ class MilestonesClustering():
 				continue
 
 			if constants.REMOTE == 1:
-				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
+				gmm = mixture.GMM(n_components = min(self.n_components_L2, matrix.shape[0]), covariance_type='full', n_iter=10000, thresh = 5e-5)
 				# Alpha didn't change between using GMM or DP-GMM for L0
 				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 1000, alpha = 1, thresh= 1e-7)
 			if constants.REMOTE == 2:
@@ -410,10 +410,11 @@ class MilestonesClustering():
 				gmm.fit(matrix)
 				dpgmm.fit(matrix)
 			except ValueError as e:
+				print "ValueError"
 				continue
 
 			Y = gmm.predict(matrix)
-			# Y = dpgmm.predict(matrix)
+			Y = dpgmm.predict(matrix)
 
 			self.save_cluster_metrics(matrix, Y, 'level2_' + str(key), level2_mode = True)
 
@@ -570,6 +571,7 @@ class MilestonesClustering():
 				milestone_label = self.map_cp2milestones[cp]
 			except KeyError:
 				print "Too Few elements inside cluster!!"
+				IPython.embed()
 				sys.exit()
 			labels_pred_1_.append(milestone_label)
 			labels_pred_2_.append(list(milestone_label)[0])
