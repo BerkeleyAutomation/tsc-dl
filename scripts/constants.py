@@ -19,12 +19,6 @@ PATH_TO_KINEMATICS = config['PATH_TO_KINEMATICS']
 
 PATH_TO_OPENCV_2_4_9 = "~/opencv_2.4.9/opencv-2.4.9/lib/"
 
-# Old Color Map with default values from Mathplotlib
-# color_map = {1:'b', 2:'g', 3:'r', 4:'c', 5: 'm', 6:'y', 7:'k', 8:'#4B0082', 9: '#9932CC', 10: '#E9967A', 11: '#800000', 12: '#008080'}
-
-# Nicer color map
-# color_map = {1:'#00b5e2', 2:'#B9D3B6', 3:'#CFDD45', 4:'#859438', 5: '#e04e39', 6:'#00A598', 7:'k', 8:'#ffc72c', 9: '#9932CC', 10: '#E9967A', 11: '#584F29', 12: '#008080'}
-
 # Even Nicer color map
 if TASK_NAME in ["100", "010", "011", "plane", "lego", "people", "people2"]:
 	color_map = {1:'#00A598', 2:'#ffc72c', 3:'#e04e39', 4:'#00b5e2', 5: '#B9D3B6', 6:'#00b2a9', 7:'k', 8:'#ffc72c', 9: '#9932CC', 10: '#E9967A', 11: '#584F29', 12: '#008080'}
@@ -35,25 +29,11 @@ alphabet_map = {}
 for i in range(500):
 	alphabet_map[i] = "A" + str(i) + "_"
 
-# alphabet_map = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H", 9:"I", 10: "J",
-# 11: "K", 12: "L", 13: "M", 14: "N", 15: "O", 16: "P", 17: "Q", 18: "R", 19: "S", 20: "T", 21:"U", 22:"V", 23:"W",
-# 24: "X", 25:"Y", 26:"Z", 27:"A1", 28:"A2", 29:"A3", 30:"A4", 31:"A5", 32:"A6", 33:"A7", 34:"A8", 35:"A9", 36:"A10",
-# 37:"A11", 38:"A12", 39:"A13", 40:"A14", 41:"A15", 42:"A16", 43:"A17", 44:"A18", 45:"A19", 46:"A20", 47:"A21", 48:"A22", 49: "A23", 50:"A24"}
-
-# Extra colors added:
-# E9967A is beige/dark salmon
-# 4B0082 is Indigo
-# 800000 is Maroon 
-# 008080 IS Teal
-
 alex_net_layers = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'pool5', 'fc6', 'fc7']
 
 vgg_layers = ['conv1_1', 'conv1_2', 'conv2_1', 'conv2_2', 'conv3_1', 'conv3_2', 'conv3_3', 'conv4_1', 'conv4_2', 'conv4_3','conv5_1', 'conv5_2', 'conv5_3', 'pool5']
 
 PATH_TO_SAVE_FIG = '/home/animesh/DeepMilestones/plots/'
-
-# constants.VGG_MEAN = np.array([123.68, 116.779, 103.939])   RGB 0-255 scale
-VGG_MEAN = np.array([ 0.48501961,  0.45795686,  0.40760392])
 
 NET_PARAMS = {"AlexNet": [CAFFE_ROOT + 'models/bvlc_reference_caffenet/deploy.prototxt', CAFFE_ROOT + 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel',
 alex_net_layers], "VGG_SOS": [CAFFE_ROOT + 'models/vgg_sos/deploy.prototxt', CAFFE_ROOT + 'models/vgg_sos/VGG16_SalObjSub.caffemodel', vgg_layers],
