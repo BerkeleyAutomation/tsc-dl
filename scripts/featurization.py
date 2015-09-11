@@ -75,7 +75,6 @@ def main(DEBUG = False):
 	for demonstration in list_of_demonstrations:
 		W = parser.get_kinematic_features(demonstration)
 		kinematics[demonstration] = W
-
 	sr = constants.SR
 	print "Sampling rate:",sr
 	# featurize_sift(list_of_demonstrations, kinematics, sr)

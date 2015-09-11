@@ -15,6 +15,7 @@ import parser
 import utils
 import cluster_evaluation
 import broken_barh
+import pruning
 
 from sklearn import (mixture, preprocessing, neighbors, metrics, cross_decomposition)
 from decimal import Decimal
@@ -79,6 +80,8 @@ class MilestonesClustering():
 		self.n_components_L2 = constants.N_COMPONENTS_L2
 
 		self.temporal_window = constants.TEMPORAL_WINDOW_ZW
+
+		self.fit_GMM = False
 
 	def loads_features(self):
 		"""
@@ -156,7 +159,7 @@ class MilestonesClustering():
 
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=1000, thresh = 5e-5)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=1000, tol = 5e-5)
 			gmm.fit(N)
 			Y = gmm.predict(N)
 	
@@ -206,25 +209,28 @@ class MilestonesClustering():
 		print "Generated big_N"
 
 		if constants.REMOTE == 1:
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
-			# dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
+			if self.fit_GMM:
+				gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+			# dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, tol= 2e-4)
 
 			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT :)
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
-			print DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
+			print "L0 ", DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, tol= 1e-7)
 
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 
-		start = time.time()
-		gmm.fit(big_N)
-		end = time.time()
-		"GMM time taken: ", str(end - start)
-		Y_gmm = gmm.predict(big_N)
+		if self.fit_GMM:
+			start = time.time()
+			gmm.fit(big_N)
+			end = time.time()
+			"GMM time taken: ", str(end - start)
+			Y_gmm = gmm.predict(big_N)
+			print "L0: Clusters in GMM", len(set(Y_gmm))
 
 		start = time.time()
 		dpgmm.fit(big_N)
@@ -235,7 +241,6 @@ class MilestonesClustering():
 		Y = Y_dpgmm
 
 		print "L0: Clusters in DP-GMM", len(set(Y))
-		print "L0: Clusters in GMM", len(set(Y_gmm))
 
 		for w in range(len(Y) - 1):
 
@@ -303,17 +308,20 @@ class MilestonesClustering():
 		if constants.REMOTE == 1:
 			print "DPGMM L1 - start"
 			# Previously, when L0 was GMM, alpha = 0.4
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
+			print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), " ALPHA ", 10
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 1000, alpha = 10, tol= 1e-7)
 			print "DPGMM L1 - end"
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
-			print "GMM L1 - end"
+			if self.fit_GMM:
+				gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, tol = 5e-5)
+				print "GMM L1 - end"
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 
-		gmm.fit(self.change_pts_Z)
-		Y_gmm = gmm.predict(self.change_pts_Z)
+		if self.fit_GMM:
+			gmm.fit(self.change_pts_Z)
+			Y_gmm = gmm.predict(self.change_pts_Z)
 
 		Y = []
 		i = 0
@@ -398,9 +406,10 @@ class MilestonesClustering():
 				continue
 
 			if constants.REMOTE == 1:
-				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, thresh = 5e-5)
+				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full', n_iter=1000, tol = 5e-5)
 				# Alpha didn't change between using GMM or DP-GMM for L0
-				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 1000, alpha = 1, thresh= 1e-7)
+				print "L2 ", str(int(np.ceil(len(list_of_cp_key)/2.0))), " ALPHA ", 1
+				dpgmm = mixture.DPGMM(n_components = int(np.ceil(len(list_of_cp_key)/2.0)), covariance_type='diag', n_iter = 1000, alpha = 1, tol= 1e-7)
 			if constants.REMOTE == 2:
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 			else:
@@ -412,8 +421,9 @@ class MilestonesClustering():
 			except ValueError as e:
 				continue
 
-			Y = gmm.predict(matrix)
-			# Y = dpgmm.predict(matrix)
+			Y = dpgmm.predict(matrix)
+			# print len(set(Y))
+			# Y = gmm.predict(matrix)
 
 			self.save_cluster_metrics(matrix, Y, 'level2_' + str(key), level2_mode = True)
 
@@ -466,10 +476,13 @@ class MilestonesClustering():
 		num_demonstrations = len(set(demonstrations_in_cluster))
 		num_total_demonstrations = len(self.list_of_demonstrations)
 		data_representation = num_demonstrations / float(num_total_demonstrations)
+		weighted_data_representation = pruning.weighted_score(list_of_demonstrations, list(set(demonstrations_in_cluster)))
 
-		print data_representation, len(list_of_cp_key)
+		val = weighted_data_representation if constants.WEIGHTED_PRUNING_MODE else data_representation
+		print str(data_representation), len(list_of_cp_key)
+		print str(weighted_data_representation), len(list_of_cp_key)
 
-		return data_representation <= self.representativeness 
+		return val <= self.representativeness 
 
 	def copy_frames(self, demonstration, frm, l1_cluster, l2_cluster, surgeme):
 
@@ -865,7 +878,10 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	for demonstration in list_of_demonstrations:
 		list_of_frms_demonstration = list_of_frms[demonstration]
 
-		assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+		try:
+			assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
+		except AssertionError as e:
+			IPython.embed()
 		data = {}
 
 		for i in range(len(list_of_frms_demonstration)):
@@ -911,7 +927,10 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
 
-		list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
+		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
+
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
 
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
