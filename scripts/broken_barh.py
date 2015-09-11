@@ -90,7 +90,7 @@ def get_time_clusters(data, T_COMPONENTS):
 		all_frms += elem
 	
 	N_COMPONENTS = min(T_COMPONENTS, len(all_frms))
-	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, thresh = 5e-7)
+	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, tol = 5e-7)
 
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
@@ -104,8 +104,6 @@ def get_time_clusters(data, T_COMPONENTS):
 	dpgmm.fit(X)
 	Y = dpgmm.predict(X)
 	means = dpgmm.means_
-
-	# IPython.embed()
 
 	list_of_elem = []
 
@@ -135,7 +133,7 @@ def get_time_clusters(data, T_COMPONENTS):
 			rep.append(id_in_cluster)
 
 		pruneCluster = True if sum(rep)/sizeTestSet < 0.4 else False
-		
+
 		min_frm = min(cluster_frames)
 		max_frm = max(cluster_frames)
 		

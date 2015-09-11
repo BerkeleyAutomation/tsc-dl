@@ -14,6 +14,7 @@ import utils
 import cluster_evaluation
 import broken_barh
 import time
+import pruning
 
 from sklearn import (mixture, neighbors, metrics, preprocessing)
 from sklearn.metrics import (adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score,
@@ -85,6 +86,8 @@ class KinematicsClustering():
 
 		self.ALPHA_L1 = 0.4
 
+		self.fit_GMM = False
+
 	def construct_features_visual(self):
 
 		data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
@@ -136,7 +139,7 @@ class KinematicsClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=5000, thresh = 5e-5, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=5000, tol = 5e-5, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
@@ -181,49 +184,52 @@ class KinematicsClustering():
 
 			big_N = utils.safe_concatenate(big_N, N)
 
-		print "Generating Changepoints. Fitting GMM ..."
+		print "Generating Changepoints. Fitting GMM/DP-GMM ..."
 
 		if constants.REMOTE == 1:
 			print "Init DPGMM"
 			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
-			print DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = self.ALPHA_CP, thresh= 1e-7)
+			print "L0", DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, tol= 1e-7)
 
 			# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
 			# print DP_GMM_COMPONENTS
-			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
+			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, tol= 1e-7)
 
 
-			print "Init GMM"
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, thresh = 5e-5)
+			if self.fit_GMM:
+				print "Init GMM"
+				gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, tol = 5e-5)
 
 		if constants.REMOTE == 2:
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
 
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
 
-		print "Fitting GMM"
-		start = time.time()
-		gmm.fit(big_N)
-		end = time.time()
-		print "GMM Time:", end - start
+		if self.fit_GMM:
+			print "Fitting GMM"
+			start = time.time()
+			gmm.fit(big_N)
+			end = time.time()
+			print "GMM Time:", end - start
+			Y_gmm = gmm.predict(big_N)
+			print "L0: Clusters in GMM", len(set(Y_gmm))
+
 		print "Fitting DPGMM"
 		start = time.time()
 		dpgmm.fit(big_N)
 		end = time.time()
 		print "DPGMM Time:", end - start
 
-		Y_gmm = gmm.predict(big_N)
 		Y_dpgmm = dpgmm.predict(big_N)
 
 		Y = Y_dpgmm
 
 		print "L0: Clusters in DP-GMM", len(set(Y))
-		print "L0: Clusters in GMM", len(set(Y_gmm))
 
 		for w in range(len(Y) - 1):
 
@@ -260,18 +266,21 @@ class KinematicsClustering():
 	def cluster_changepoints(self):
 
 		print "Clustering changepoints..."
+		print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1)," ALPHA: ", self.ALPHA_L1
 
 		if constants.REMOTE == 1:
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, thresh= 1e-4)
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, tol= 1e-4)
+			if self.fit_GMM:
+				gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, tol = 0.01)
 		elif constants.REMOTE == 2:
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', thresh = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 
-		gmm.fit(self.changepoints)
-
-		predictions_gmm = gmm.predict(self.changepoints)
+		if self.fit_GMM:
+			gmm.fit(self.changepoints)
+			predictions_gmm = gmm.predict(self.changepoints)
+			print "L1: Clusters in GMM",len(set(predictions_gmm))
 
 		predictions = []
 		while True:
@@ -282,7 +291,6 @@ class KinematicsClustering():
 				break
 
 		print "L1: Clusters in DP-GMM", len(set(predictions))
-		print "L1: Clusters in GMM",len(set(predictions_gmm))
 
 		self.save_cluster_metrics(self.changepoints, predictions,'level1')
 
@@ -304,11 +312,19 @@ class KinematicsClustering():
 		for cluster in self.map_level1_cp.keys():
 			cluster_list_of_cp = self.map_level1_cp[cluster]
 			cluster_demonstrations = []
+
 			for cp in cluster_list_of_cp:
 				cluster_demonstrations.append(self.map_cp2demonstrations[cp])
+
 			data_representation = float(len(set(cluster_demonstrations))) / float(len(self.list_of_demonstrations))
-			print str(cluster) + ": " + str(data_representation), " " + str(len(cluster_list_of_cp))
-			if data_representation <= self.representativeness:
+			weighted_data_representation = pruning.weighted_score(self.list_of_demonstrations, list(set(cluster_demonstrations)))
+
+			print str(cluster) + ":  " + str(data_representation), " " + str(len(cluster_list_of_cp))
+			print str(cluster) + ":w " + str(weighted_data_representation), " " + str(len(cluster_list_of_cp))
+
+			val = weighted_data_representation if constants.WEIGHTED_PRUNING_MODE else data_representation
+
+			if val <= self.representativeness:
 				new_cluster_list = cluster_list_of_cp[:]
 				for cp in cluster_list_of_cp:
 					print "Pruning " + str(cluster) + " " + str(data_representation) +  ": " + str(cp)
@@ -648,10 +664,10 @@ if __name__ == "__main__":
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
 
 		# Experts +Intermediates (Suturing)
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
 
 		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
 
@@ -659,7 +675,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['people_2', 'people_3', 'people_4', 'people_5', 'people_6']
 
-		list_of_demonstrations = ['people2_2', 'people2_3', 'people2_4', 'people2_5', 'people2_6']
+		# list_of_demonstrations = ['people2_2', 'people2_3', 'people2_4', 'people2_5', 'people2_6']
 
 	vision_mode = False
 	feat_fname = None
