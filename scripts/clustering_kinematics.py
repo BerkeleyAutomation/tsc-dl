@@ -139,7 +139,7 @@ class KinematicsClustering():
 			print "Changepoints for " + demonstration
 			N = self.data_N[demonstration]
 
-			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=5000, tol = 5e-5, covariance_type='full')
+			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=5000, thresh = 5e-5, covariance_type='full')
 			gmm.fit(N)
 			Y = gmm.predict(N)
 
@@ -192,20 +192,20 @@ class KinematicsClustering():
 			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
 			print "L0", DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, tol= 1e-7)
+			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
 
 			# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
 			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
 			# print DP_GMM_COMPONENTS
-			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, tol= 1e-7)
+			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
 
 
 			if self.fit_GMM:
 				print "Init GMM"
-				gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, tol = 5e-5)
+				gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', n_iter=5000, thresh = 5e-5)
 
 		if constants.REMOTE == 2:
-			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', tol = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
 
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
@@ -269,11 +269,11 @@ class KinematicsClustering():
 		print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1)," ALPHA: ", self.ALPHA_L1
 
 		if constants.REMOTE == 1:
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, tol= 1e-4)
+			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, thresh= 1e-4)
 			if self.fit_GMM:
-				gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, tol = 0.01)
+				gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
 		elif constants.REMOTE == 2:
-			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', tol = 0.01)
+			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', thresh = 0.01)
 		else:
 			gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full')
 
@@ -663,11 +663,22 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
 
-		# Experts +Intermediates (Suturing)
+		# # Experts +Intermediates (Suturing)
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+		# Experts + Intermediates + Novices (Suturing)
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
+		'Suturing_B001','Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005',
+		'Suturing_H003', 'Suturing_H004', 'Suturing_H005', 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		'Suturing_I001','Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
 

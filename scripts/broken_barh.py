@@ -90,7 +90,7 @@ def get_time_clusters(data, T_COMPONENTS):
 		all_frms += elem
 	
 	N_COMPONENTS = min(T_COMPONENTS, len(all_frms))
-	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, tol = 5e-7)
+	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, thresh = 5e-7)
 
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
