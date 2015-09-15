@@ -1,2 +1,2 @@
-# vtsc
-Visual Transition State Clustering
+# tsc-dl
+Transition State Clustering-Deep Learning
