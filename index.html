@@ -16,8 +16,8 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1 class="header">TSC-DL: Transition State Clustering with Deep Learning</h1>
-        <p class="header">Unsupervised Task Segmentation from Multi-Modal Data</p>
+        <h1 class="header">TSC-DL</h1>
+        <p class="header">Transition State Clustering with Deep Learning</p>
 
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/BerkeleyAutomation/tsc-dl/zipball/master">Download ZIP</a></li>
@@ -30,39 +30,57 @@
 
       </header>
       <section>
-        <h2>
-<a id="full-title-of-the-paper" class="anchor" href="#full-title-of-the-paper" aria-hidden="true"><span class="octicon octicon-link"></span></a>Full Title of the Paper</h2>
+      <h2>
+      <a id="tscdl" class="anchor" href="#tscdl" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+        TSC-DL: Unsupervised Trajectory Segmentation of Multi-Modal Surgical Demonstrations with Deep Learning
+    
+    </h2>
 
-<hr>
-
-<p><a href="">Image</a></p>
+<p align="center">
+<br>
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/L561cJh7DLE?autoplay=0&showinfo=0&controls=2&modestbranding=1&rel=0&theme=light" frameborder="10" allowfullscreen></iframe>
+</p>  
 
 <h3>
 <a id="abstract" class="anchor" href="#abstract" aria-hidden="true"><span class="octicon octicon-link"></span></a>Abstract</h3>
 
-<p>Blah Blah Blah</p>
+<p>
+  The growth of robot-assisted minimally invasive surgery has led to sizeable datasets of fixed-camera video and kinematic recordings of surgical subtasks.Temporal segmentation of these trajectories into meaningful contiguous sections is an important first step to facilitate human training and the automation of subtasks.  Manual, or supervised, segmentation can be prone to error and impractical for large datasets. We present Transition State Clustering with Deep Learning (TSC-DL), a new unsupervised algorithm that leverages video and kinematic data for task-level segmentation, and finds regions of the visual feature space that mark transition events using features constructed from layers of pre-trained image classification Convolutional Neural Networks (CNNs). We report results on five datasets comparing architectures (AlexNet and VGG), choice of convolutional layer, dimensionality reduction techniques, visual encoding, and the use of Scale Invariant Feature Transforms (SIFT). TSC-DL matches manual annotations with up-to 0.806 Normalized Mutual Information (NMI). We also found that using both kinematics and visual data results in increases of up-to 0.215 NMI compared to using kinematics alone. We also present cases where TSC-DL discovers human annotator errors. 
+</p>
+
 
 <h3>
-<a id="videoimages-of-results" class="anchor" href="#videoimages-of-results" aria-hidden="true"><span class="octicon octicon-link"></span></a>Video/Images of Results</h3>
+<a id="references" class="anchor" href="#references" aria-hidden="true"><span class="octicon octicon-link"></span></a>References</h3>
 
-<p>Blah Blah Blah</p>
+<ul>
+<li> 
+<strong>TSC-DL: Unsupervised Trajectory Segmentation of Multi-Modal Surgical Demonstrations with Deep Learning,</strong> <br>
+Adithyavairavan Murali*, Animesh Garg*, Sanjay Krishnan*, Florian T. Pokorny, Pieter Abbeel, Trevor Darrell, Ken Goldberg (* denotes equal contribution). Under Review, ICRA 2016 [<a href="files/mgk-icra16-tscdl-submitted.pdf"> <strong>PDF</strong> </a>] </li>
+</ul>
+
 
 <h3>
 <a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+<p><a href="http://adithyamurali.com">Adithya Murali</a>, <a href="http://animeshgarg.com">Animesh Garg</a>, <a href="https://www.ocf.berkeley.edu/~sanjayk/">Sanjay Krishnan</a>, <a href="http://www.csc.kth.se/~fpokorny/">Florian Pokorny</a><br>
+PIs: Ken Goldberg, Trevor Darrell, Pieter Abbeel
+</p>
 
-<p>PIs: Ken Goldberg, Trevor Darrell, Pieter Abbeel<br>
-Animesh Garg, Adithyavairavan Murali, Sanjay Krishnan, Florian Pokorny</p>
 
 <h3>
 <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
 
-<p>Please contact Animesh Garg at <a href="mailto:animesh.garg@berkeley.edu">animesh.garg@berkeley.edu</a> for details</p>
+<p>Please Contact <a href="goldberg.berkeley.edu">Prof. Ken Goldberg</a>, Director of Automation Sciences Lab at <a href="mailto:goldberg@berkeley.edu">goldberg@berkeley.edu</a></p>
+
+<hr>
       </section>
-      <footer>
-        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      <footer>      
+      <p><small>      
+      <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png"></a><br>
+      Interchangeable Surgical Tools by <a href="automation.berkeley.edu">Automation Lab</a> is licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+      </small></p>        
       </footer>
     </div>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		
+        
   </body>
 </html>
