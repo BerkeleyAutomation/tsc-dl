@@ -5,7 +5,7 @@ def parse_yaml(yaml_fname):
 	config = yaml.load(open(yaml_fname, 'r'))
 	return config
 
-config = parse_yaml("../config/suturing_FCED.yaml")
+config = parse_yaml("../config/needle_passing_all.yaml")
 
 CAFFE_ROOT = '/home/animesh/caffe/'
 
@@ -74,6 +74,8 @@ PRUNING_FACTOR_W = config["PRUNING_FACTOR_W"]
 PRUNING_FACTOR_Z = config["PRUNING_FACTOR_Z"]
 
 PRUNING_FACTOR_ZW = config["PRUNING_FACTOR_ZW"]
+
+PRUNING_FACTOR_T = config["PRUNING_FACTOR_T"]
 
 REMOTE = config["REMOTE"]
 

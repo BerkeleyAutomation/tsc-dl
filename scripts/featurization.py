@@ -48,26 +48,41 @@ def main(DEBUG = False):
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-
 		# list_of_demonstrations = ["people_0", "people_1", "people_2", "people_3", "people_4", "people_5", "people_6"]
 
 		# list_of_demonstrations = ['Suturing_G002', 'Suturing_G004', 'Suturing_G005',
 		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
 		# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
 
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
-		'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
-		'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
-		'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005',
-		'Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
+		# 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+		# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005',
+		# 'Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005']
+
+		# list_of_demonstrations = ["Needle_Passing_B001", "Needle_Passing_B002", "Needle_Passing_B003", "Needle_Passing_B004",
+		# "Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
+		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
+		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004",
+		# "Needle_Passing_H002", "Needle_Passing_H004", "Needle_Passing_H005",
+		# "Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004","Needle_Passing_I005"]
+
+		# Experts + Intermediates (Needle Passing)
+		# list_of_demonstrations = ["Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
+		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
+		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
+
 
 		# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
 
 		# list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
+
+		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 	# Parse Kinematic Features
 	print "Parsing Kinematic Features"
@@ -82,11 +97,12 @@ def main(DEBUG = False):
 	# featurize_2(list_of_demonstrations, kinematics, sr)
 	# featurize_3(list_of_demonstrations, kinematics, sr)
 	# featurize_4(list_of_demonstrations, kinematics, sr)
-	featurize_5(list_of_demonstrations, kinematics, sr)
+	# featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
 	# featurize_7(list_of_demonstrations, kinematics, sr)
 	# featurize_8(list_of_demonstrations, kinematics, sr)
 	# featurize_visual(list_of_demonstrations, sr)
+	featurize_PCA(list_of_demonstrations, kinematics, sr)
 	pass
 
 
@@ -217,6 +233,13 @@ def featurize_8(list_of_demonstrations, kinematics, sr, config = [True, True, Tr
 	fname = "8"
 	featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, folder, conv_dimensions, batch_size, fname, config = [True, True, True])
 
+# Featurize - VGG conv5_3 with varing PCA dimensions
+def featurize_PCA(list_of_demonstrations, kinematics, sr):
+	print "FEATURIZATION 5"
+	list_of_PC = [500, 2000]
+	for PC in list_of_PC:
+		featurize_cnn_features(list_of_demonstrations, kinematics, "conv5_3",
+			constants.VGG_FEATURES_FOLDER, PC,"VGG", sr, C = PC)
 
 def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, folder, dimensions, batch_size, fname, config = [True, True, True]):
 	M = dimensions[0]
@@ -315,7 +338,7 @@ def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, fold
 	if config[2]:
 		pickle.dump(data_X_GRP, open(PATH_TO_FEATURES + fname + "_GRP" + ".p", "wb"))
 
-def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, False, True]):
+def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, feature_index, net, sr = 3, config = [True, False, False], C = 100):
 
 	# For config params [x,y,z] refers to perform PCA, CCA and GRP respectively
 
@@ -352,7 +375,8 @@ def featurize_cnn_features(list_of_demonstrations, kinematics, layer, folder, fe
 
 		print "PCA # of rows: ", dimensions_of_PCA
 
-	PC = min(100, min(demonstration_size.values()))
+	PC = min(C, min(demonstration_size.values()))
+	print "XXXX - PC:", str(PC)
 
 	# Quick check to see if kinematics and visual features are aligned
 	for demonstration in list_of_demonstrations:

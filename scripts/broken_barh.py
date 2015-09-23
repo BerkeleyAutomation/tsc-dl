@@ -100,10 +100,10 @@ def get_time_clusters(data, T_COMPONENTS):
 	means = time_cluster.means_
 	covars = time_cluster.covars_
 
-	dpgmm = mixture.DPGMM(n_components = numDemos * 3, covariance_type='diag', n_iter = 10000, alpha = 1000, thresh= 1e-10)
-	dpgmm.fit(X)
-	Y = dpgmm.predict(X)
-	means = dpgmm.means_
+	#dpgmm = mixture.DPGMM(n_components = numDemos * 3, covariance_type='diag', n_iter = 10000, alpha = 1000, thresh= 1e-10)
+	#dpgmm.fit(X)
+	#Y = dpgmm.predict(X)
+	#means = dpgmm.means_
 
 	list_of_elem = []
 
@@ -132,7 +132,7 @@ def get_time_clusters(data, T_COMPONENTS):
 			id_in_cluster = 1. if len(commonElem) > 0 else 0.
 			rep.append(id_in_cluster)
 
-		pruneCluster = True if sum(rep)/sizeTestSet < 0.4 else False
+		pruneCluster = True if sum(rep)/sizeTestSet < constants.PRUNING_FACTOR_T else False
 
 		min_frm = min(cluster_frames)
 		max_frm = max(cluster_frames)

@@ -253,7 +253,7 @@ class MilestonesClustering():
 
 				cp_index += 1
 
-		print "Done with generating change points"
+		print "Done with generating change points", len(self.list_of_cp)
 
 	def append_cp_array(self, cp):
 		if self.change_pts is None:
@@ -400,8 +400,9 @@ class MilestonesClustering():
 			if self.check_pruning_condition(list_of_cp_key):
 				self.pruned_L1_clusters.append(key)
 				del self.map_level12cp[key]
+				print "Pruned"
 				for pruned_cp in list_of_cp_key:
-					print "Pruned: " + str(key) + " " + str(pruned_cp) + " " + str(self.map_cp2demonstrations[pruned_cp])
+					# print "Pruned: " + str(key) + " " + str(pruned_cp) + " " + str(self.map_cp2demonstrations[pruned_cp])
 					self.list_of_cp.remove(pruned_cp)
 				continue
 
@@ -583,7 +584,6 @@ class MilestonesClustering():
 				milestone_label = self.map_cp2milestones[cp]
 			except KeyError:
 				print "Too Few elements inside cluster!!"
-				IPython.embed()
 				sys.exit()
 			labels_pred_1_.append(milestone_label)
 			labels_pred_2_.append(list(milestone_label)[0])
@@ -877,22 +877,22 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	pickle.dump(list_of_frms, open(constants.PATH_TO_CLUSTERING_RESULTS + filename + "_.p", "wb"))
 
 	for demonstration in list_of_demonstrations:
-		list_of_frms_demonstration = list_of_frms[demonstration]
-
 		try:
-			assert len(list_of_frms_demonstration) == len(list_of_demonstrations) - 1
-		except AssertionError as e:
-			IPython.embed()
-		data = {}
+			list_of_frms_demonstration = list_of_frms[demonstration]
 
-		for i in range(len(list_of_frms_demonstration)):
-			data[i] = [elem[0] for elem in list_of_frms_demonstration[i]]
+			data = {}
 
-		dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
-			constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg", constants.N_COMPONENTS_TIME_ZW)
-		list_of_dtw_values.append(dtw_score)
-		list_of_norm_dtw_values.append(normalized_dtw_score)
-		list_of_lengths.append(length)
+			for i in range(len(list_of_frms_demonstration)):
+				data[i] = [elem[0] for elem in list_of_frms_demonstration[i]]
+
+			dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+				constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg", constants.N_COMPONENTS_TIME_ZW)
+			list_of_dtw_values.append(dtw_score)
+			list_of_norm_dtw_values.append(normalized_dtw_score)
+			list_of_lengths.append(length)
+		except:
+			print demonstration
+			continue
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
 	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
@@ -911,8 +911,6 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
@@ -930,8 +928,8 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
 
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
 
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
 		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
@@ -940,6 +938,35 @@ if __name__ == "__main__":
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
 		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+
+		# # Experts + Intermediates + Novices (Suturing)
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
+		# 'Suturing_B001','Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005',
+		# 'Suturing_H003','Suturing_H004', 'Suturing_H005', 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		# 'Suturing_I001','Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+
+
+		# Experts + Intermediates + Novices (Needle_Passing)
+		# list_of_demonstrations = ["Needle_Passing_B001", "Needle_Passing_B002", "Needle_Passing_B003", "Needle_Passing_B004",
+		# "Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
+		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
+		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004",
+		# "Needle_Passing_H002", "Needle_Passing_H004", "Needle_Passing_H005",
+		# "Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004","Needle_Passing_I005"]
+
+		# Experts + Intermediates (Needle_Passing)
+		# list_of_demonstrations = ["Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
+		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
+		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
+
+		# Experts (Needle Passing)
+		list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		"Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 

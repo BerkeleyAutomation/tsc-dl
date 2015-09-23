@@ -29,7 +29,7 @@ def weighted_score(list_of_demonstrations, list_of_frm_demonstrations):
 		weight = uniform_weight
 
 		# Stripped demonstration task (Suturing_, Needle_passing_, etc.) from demonstration name
-		demonstration_name = demonstration.split("_")[1]
+		demonstration_name = demonstration.split("_")[-1]
 
 		if demonstration_name in experts:
 			weight *= constants.WEIGHT_EXPERT
