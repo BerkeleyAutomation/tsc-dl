@@ -45,6 +45,8 @@ def main(DEBUG = False):
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
+		list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
+
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
@@ -77,7 +79,6 @@ def main(DEBUG = False):
 		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
 
-
 		# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
 
 		# list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
@@ -92,7 +93,7 @@ def main(DEBUG = False):
 		kinematics[demonstration] = W
 	sr = constants.SR
 	print "Sampling rate:",sr
-	# featurize_sift(list_of_demonstrations, kinematics, sr)
+	featurize_sift(list_of_demonstrations, kinematics, sr)
 	# featurize_1(list_of_demonstrations, kinematics, sr)
 	# featurize_2(list_of_demonstrations, kinematics, sr)
 	# featurize_3(list_of_demonstrations, kinematics, sr)
@@ -137,8 +138,8 @@ def featurize_sift(list_of_demonstrations, kinematics, sr):
 		data_X_xy[demonstration] = X
 		data_X_x[demonstration] = X_onlyx
 
-	pickle.dump(data_X_xy, open(PATH_TO_FEATURES + "SIFT_xy_2.p", "wb"))
-	pickle.dump(data_X_x, open(PATH_TO_FEATURES + "SIFT_x_2.p", "wb"))
+	pickle.dump(data_X_xy, open(PATH_TO_FEATURES + "SIFT_xy.p", "wb"))
+	pickle.dump(data_X_x, open(PATH_TO_FEATURES + "SIFT_x.p", "wb"))
 
 # Featurize - SIFT
 def featurize_1(list_of_demonstrations, kinematics, sr):

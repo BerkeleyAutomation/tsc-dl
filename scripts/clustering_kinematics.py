@@ -88,6 +88,10 @@ class KinematicsClustering():
 
 		self.fit_GMM = False
 
+		self.fit_DPGMM = True
+
+		assert self.fit_DPGMM or self.fit_GMM == True
+
 	def construct_features_visual(self):
 
 		data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
@@ -187,17 +191,18 @@ class KinematicsClustering():
 		print "Generating Changepoints. Fitting GMM/DP-GMM ..."
 
 		if constants.REMOTE == 1:
-			print "Init DPGMM"
-			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
-			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
-			print "L0", DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
+			if self.fit_DPGMM:
+				print "Init DPGMM"
+				#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
+				avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+				DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+				print "L0", DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
+				dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
 
-			# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-			# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
-			# print DP_GMM_COMPONENTS
-			# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
+				# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+				# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
+				# print DP_GMM_COMPONENTS
+				# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
 
 
 			if self.fit_GMM:
@@ -216,20 +221,21 @@ class KinematicsClustering():
 			gmm.fit(big_N)
 			end = time.time()
 			print "GMM Time:", end - start
+
 			Y_gmm = gmm.predict(big_N)
 			print "L0: Clusters in GMM", len(set(Y_gmm))
+			Y = Y_gmm
 
-		print "Fitting DPGMM"
-		start = time.time()
-		dpgmm.fit(big_N)
-		end = time.time()
-		print "DPGMM Time:", end - start
+		if self.fit_DPGMM:
+			print "Fitting DPGMM"
+			start = time.time()
+			dpgmm.fit(big_N)
+			end = time.time()
+			print "DPGMM Time:", end - start
 
-		Y_dpgmm = dpgmm.predict(big_N)
-
-		Y = Y_dpgmm
-
-		print "L0: Clusters in DP-GMM", len(set(Y))
+			Y_dpgmm = dpgmm.predict(big_N)
+			print "L0: Clusters in DP-GMM", len(set(Y_dpgmm))
+			Y = Y_dpgmm
 
 		for w in range(len(Y) - 1):
 
@@ -269,7 +275,8 @@ class KinematicsClustering():
 		print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1)," ALPHA: ", self.ALPHA_L1
 
 		if constants.REMOTE == 1:
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, thresh= 1e-4)
+			if self.fit_DPGMM:
+				dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_L1, thresh= 1e-4)
 			if self.fit_GMM:
 				gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=5000, thresh = 0.01)
 		elif constants.REMOTE == 2:
@@ -281,18 +288,20 @@ class KinematicsClustering():
 			gmm.fit(self.changepoints)
 			predictions_gmm = gmm.predict(self.changepoints)
 			print "L1: Clusters in GMM",len(set(predictions_gmm))
+			predictions = predictions_gmm
 
-		predictions = []
-		while True:
-			print "Inside loop"
-			dpgmm.fit(self.changepoints)
-			predictions = dpgmm.predict(self.changepoints)
-			if len(set(predictions)) > 1:
-				break
+		if self.fit_DPGMM:
+			predictions = []
+			while True:
+				print "Inside loop"
+				dpgmm.fit(self.changepoints)
+				predictions = dpgmm.predict(self.changepoints)
+				if len(set(predictions)) > 1:
+					break
 
-		print "L1: Clusters in DP-GMM", len(set(predictions))
+			print "L1: Clusters in DP-GMM", len(set(predictions))
 
-		self.save_cluster_metrics(self.changepoints, predictions,'level1')
+		self.save_cluster_metrics(self.changepoints, predictions, 'level1')
 
 		for i in range(len(predictions)):
 			label = constants.alphabet_map[predictions[i] + 1]
@@ -327,6 +336,7 @@ class KinematicsClustering():
 			if val <= self.representativeness:
 				print "Pruned"
 				new_cluster_list = cluster_list_of_cp[:]
+				print "Pruned cluster"
 				for cp in cluster_list_of_cp:
 					# print "Pruning " + str(cluster) + " " + str(data_representation) +  ": " + str(cp)
 					self.list_of_cp.remove(cp)
@@ -619,7 +629,8 @@ def post_evaluation(metrics, file, fname, vision_mode):
 			list_of_norm_dtw_values.append(normalized_dtw_score)
 			list_of_lengths.append(length)
 		except:
-			continue
+			print demonstration
+			pass
 
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
 	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
@@ -639,6 +650,8 @@ if __name__ == "__main__":
 		DEBUG = False
 
 		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
+
+		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
@@ -664,7 +677,7 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
 
-		# Experts +Intermediates (Suturing)
+		# # Experts +Intermediates (Suturing)
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
@@ -690,13 +703,17 @@ if __name__ == "__main__":
 		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
 
 		# Experts + Intermediates + Novices (Needle_Passing)
-		list_of_demonstrations = ["Needle_Passing_B001", "Needle_Passing_B002", "Needle_Passing_B003", "Needle_Passing_B004",
-		"Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
-		"Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
-		"Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		"Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004",
-		"Needle_Passing_H002", "Needle_Passing_H004", "Needle_Passing_H005",
-		"Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004","Needle_Passing_I005"]
+		# list_of_demonstrations = ["Needle_Passing_B001", "Needle_Passing_B002", "Needle_Passing_B003", "Needle_Passing_B004",
+		# "Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
+		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
+		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004",
+		# "Needle_Passing_H002", "Needle_Passing_H004", "Needle_Passing_H005",
+		# "Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004","Needle_Passing_I005"]
+		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005', 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		# 'Suturing_I001','Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
+
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
 
@@ -706,7 +723,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['people2_2', 'people2_3', 'people2_4', 'people2_5', 'people2_6']
 
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 	vision_mode = False
 	feat_fname = None

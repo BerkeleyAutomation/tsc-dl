@@ -83,6 +83,10 @@ class MilestonesClustering():
 
 		self.fit_GMM = False
 
+		self.fit_DPGMM = True
+
+		assert self.fit_DPGMM or self.fit_GMM == True
+
 	def loads_features(self):
 		"""
 		Loads the kinematic and/or visual features into self.data_X.
@@ -211,13 +215,15 @@ class MilestonesClustering():
 		if constants.REMOTE == 1:
 			if self.fit_GMM:
 				gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full', thresh = 0.01)
-			# dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
 
-			#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT :)
-			avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-			DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
-			print "L0 ", DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
-			dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
+			if self.fit_DPGMM:
+				# dpgmm = mixture.DPGMM(n_components = 100, covariance_type='diag', n_iter = 10000, alpha = 100, thresh= 2e-4)
+
+				#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT :)
+				avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
+				DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+				print "L0 ", DP_GMM_COMPONENTS, "ALPHA: ", constants.ALPHA_ZW_CP
+				dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 1000, alpha = constants.ALPHA_ZW_CP, thresh= 1e-7)
 
 		elif constants.REMOTE == 2:
 			gmm = mixture.GMM(n_components = self.n_components_cp, covariance_type='full')
@@ -230,17 +236,19 @@ class MilestonesClustering():
 			end = time.time()
 			"GMM time taken: ", str(end - start)
 			Y_gmm = gmm.predict(big_N)
+
 			print "L0: Clusters in GMM", len(set(Y_gmm))
+			Y = Y_gmm
 
-		start = time.time()
-		dpgmm.fit(big_N)
-		end = time.time()
-		"DP-GMM time taken: ", str(end - start)		
-		Y_dpgmm = dpgmm.predict(big_N)
+		if self.fit_DPGMM:
+			start = time.time()
+			dpgmm.fit(big_N)
+			end = time.time()
+			"DP-GMM time taken: ", str(end - start)
+			Y_dpgmm = dpgmm.predict(big_N)
 
-		Y = Y_dpgmm
-
-		print "L0: Clusters in DP-GMM", len(set(Y))
+			Y = Y_dpgmm
+			print "L0: Clusters in DP-GMM", len(set(Y_dpgmm))
 
 		for w in range(len(Y) - 1):
 
@@ -306,11 +314,13 @@ class MilestonesClustering():
 		print "Level1 : Clustering changepoints in Z(t)"
 
 		if constants.REMOTE == 1:
-			print "DPGMM L1 - start"
-			# Previously, when L0 was GMM, alpha = 0.4
-			print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), " ALPHA ", 10
-			dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
-			print "DPGMM L1 - end"
+			if self.fit_DPGMM:
+				print "DPGMM L1 - start"
+				# Previously, when L0 was GMM, alpha = 0.4
+				print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1), " ALPHA ", 10
+				dpgmm = mixture.DPGMM(n_components = int(len(self.list_of_cp)/6), covariance_type='diag', n_iter = 1000, alpha = 10, thresh= 1e-7)
+				print "DPGMM L1 - end"
+
 			if self.fit_GMM:
 				gmm = mixture.GMM(n_components = self.n_components_L1, covariance_type='full', n_iter=1000, thresh = 5e-5)
 				print "GMM L1 - end"
@@ -322,19 +332,23 @@ class MilestonesClustering():
 		if self.fit_GMM:
 			gmm.fit(self.change_pts_Z)
 			Y_gmm = gmm.predict(self.change_pts_Z)
+			Y = Y_gmm
 
-		Y = []
-		i = 0
 
-		while True:
-			print "In DPGMM Fit loop"
-			dpgmm.fit(self.change_pts_Z)
-			Y = dpgmm.predict(self.change_pts_Z)
-			if len(set(Y)) > 1:
-				break
-			i += 1
-			if i > 100:
-				break
+		if self.fit_DPGMM:
+			Y = []
+			i = 0
+
+			while True:
+				print "In DPGMM Fit loop"
+				dpgmm.fit(self.change_pts_Z)
+				Y = dpgmm.predict(self.change_pts_Z)
+				if len(set(Y)) > 1:
+					break
+				i += 1
+				if i > 100:
+					break
+
 		self.save_cluster_metrics(self.change_pts_Z, Y, 'level1')
 
 		for i in range(len(Y)):
@@ -417,14 +431,16 @@ class MilestonesClustering():
 				gmm = mixture.GMM(n_components = self.n_components_L2, covariance_type='full')
 
 			try:
-				gmm.fit(matrix)
-				dpgmm.fit(matrix)
+				if self.fit_GMM:
+					gmm.fit(matrix)
+					Y = gmm.predict(matrix)
+				if self.fit_DPGMM:
+					dpgmm.fit(matrix)
+					Y = dpgmm.predict(matrix)
+
 			except ValueError as e:
 				print "ValueError"
 				continue
-
-			Y = gmm.predict(matrix)
-			Y = dpgmm.predict(matrix)
 
 			self.save_cluster_metrics(matrix, Y, 'level2_' + str(key), level2_mode = True)
 
@@ -914,6 +930,8 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
 
+		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
+
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
 		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
@@ -921,7 +939,7 @@ if __name__ == "__main__":
 		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
 		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
 
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
 
 		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
 		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']

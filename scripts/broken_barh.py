@@ -36,7 +36,7 @@ def setup_manual_labels(segments):
 		color = constants.color_map[key]
 
 		for elem in segments[key]:
-			list_of_start_end.append((elem[0] + constants.SR * 2, elem[1] - elem[0]))
+			list_of_start_end.append((elem[0], elem[1] - elem[0]))
 			list_of_colors.append(color)
 
 	return list_of_start_end, tuple(list_of_colors)
@@ -90,7 +90,7 @@ def get_time_clusters(data, T_COMPONENTS):
 		all_frms += elem
 	
 	N_COMPONENTS = min(T_COMPONENTS, len(all_frms))
-	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, tol = 5e-7)
+	time_cluster = mixture.GMM(n_components = N_COMPONENTS, covariance_type='full', n_iter = 50000, thresh = 5e-7)
 
 	X = np.array(all_frms)
 	X = X.reshape(len(all_frms), 1)
@@ -170,7 +170,7 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	if (TASK in ["lego", "plane"]):
 		end = end + 20
 	elif (TASK in ["000", "010", "011", "100"]):
-		end = end + 10
+		end = end + 2
 	else:
 		end = end + 50
 
