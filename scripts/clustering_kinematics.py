@@ -93,6 +93,10 @@ class KinematicsClustering():
 		assert self.fit_DPGMM or self.fit_GMM == True
 
 	def construct_features_visual(self):
+		"""
+		Loads visual features (saved as pickle files) and populates
+		self.data_X dictionary
+		"""
 
 		data_X = pickle.load(open(PATH_TO_FEATURES + str(self.feat_fname),"rb"))
 		for demonstration in self.list_of_demonstrations:
@@ -108,6 +112,10 @@ class KinematicsClustering():
 			self.data_X[demonstration] = X_visual
 
 	def construct_features_kinematics(self):
+		"""
+		Loads kinematic features (saved in text files) and populates
+		self.data_X dictionary
+		"""
 
 		for demonstration in self.list_of_demonstrations:
 			W = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
@@ -116,7 +124,10 @@ class KinematicsClustering():
 			print "Kinematics ", demonstration, self.data_X[demonstration].shape
 
 	def generate_transition_features(self):
-
+		"""
+		For each data point X(t), transition feature are created as follows:
+		N(t) = X(t) + X(t+1) + .. + X(T), where T is self.temporal_window.
+		"""
 		self.X_dimension = self.data_X[self.list_of_demonstrations[0]].shape[1]
 		print "X dimension", str(self.X_dimension)
 
@@ -193,17 +204,10 @@ class KinematicsClustering():
 		if constants.REMOTE == 1:
 			if self.fit_DPGMM:
 				print "Init DPGMM"
-				#DO NOT FIDDLE WITH PARAMS WITHOUT CONSENT
 				avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-				DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR) #tuned with suturing experts only for kinematics
+				DP_GMM_COMPONENTS = int(avg_len/constants.DPGMM_DIVISOR)
 				print "L0", DP_GMM_COMPONENTS, "ALPHA: ", self.ALPHA_CP
 				dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 10000, alpha = self.ALPHA_CP, thresh= 1e-7)
-
-				# avg_len = int(big_N.shape[0]/len(self.list_of_demonstrations))
-				# DP_GMM_COMPONENTS =int(avg_len/25) #tuned with suturing experts only for video
-				# print DP_GMM_COMPONENTS
-				# dpgmm = mixture.DPGMM(n_components = DP_GMM_COMPONENTS, covariance_type='diag', n_iter = 100, alpha = 1e-3, thresh= 1e-7)
-
 
 			if self.fit_GMM:
 				print "Init GMM"
@@ -254,7 +258,10 @@ class KinematicsClustering():
 		self.changepoints = utils.safe_concatenate(self.changepoints, cp)
 
 	def save_cluster_metrics(self, points, predictions, key):
-
+		"""
+		Utility function calculates clustering metrics whenever
+		clustering is performed in the algorithm.
+		"""
 		if key == 'level1':
 			self.silhouette_score_global = metrics.silhouette_score(points, predictions, metric='euclidean')
 			self.silhouette_score_weighted = utils.silhoutte_weighted(points, predictions)
@@ -270,6 +277,9 @@ class KinematicsClustering():
 			self.dunn_scores_3[key] = dunn_scores[2]
 
 	def cluster_changepoints(self):
+		"""
+		Clusters changepoints specified in self.list_of_cp.
+		"""
 
 		print "Clustering changepoints..."
 		print "L1 ", str(len(self.list_of_cp)/constants.DPGMM_DIVISOR_L1)," ALPHA: ", self.ALPHA_L1
@@ -338,7 +348,6 @@ class KinematicsClustering():
 				new_cluster_list = cluster_list_of_cp[:]
 				print "Pruned cluster"
 				for cp in cluster_list_of_cp:
-					# print "Pruning " + str(cluster) + " " + str(data_representation) +  ": " + str(cp)
 					self.list_of_cp.remove(cp)
 					new_cluster_list.remove(cp)
 				self.map_level1_cp[cluster] = new_cluster_list
@@ -435,6 +444,9 @@ class KinematicsClustering():
 		return labels_true, labels_pred
 
 	def cluster_metrics(self):
+		"""
+		Computes metrics and returns as single dictionary.
+		"""
 		labels_true, labels_pred = self.prepare_labels()
 
 		metric_funcs = [adjusted_rand_score, adjusted_mutual_info_score, normalized_mutual_info_score, 
@@ -499,8 +511,6 @@ class KinematicsClustering():
 		data = [self.label_based_scores_1, self.silhouette_score_global, self.dunn_scores_1,
 		self.dunn_scores_2, self.dunn_scores_3, viz, self.silhouette_score_weighted]
 
-		# pickle.dump(data, open(self.metrics_picklefile, "wb"))
-
 		return data
 
 	def do_everything(self):
@@ -526,6 +536,11 @@ class KinematicsClustering():
 		return data
 
 def get_list_of_demo_combinations(list_of_demonstrations):
+	"""
+	For a given list_of_demonstrations with N demonstrations, function generates N combinations
+	of N - 1 subsets of the inital dataset. This is used in the Jackknife
+	estimate/Leave-one-out Cross Validation.
+	"""
 	iterator = itertools.combinations(list_of_demonstrations, len(list_of_demonstrations) - 1)
 	demo_combinations = []
 	while (1):

@@ -264,9 +264,13 @@ def get_frame_fig_name(frm_num):
 	else:
 		pass
 
-def get_chronological_sequences(annotations_file):
+def get_chronological_sequences(annotations):
+	"""
+	For all surgemes/regimes in annotations dict, returns segments, defined
+	as (start, end) tuples in chronologically sorted order.
+    """
 	sequences = []
-	for elem1 in annotations_file.values():
+	for elem1 in annotations.values():
 		for elem2 in elem1:
 			sequences.append(elem2)
 
@@ -313,6 +317,9 @@ def sys_copy(from_path, to_path):
 	os.system(command)
 
 def dict_insert(key, value, data_dict, axis = 0):
+	"""
+	Inserts (key, value) pair into data_dict. Dictionary values are numpy arrays.
+    """
 	if key not in data_dict:
 		data_dict[key] = value
 	else:
@@ -331,6 +338,11 @@ def safe_concatenate(X, W, axis = 0):
 		return np.concatenate((X, W), axis = axis)
 
 def sample_matrix(matrix, sampling_rate = 1):
+	"""
+	Uniform sampling of matrix.
+	Input: (N * d) matrix and sampling_rate
+	Output: Sampled ((N/sampling_rate) * d) matrix
+    """
 	return matrix[::sampling_rate]
 
 def nsf(num, n = 3):
@@ -385,6 +397,10 @@ def make_transition_feature(matrix, temporal_window, index):
 	return result
 
 def only_X(W):
+	"""
+	Used for Partially-Observed (PO) cases. Given kinematic state represented by (x,y)
+	coordinates, this function returns (x,).
+	"""
 	return W.T[:1].T
 
 def quaternion2rotation(q):

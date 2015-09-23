@@ -14,6 +14,11 @@ layers_of_interest = {"VGG": ['conv5_3'], "VGG_SOS": ['conv5_3'], "AlexNet": ["c
 features_folder = {"VGG": constants.VGG_FEATURES_FOLDER, "VGG_SOS": constants.VGG_FEATURES_FOLDER, "AlexNet": constants.ALEXNET_FEATURES_FOLDER}
 
 def forward_pass_entire_dataset(list_of_demonstrations, net_name, camera):
+	"""
+	Function performs forward pass of the frames corresponding to the demonstration
+	through specified 2D CNN.
+	Input: List of demonstrations, the Net (VGG, AlexNet) and camera (capture1, caputure2)
+	"""
 	net = CNNFeatureExtractor(net_name)
 	
 	total = len(list_of_demonstrations) 
@@ -26,7 +31,9 @@ def forward_pass_entire_dataset(list_of_demonstrations, net_name, camera):
 		i += 1
 
 def get_cnn_features_pickle_dump(net, fname, PATH_TO_DATA, annotations, net_name):
-	# Note - Only storing features for conv1-5 and pool5
+	"""
+	Extracts CNN features for frames located at PATH_TO_DATA, saves them as pickle file with file name fname.
+	"""
 
 	list_of_layers = layers_of_interest[net_name]
 	Z = net.forward_pass(PATH_TO_DATA, annotations, list_of_layers = list_of_layers, sampling_rate = 1, no_plot_mode = True)
