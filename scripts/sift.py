@@ -34,7 +34,6 @@ def run_sift_frame(PATH_TO_IMAGE, n_features = 10):
 	kp = sift.detect(img, None)
 	img2 = cv2.drawKeypoints(img, kp)
 	cv2.imshow("frame", img2)
-	IPython.embed()
 	return len(kp)
 
 def run_sift(PATH_TO_DATA, count, n_features = 20):

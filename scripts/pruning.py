@@ -20,6 +20,12 @@ def weighted_score(list_of_demonstrations, list_of_frm_demonstrations):
 	Returns weighted score.
 	"""
 
+	if constants.TASK_NAME not in ["suturing", "needle_passing"]:
+		return None
+
+	if not constants.WEIGHTED_PRUNING_MODE:
+		return None
+
 	N = float(len(list_of_demonstrations))
 	uniform_weight = 1/N
 	map_demonstration2weight = {}

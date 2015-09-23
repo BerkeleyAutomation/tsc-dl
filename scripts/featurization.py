@@ -45,6 +45,8 @@ def main(DEBUG = False):
 
 		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
 
+		list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
+
 		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
 		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
@@ -56,14 +58,14 @@ def main(DEBUG = False):
 		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
 		# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
 
-		list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
-		'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
-		'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
-		'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005',
-		'Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005']
+		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
+		# 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
+		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005',
+		# 'Suturing_I001', 'Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005',
+		# 'Suturing_B001', 'Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005']
 
 		# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
 
@@ -77,12 +79,12 @@ def main(DEBUG = False):
 		kinematics[demonstration] = W
 	sr = constants.SR
 	print "Sampling rate:",sr
-	# featurize_sift(list_of_demonstrations, kinematics, sr)
+	featurize_sift(list_of_demonstrations, kinematics, sr)
 	# featurize_1(list_of_demonstrations, kinematics, sr)
 	# featurize_2(list_of_demonstrations, kinematics, sr)
 	# featurize_3(list_of_demonstrations, kinematics, sr)
 	# featurize_4(list_of_demonstrations, kinematics, sr)
-	featurize_5(list_of_demonstrations, kinematics, sr)
+	# featurize_5(list_of_demonstrations, kinematics, sr)
 	# featurize_6(list_of_demonstrations, kinematics, sr)
 	# featurize_7(list_of_demonstrations, kinematics, sr)
 	# featurize_8(list_of_demonstrations, kinematics, sr)
@@ -121,8 +123,8 @@ def featurize_sift(list_of_demonstrations, kinematics, sr):
 		data_X_xy[demonstration] = X
 		data_X_x[demonstration] = X_onlyx
 
-	pickle.dump(data_X_xy, open(PATH_TO_FEATURES + "SIFT_xy_2.p", "wb"))
-	pickle.dump(data_X_x, open(PATH_TO_FEATURES + "SIFT_x_2.p", "wb"))
+	pickle.dump(data_X_xy, open(PATH_TO_FEATURES + "SIFT_xy.p", "wb"))
+	pickle.dump(data_X_x, open(PATH_TO_FEATURES + "SIFT_x.p", "wb"))
 
 # Featurize - SIFT
 def featurize_1(list_of_demonstrations, kinematics, sr):

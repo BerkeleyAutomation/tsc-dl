@@ -36,7 +36,7 @@ def setup_manual_labels(segments):
 		color = constants.color_map[key]
 
 		for elem in segments[key]:
-			list_of_start_end.append((elem[0] + constants.SR * 2, elem[1] - elem[0]))
+			list_of_start_end.append((elem[0], elem[1] - elem[0]))
 			list_of_colors.append(color)
 
 	return list_of_start_end, tuple(list_of_colors)
@@ -100,10 +100,10 @@ def get_time_clusters(data, T_COMPONENTS):
 	means = time_cluster.means_
 	covars = time_cluster.covars_
 
-	dpgmm = mixture.DPGMM(n_components = numDemos * 3, covariance_type='diag', n_iter = 10000, alpha = 1000, thresh= 1e-10)
-	dpgmm.fit(X)
-	Y = dpgmm.predict(X)
-	means = dpgmm.means_
+	# dpgmm = mixture.DPGMM(n_components = numDemos * 3, covariance_type='diag', n_iter = 10000, alpha = 1000, thresh= 1e-10)
+	# dpgmm.fit(X)
+	# Y = dpgmm.predict(X)
+	# means = dpgmm.means_
 
 	list_of_elem = []
 
@@ -132,7 +132,7 @@ def get_time_clusters(data, T_COMPONENTS):
 			id_in_cluster = 1. if len(commonElem) > 0 else 0.
 			rep.append(id_in_cluster)
 
-		pruneCluster = True if sum(rep)/sizeTestSet < 0.4 else False
+		pruneCluster = True if sum(rep)/sizeTestSet < constants.PRUNING_FACTOR_T else False
 
 		min_frm = min(cluster_frames)
 		max_frm = max(cluster_frames)
@@ -170,7 +170,7 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	if (TASK in ["lego", "plane"]):
 		end = end + 20
 	elif (TASK in ["000", "010", "011", "100"]):
-		end = end + 10
+		end = end + 2
 	else:
 		end = end + 50
 

@@ -125,6 +125,7 @@ def parse_kinematics(PATH_TO_KINEMATICS_DATA, PATH_TO_ANNOTATION, fname):
 		mat = scipy.io.loadmat(PATH_TO_KINEMATICS_DATA + fname)
 		X = mat['x_traj']
 		X = X.T
+		# IPython.embed()
 		# X = pickle.load(open(PATH_TO_KINEMATICS_DATA + fname + ".p", "rb"))
 	elif constants.TASK_NAME in ["plane","lego"]:
 		print "-- Parsing Kinematics for ", fname
@@ -174,7 +175,9 @@ if __name__ == "__main__":
 
 	# list_of_demonstrations = ["lego_2", "lego_3", "lego_4", "lego_5", "lego_6", "lego_7"]
 
-	list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
+	# list_of_demonstrations = ["people2_2", "people2_3", "people2_4", "people2_5", "people2_6", "people2_7"]
+
+	list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
 
 	parse_annotations(list_of_demonstrations)
 
