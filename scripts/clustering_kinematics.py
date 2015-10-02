@@ -738,7 +738,7 @@ if __name__ == "__main__":
 
 		# list_of_demonstrations = ['people2_2', 'people2_3', 'people2_4', 'people2_5', 'people2_6']
 
-		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
+		list_of_demonstrations = constants.config.get("list_of_demonstrations")
 
 	vision_mode = False
 	feat_fname = None

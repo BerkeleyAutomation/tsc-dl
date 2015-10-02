@@ -4,7 +4,6 @@ import yaml
 import os
 import sys
 
-
 default_config = {'ALEXNET_FEATURES_FOLDER': 'alexnetfeatures/', 'ALPHA_W_CP': 750, 'ALPHA_ZW_CP': 1000, 'ALPHA_Z_CP': 0.001,
  'CAMERA': 'capture2',  'CONFIG_FILE': 'meta_file_Suturing.txt', 'CROP_PARAMS_CAPTURE_1': 'crop=330:260:200:170',
  'CROP_PARAMS_CAPTURE_2': 'crop=330:260:150:150', 'DPGMM_DIVISOR': 45, 'DPGMM_DIVISOR_L1': 15, 'KINEMATICS_DIM': 38,

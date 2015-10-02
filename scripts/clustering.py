@@ -983,10 +983,12 @@ if __name__ == "__main__":
 		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
 
 		# Experts (Needle Passing)
-		list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		"Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
+		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
+		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
 
 		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
+
+		list_of_demonstrations = constants.config.get("list_of_demonstrations")
 
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
 
