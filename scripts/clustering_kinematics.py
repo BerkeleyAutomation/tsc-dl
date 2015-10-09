@@ -53,6 +53,7 @@ class KinematicsClustering():
 		self.map_cp2surgemetransitions = {}
 		self.map_frm2surgeme = parser.get_all_frame2surgeme_maps(self.list_of_demonstrations)
 		self.trial = utils.hashcode() + fname
+
 		# self.trial = fname
 		self.cp_surgemes = []
 		self.pruned_L1_clusters = []
@@ -523,7 +524,6 @@ class KinematicsClustering():
 		self.generate_transition_features()
 
 		self.generate_change_points_2() #cluster over the full data set
-		# self.generate_change_points_1() #cluster over the each demo
 
 		self.cluster_changepoints()
 

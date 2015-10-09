@@ -723,7 +723,6 @@ class MilestonesClustering():
 
 	def do_everything(self):
 
-		# self.loads_features()
 		self.loads_features_split()
 
 		self.generate_transition_features()

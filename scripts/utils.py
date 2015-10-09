@@ -173,7 +173,7 @@ def plot_scatter_continous(X, figure_name, title = None, colormap_name = "Accent
 		coords_y.append(y_coord)
 
 	plt.scatter(np.array(coords_x), np.array(coords_y), s = 40, c = colors, edgecolors = 'None', cmap = mymap)
-	plt.savefig("../plots/"+ figure_name + "_" + colormap_name + ".jpg")
+	plt.savefig(figure_name + "_" + colormap_name + ".jpg")
 
 def plot_hypercolumns(X, net, label_map, frm_map, figure_name, hypercolumns_layers, encoding_func = None):
 	hc_string = ''
@@ -477,11 +477,22 @@ def binary_search(ranges, val):
 		return binary_search(right_ranges, val)
 
 if __name__ == "__main__":
-	data = pickle.load(open("final3_alexnet_dimred.p", "rb"))
 	colormap_name = "coolwarm"
-	for layer in ["conv3", "conv4", "pool5"]:
-		start = 0.25
-		end = 0.55
-		[X_pca, X_tsne_pca, X_grp] = data[layer]
-		plot_scatter_continous(X_pca[np.floor(X_pca.shape[0]*start):np.floor(X_pca.shape[0]*end),:], "PCA" + layer+ "_" + str(start)+"_"+str(end), colormap_name = colormap_name)
-		# plot_scatter_continous(X_tsne_pca, "t-SNE" + layer,colormap_name = colormap_name)
+	start = 0.20
+	end = 0.30
+
+	# VGG
+	data = pickle.load(open("VGG_dimred.p", "rb"))
+	list_of_layers = ['conv4_1','conv4_3', 'conv5_1', 'conv5_3', 'pool5']
+	for layer in list_of_layers:
+		[X_pca, X_tsne, X_grp] = data[layer]
+		plot_scatter_continous(X_pca[np.floor(X_pca.shape[0]*start):np.floor(X_pca.shape[0]*end),:], "VGG_PCA" + layer+ "_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+		plot_scatter_continous(X_tsne[np.floor(X_tsne.shape[0]*start):np.floor(X_tsne.shape[0]*end),:], "VGG_tSNE" + layer+ "_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+
+	# AlexNet
+	data = pickle.load(open("AlexNet_dimred.p", "rb"))
+	list_of_layers = ["conv3", "conv4", "pool5"]
+	for layer in list_of_layers:
+		[X_pca, X_tsne, X_grp] = data[layer]
+		plot_scatter_continous(X_pca[np.floor(X_pca.shape[0]*start):np.floor(X_pca.shape[0]*end),:], "AlexNet_PCA" + layer+ "_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+		plot_scatter_continous(X_tsne[np.floor(X_tsne.shape[0]*start):np.floor(X_tsne.shape[0]*end),:], "AlexNet_tSNE" + layer+ "_" + str(start)+"_"+str(end), colormap_name = colormap_name)
