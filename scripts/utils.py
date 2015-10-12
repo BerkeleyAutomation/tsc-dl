@@ -316,6 +316,11 @@ def sys_copy(from_path, to_path):
 	command = "cp " + from_path + " " + to_path
 	os.system(command)
 
+##DEBUG##
+def mem_addr(x):
+	return x.__array_interface__['data'][0]
+########
+
 def dict_insert(key, value, data_dict, axis = 0):
 	"""
 	Inserts (key, value) pair into data_dict. Dictionary values are numpy arrays.
@@ -324,7 +329,22 @@ def dict_insert(key, value, data_dict, axis = 0):
 		data_dict[key] = value
 	else:
 		curr_value = data_dict[key]
+		if key=='pool5':
+			st = time.clock()
 		curr_value = np.concatenate((curr_value, value), axis = axis)
+		if key == 'pool5':
+			print time.clock() - st
+		data_dict[key] = curr_value
+
+def dict_array_insert(key, value, data_dict, axis = 0):
+	"""
+	Inserts (key, value) pair into data_dict. Dictionary values are numpy arrays.
+    """
+	if key not in data_dict:
+		data_dict[key] = [value]
+	else:
+		curr_value = data_dict[key]
+		curr_value += value
 		data_dict[key] = curr_value
 
 def safe_concatenate(X, W, axis = 0):

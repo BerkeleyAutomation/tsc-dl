@@ -11,6 +11,7 @@ import cv2
 
 import utils
 import constants
+import time
 
 sys.path.insert(0, constants.CAFFE_ROOT + 'python')
 
@@ -38,18 +39,19 @@ class CNNFeatureExtractor:
 			print str(seg)
 			frm_num = seg[0]
 			while frm_num <= seg[1]:
-				print frm_num, annotations
 				im = caffe.io.load_image(utils.get_full_image_path(PATH_TO_DATA, frm_num))
 				self.net.blobs['data'].data[...] = self.transformer.preprocess('data', im)
 				out = self.net.forward()
+				cur = time.clock()
 				for layer in list_of_layers:
 					if layer == 'input':
 						data = cv2.imread(full_image_path)
 					else:
 						data = self.net.blobs[layer].data[0]
 					data = utils.flatten(data)
-					utils.dict_insert(layer, data, X)
+					utils.dict_array_insert(layer, data, X)
 				frm_num += sampling_rate
+				print frm_num, cur - time.clock()
 		return X
 
 
