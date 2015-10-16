@@ -344,7 +344,7 @@ def dict_array_insert(key, value, data_dict, axis = 0):
 		data_dict[key] = [value]
 	else:
 		curr_value = data_dict[key]
-		curr_value += value
+		curr_value.append(value)
 		data_dict[key] = curr_value
 
 def safe_concatenate(X, W, axis = 0):
