@@ -22,20 +22,21 @@ def parse_yaml(yaml_fname):
 
 class Config:
 	def __init__(self, yaml_fname):
-		self.__vars = parse_yaml(yaml_fname)
+		self.__vars = parse_yaml("../config/"+yaml_fname)
 		self.__yaml_fname = yaml_fname
 
 	def get(self, var_name):
 		if var_name in self.__vars:
 			return self.__vars[var_name]
 		if var_name not in default_config:
-			print "ERROR: Incorrect variable name"
+			print "ERROR: Incorrect variable name, ", str(var_name)
 			sys.exit()
 		else:
 			print "ERROR: Using default parameter for ", str(var_name)
 			return default_config[var_name]
 
-config = Config("../config/suturing.yaml")
+f = open('../config/defaultconfig', 'r+')
+config = Config(f.readline().strip('\n'))
 
 # Constants for Path resolution
 REPO_ROOT = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
@@ -43,6 +44,11 @@ CAFFE_ROOT = '/home/animesh/caffe/'
 TASK_NAME = config.get('TASK_NAME')
 PATH_TO_DATA = REPO_ROOT + "/data/" + config.get('PATH_TO_DATA')
 PATH_TO_CLUSTERING_RESULTS = REPO_ROOT + "/clustering/" + config.get('PATH_TO_CLUSTERING_RESULTS')
+
+if not os.path.exists(PATH_TO_CLUSTERING_RESULTS):
+	print PATH_TO_CLUSTERING_RESULTS, " does not exist; new folder created"
+	os.mkdir(PATH_TO_CLUSTERING_RESULTS)
+
 PATH_TO_KINEMATICS = REPO_ROOT + "/data/" + config.get('PATH_TO_KINEMATICS')
 PATH_TO_OPENCV_2_4_9 = "~/opencv_2.4.9/opencv-2.4.9/lib/"
 PATH_TO_SAVE_FIG = REPO_ROOT + "/plots/"

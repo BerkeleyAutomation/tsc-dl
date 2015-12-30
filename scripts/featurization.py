@@ -13,8 +13,6 @@ import lcd
 import encoding
 import sift
 
-# from sklearn.decomposition import PCA, IncrementalPCA
-
 # Table of features:
 
 # 1 - SIFT

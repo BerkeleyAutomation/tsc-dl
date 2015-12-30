@@ -168,7 +168,8 @@ class KinematicsClustering():
 
 				if Y[i] != Y[i + 1]:
 
-					change_pt = N[i][self.X_dimension:]
+					change_pt = N[i][:self.X_dimension]
+					assert change_pt.shape[0] == self.X_dimension
 					self.append_cp_array(utils.reshape(change_pt))
 					self.map_cp2frm[cp_index] = start + i * self.sr
 					self.map_cp2demonstrations[cp_index] = demonstration
@@ -245,7 +246,7 @@ class KinematicsClustering():
 		for w in range(len(Y) - 1):
 
 			if Y[w] != Y[w + 1]:
-				change_pt = big_N[w][self.X_dimension:]
+				change_pt = big_N[w][:self.X_dimension]
 				self.append_cp_array(utils.reshape(change_pt))
 				self.map_cp2frm[cp_index] = map_index2frm[w]
 				self.map_cp2demonstrations[cp_index] = map_index2demonstration[w]
@@ -312,8 +313,6 @@ class KinematicsClustering():
 
 			print "L1: Clusters in DP-GMM", len(set(predictions))
 
-		self.save_cluster_metrics(self.changepoints, predictions, 'level1')
-
 		for i in range(len(predictions)):
 			label = constants.alphabet_map[predictions[i] + 1]
 			self.map_cp2cluster[i] = label
@@ -352,6 +351,20 @@ class KinematicsClustering():
 					self.list_of_cp.remove(cp)
 					new_cluster_list.remove(cp)
 				self.map_level1_cp[cluster] = new_cluster_list
+
+		predictions = []
+		filtered_changepoints = None
+		inv_map = {v:k for k, v in constants.alphabet_map.items()}
+
+		for cluster in self.map_level1_cp:
+			cluster_list_of_cp = self.map_level1_cp[cluster]
+			for cp in cluster_list_of_cp:
+				predictions.append(inv_map[cluster])
+				filtered_changepoints = utils.safe_concatenate(filtered_changepoints, utils.reshape(self.changepoints[cp]))
+
+		predictions = np.array(predictions)
+
+		self.save_cluster_metrics(filtered_changepoints, predictions, 'level1')
 
 	def cluster_evaluation(self):
 
@@ -663,80 +676,6 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-
-		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
-
-		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
-
-		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
-
-		# list_of_demonstrations = ["baseline_000", "baseline_010", "baseline_025", "baseline_050", "baseline_075"]
-
-		# list_of_demonstrations = ["baseline2_010_01", "baseline2_010_02", "baseline2_010_03", "baseline2_010_04", "baseline2_010_05"]
-
-		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
-
-		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
-
-		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
-
-		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
-
-		# list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-
-		# list_of_demonstrations = ["0001_01", "0001_02", "0001_03", "0001_04", "0001_05"]
-		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
-
-		# Experts (Suturing)
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
-
-		# # Experts +Intermediates (Suturing)
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
-
-		# Experts + Intermediates + Novices (Suturing)
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
-		# 'Suturing_B001','Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005',
-		# 'Suturing_H003','Suturing_H004', 'Suturing_H005', 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
-		# 'Suturing_I001','Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
-
-		# Experts (Needle_Passing)
-		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
-
-		# Experts + Intermediates (Needle_Passing)
-		# list_of_demonstrations = ["Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
-		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
-		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
-
-		# Experts + Intermediates + Novices (Needle_Passing)
-		# list_of_demonstrations = ["Needle_Passing_B001", "Needle_Passing_B002", "Needle_Passing_B003", "Needle_Passing_B004",
-		# "Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
-		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
-		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004",
-		# "Needle_Passing_H002", "Needle_Passing_H004", "Needle_Passing_H005",
-		# "Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004","Needle_Passing_I005"]
-		# 'Suturing_H003', 'Suturing_H004', 'Suturing_H005', 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
-		# 'Suturing_I001','Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
-
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-
-		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
-
-		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
-
-		# list_of_demonstrations = ['people_2', 'people_3', 'people_4', 'people_5', 'people_6']
-
-		# list_of_demonstrations = ['people2_2', 'people2_3', 'people2_4', 'people2_5', 'people2_6']
 
 		list_of_demonstrations = constants.config.get("list_of_demonstrations")
 

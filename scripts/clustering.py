@@ -253,7 +253,7 @@ class MilestonesClustering():
 		for w in range(len(Y) - 1):
 
 			if Y[w] != Y[w + 1]:
-				change_pt = big_N[w][size_of_X:]
+				change_pt = big_N[w][:size_of_X]
 				self.append_cp_array(change_pt)
 				self.map_cp2frm[cp_index] = map_index2frm[w]
 				self.map_cp2demonstrations[cp_index] = map_index2demonstration[w]
@@ -926,67 +926,6 @@ if __name__ == "__main__":
 		list_of_demonstrations = ['Suturing_E001','Suturing_E002']
 	else:
 		DEBUG = False
-
-		# list_of_demonstrations = ["100_01", "100_02", "100_03", "100_04", "100_05"]
-
-		# list_of_demonstrations = ["010_01", "010_02", "010_03", "010_04", "010_05"]
-
-		# list_of_demonstrations = ["011_01", "011_02", "011_03", "011_04", "011_05"]
-
-		# list_of_demonstrations = ["Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
-
-		# list_of_demonstrations = ["plane_3", "plane_4", "plane_5",
-		# 	"plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
-
-		list_of_demonstrations = ['Suturing_E001', 'Suturing_E002','Suturing_E003', 'Suturing_E004', 'Suturing_E005']
-
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
-
-		# list_of_demonstrations = ['lego_3', 'lego_4', 'lego_5', 'lego_6', 'lego_7']
-
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005']
-
-		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
-		# list_of_demonstrations = ["0100_01", "0100_02", "0100_03", "0100_04", "0100_05"]
-
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
-
-		# # Experts + Intermediates + Novices (Suturing)
-		# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-		# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-		# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-		# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005',
-		# 'Suturing_B001','Suturing_B002', 'Suturing_B003', 'Suturing_B004', 'Suturing_B005',
-		# 'Suturing_H003','Suturing_H004', 'Suturing_H005', 'Suturing_G002', 'Suturing_G004', 'Suturing_G005',
-		# 'Suturing_I001','Suturing_I002', 'Suturing_I003', 'Suturing_I004', 'Suturing_I005']
-
-
-		# Experts + Intermediates + Novices (Needle_Passing)
-		# list_of_demonstrations = ["Needle_Passing_B001", "Needle_Passing_B002", "Needle_Passing_B003", "Needle_Passing_B004",
-		# "Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
-		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
-		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004",
-		# "Needle_Passing_H002", "Needle_Passing_H004", "Needle_Passing_H005",
-		# "Needle_Passing_I002", "Needle_Passing_I003", "Needle_Passing_I004","Needle_Passing_I005"]
-
-		# Experts + Intermediates (Needle_Passing)
-		# list_of_demonstrations = ["Needle_Passing_C001","Needle_Passing_C002", "Needle_Passing_C003", "Needle_Passing_C004", "Needle_Passing_C005",
-		# "Needle_Passing_D001","Needle_Passing_D002", "Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005",
-		# "Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_F001", "Needle_Passing_F003", "Needle_Passing_F004"]
-
-		# Experts (Needle Passing)
-		# list_of_demonstrations = ["Needle_Passing_E001", "Needle_Passing_E003", "Needle_Passing_E004", "Needle_Passing_E005",
-		# "Needle_Passing_D001", "Needle_Passing_D002","Needle_Passing_D003", "Needle_Passing_D004", "Needle_Passing_D005"]
-
-		# list_of_demonstrations = ["plane_6", "plane_7", "plane_8", "plane_9", "plane_10"]
-
 		list_of_demonstrations = constants.config.get("list_of_demonstrations")
 
 	combinations = get_list_of_demo_combinations(list_of_demonstrations)
