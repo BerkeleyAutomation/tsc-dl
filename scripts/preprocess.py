@@ -38,7 +38,7 @@ def preprocess(list_of_demonstrations):
 
 	for demonstration in list_of_demonstrations:
 		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + camera + ".p"
-		start, end = parser.get_start_end_annotations(PATH_TO_ANNOTATION)
+		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
 
 		OLD_FRM_PATH = constants.PATH_TO_DATA + "frames_unprocessed/" + demonstration + "_" + camera + "/"
 		NEW_FRM_PATH = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration + "_" + camera + "/"

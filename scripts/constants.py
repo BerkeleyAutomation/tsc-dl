@@ -1,6 +1,5 @@
-import numpy as np
-import IPython
 import yaml
+import numpy as np
 import os
 import sys
 

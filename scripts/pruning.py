@@ -4,6 +4,7 @@ import IPython
 import pickle
 import numpy as np
 
+import parser
 import constants
 import utils
 
@@ -28,11 +29,21 @@ def weighted_score(list_of_demonstrations, list_of_frm_demonstrations):
 
 	N = float(len(list_of_demonstrations))
 	uniform_weight = 1/N
+
+	# Weights for skill-weighted pruning, where each demonstration has the same weight for 
 	map_demonstration2weight = {}
 
+	# Weight is inversely proportional to completion time.
+	map_demonstration2weight_t = {}
+
 	for demonstration in list_of_demonstrations:
+
 		# Base weight
 		weight = uniform_weight
+
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
+		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
+		weight_t = 1.0/(end - start)
 
 		# Stripped demonstration task (Suturing_, Needle_passing_, etc.) from demonstration name
 		demonstration_name = demonstration.split("_")[-1]
@@ -46,16 +57,25 @@ def weighted_score(list_of_demonstrations, list_of_frm_demonstrations):
 				print "ERROR: Unidentified Demonstration"
 				IPython.embed()
 		map_demonstration2weight[demonstration] = weight
+		map_demonstration2weight_t[demonstration] = weight_t
 
 	normalization_factor = sum(map_demonstration2weight.values())
+	normalization_factor_t = sum(map_demonstration2weight_t.values())
 
 	#Weight normalization
 	for demonstration in list_of_demonstrations:
 		weight = map_demonstration2weight[demonstration]
 		map_demonstration2weight[demonstration] = weight/float(normalization_factor)
 
+		weight_t = map_demonstration2weight_t[demonstration]
+		map_demonstration2weight_t[demonstration] = weight_t/float(normalization_factor_t)
+
 	score = 0.0
 	for demonstration in set(list_of_frm_demonstrations):
 		score += map_demonstration2weight[demonstration]
 
-	return score
+	score_t = 0.0
+	for demonstration in set(list_of_frm_demonstrations):
+		score_t += map_demonstration2weight_t[demonstration]
+
+	return score_t

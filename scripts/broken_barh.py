@@ -162,7 +162,7 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 	"""
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
-	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
+	start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
 	length = end - start
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 
@@ -249,7 +249,7 @@ def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 	sizeTestSet = numDemos - 1
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
-	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
+	start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
 	length = end - start
 	segments = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 

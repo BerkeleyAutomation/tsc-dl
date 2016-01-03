@@ -54,7 +54,7 @@ class MilestonesClustering():
 		self.map_cp2surgemes = {}
 		self.map_cp2surgemetransitions = {}
 		self.l2_cluster_matrices = {}
-		self.map_frm2surgeme = parser.get_all_frame2surgeme_maps(self.list_of_demonstrations)
+		self.map_frm2surgeme = utils.get_all_frame2surgeme_maps(self.list_of_demonstrations)
 		self.trial = utils.hashcode() + trialname
 		# self.trial = trialname
 		self.cp_surgemes = []
@@ -124,7 +124,7 @@ class MilestonesClustering():
 	
 			self.save_cluster_metrics(N, Y, gmm.means_, 'cpts_' + demonstration, gmm)
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+			start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_capture2.p")
 
 			size_of_X = self.data_X_size[demonstration]
@@ -346,7 +346,7 @@ class MilestonesClustering():
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
 
-			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+			ranges = sorted(utils.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_capture2.p"))
 
 			bin = utils.binary_search(ranges, frm)

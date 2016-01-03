@@ -87,7 +87,7 @@ def main(DEBUG = False):
 	print "Parsing Kinematic Features"
 	kinematics = {}
 	for demonstration in list_of_demonstrations:
-		W = parser.get_kinematic_features(demonstration)
+		W = utils.get_kinematic_features(demonstration)
 		kinematics[demonstration] = W
 	sr = constants.SR
 	print "Sampling rate:",sr
@@ -119,7 +119,7 @@ def featurize_sift(list_of_demonstrations, kinematics, sr):
 		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
 
 		Z = []
-		start, end = parser.get_start_end_annotations(PATH_TO_ANNOTATION)
+		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
 		for frm in range(start, end + 1):
 			PATH_TO_IMAGE = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration + "_" + constants.CAMERA + "/"
 			Z.append(sift.run_sift_frame(utils.get_full_image_path(PATH_TO_IMAGE, frm)))
@@ -151,7 +151,7 @@ def featurize_1(list_of_demonstrations, kinematics, sr):
 	data_X_2 = {}
 	for demonstration in list_of_demonstrations:
 		print "SIFT for ", demonstration
-		start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+		start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 						+ demonstration + "_" + constants.CAMERA +".p")
 
 		W = kinematics[demonstration]
@@ -274,7 +274,7 @@ def featurize_LCD_VLAD(list_of_demonstrations, kinematics, layer, net_name, fold
 		IPython.embed()
 
 		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
-		start, end = parser.get_start_end_annotations(PATH_TO_ANNOTATION)
+		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
 
 		Z = []
 

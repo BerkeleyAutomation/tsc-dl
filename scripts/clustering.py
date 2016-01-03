@@ -11,7 +11,6 @@ import itertools
 import time
 
 import constants
-import parser
 import utils
 import cluster_evaluation
 import broken_barh
@@ -50,7 +49,7 @@ class MilestonesClustering():
 		self.map_cp2surgemes = {}
 		self.map_cp2surgemetransitions = {}
 		self.l2_cluster_matrices = {}
-		self.map_frm2surgeme = parser.get_all_frame2surgeme_maps(self.list_of_demonstrations)
+		self.map_frm2surgeme = utils.get_all_frame2surgeme_maps(self.list_of_demonstrations)
 		self.trial = utils.hashcode() + trialname
 		self.cp_surgemes = []
 		self.pruned_L1_clusters = []
@@ -117,7 +116,7 @@ class MilestonesClustering():
 		Independently loads/sets-up the kinematics in self.data_W.
 		"""
 		for demonstration in self.list_of_demonstrations:
-			W = utils.sample_matrix(parser.get_kinematic_features(demonstration), sampling_rate = self.sr)
+			W = utils.sample_matrix(utils.get_kinematic_features(demonstration), sampling_rate = self.sr)
 			scaler = preprocessing.StandardScaler().fit(W)
 			self.data_W[demonstration] = scaler.transform(W)
 
@@ -169,7 +168,7 @@ class MilestonesClustering():
 	
 			self.save_cluster_metrics(N, Y, 'cpts_' + demonstration)
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+			start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_" + constants.CAMERA + ".p")
 
 			size_of_X = self.data_X_size[demonstration]
@@ -200,7 +199,7 @@ class MilestonesClustering():
 			print demonstration
 			N = self.data_N[demonstration]
 
-			start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+			start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_" + constants.CAMERA + ".p")
 
 			for j in range(N.shape[0]):
@@ -519,7 +518,7 @@ class MilestonesClustering():
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
 
-			ranges = sorted(parser.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
+			ranges = sorted(utils.get_annotation_segments(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER
 				+ demonstration + "_" + constants.CAMERA + ".p"))
 
 			bin = utils.binary_search(ranges, frm)
@@ -602,7 +601,7 @@ class MilestonesClustering():
 				print "Too Few elements inside cluster!!"
 				sys.exit()
 			labels_pred_1_.append(milestone_label)
-			labels_pred_2_.append(list(milestone_label)[0])
+			labels_pred_2_.append(milestone_label.split('_')[0])
 
 		labels_pred_1 = utils.label_convert_to_numbers(labels_pred_1_)
 		labels_pred_2 = utils.label_convert_to_numbers(labels_pred_2_)

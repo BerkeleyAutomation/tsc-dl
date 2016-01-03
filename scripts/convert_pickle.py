@@ -16,7 +16,7 @@ list_of_annotations = ["plane_3_capture2.p", "plane_4_capture2.p", "plane_5_capt
 
 for i in range(len(list_of_annotations)):
 	print list_of_annotations[i], list_of_joint_states[i], list_of_trajectories[i]
-	start, end = parser.get_start_end_annotations(constants.PATH_TO_DATA + "annotations/" + list_of_annotations[i])
+	start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + "annotations/" + list_of_annotations[i])
 	X = None
 	trajectory = pickle.load(open(constants.PATH_TO_KINEMATICS + list_of_joint_states[i], "rb"))
 	for frm in range(start, end + 1):
