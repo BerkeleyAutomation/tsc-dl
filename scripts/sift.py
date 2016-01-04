@@ -3,8 +3,9 @@ import IPython
 import pickle
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
-
+import constants
 import utils
 
 def min_kp_SIFT(PATH_TO_DATA):
@@ -25,7 +26,7 @@ def min_kp_SIFT(PATH_TO_DATA):
 	cap.release()
 	return min(result)
 
-def run_sift_frame(PATH_TO_IMAGE, n_features = 10):
+def run_surf_frame(PATH_TO_IMAGE, n_features = 10):
 	img = cv2.imread(PATH_TO_IMAGE)
 	# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 	sift = cv2.SURF(4000)
@@ -36,12 +37,33 @@ def run_sift_frame(PATH_TO_IMAGE, n_features = 10):
 	cv2.imshow("frame", img2)
 	return len(kp)
 
+def run_sift_for_demonstration():
+	list_of_demonstrations = ["Suturing_E001",]
+	for demonstration in list_of_demonstrations:
+		print "SIFT for ", demonstration
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
+
+		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
+		for frm in range(start, end + 1):
+			if ((frm % 3) == 0):
+				PATH_TO_IMAGE = utils.get_full_image_path(constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration + "_" + constants.CAMERA + "/", frm)
+
+				print PATH_TO_IMAGE
+				img = cv2.imread(PATH_TO_IMAGE)
+				sift = cv2.SIFT(nfeatures = 50)
+				kp, des = sift.detectAndCompute(img, None)
+				img = cv2.drawKeypoints(img, kp)
+				cv2.imshow('sift',img)
+				cv2.imwrite('../sift_images/' + str(frm) +".jpg",img)
+
+
 def run_sift(PATH_TO_DATA, count, n_features = 20):
 	cap = cv2.VideoCapture(PATH_TO_DATA)
 	sift = cv2.SIFT(nfeatures = n_features)
 	i = 0
 	X1 = None
 	X2 = None
+	IPython.embed()
 	while(1):
 		print str(count) + " "+ str(i)
 		ret, frame = cap.read()
@@ -70,16 +92,14 @@ def run_sift(PATH_TO_DATA, count, n_features = 20):
 	return X1, X2
 
 if __name__ == "__main__":
-	list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
-	'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
-	'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
-	'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
-
-	# list_of_demonstrations = ["Suturing_E001"]
-
-	j = 0
-	for demonstration in list_of_demonstrations:
-		X1, X2 = run_sift("/Users/adithyamurali/dev/DeepMilestones/sift_videos/"+ demonstration + ".mp4", j)
-		pickle.dump(X1, open("SIFT_" + demonstration + "_1.p", "wb"))
-		pickle.dump(X2, open("SIFT_" + demonstration + "_2.p", "wb"))
-		j += 1
+	# list_of_demonstrations = ['Suturing_E001','Suturing_E002', 'Suturing_E003', 'Suturing_E004', 'Suturing_E005',
+	# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
+	# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
+	# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
+	run_sift_for_demonstration()
+	# j = 0
+	# for demonstration in list_of_demonstrations:
+	# 	X1, X2 = run_sift("/Users/adithyamurali/dev/DeepMilestones/sift_videos/"+ demonstration + ".mp4", j)
+	# 	# pickle.dump(X1, open("SIFT_" + demonstration + "_1.p", "wb"))
+	# 	# pickle.dump(X2, open("SIFT_" + demonstration + "_2.p", "wb"))
+	# 	j += 1

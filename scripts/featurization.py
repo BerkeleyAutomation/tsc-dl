@@ -122,7 +122,7 @@ def featurize_sift(list_of_demonstrations, kinematics, sr):
 		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
 		for frm in range(start, end + 1):
 			PATH_TO_IMAGE = constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration + "_" + constants.CAMERA + "/"
-			Z.append(sift.run_sift_frame(utils.get_full_image_path(PATH_TO_IMAGE, frm)))
+			Z.append(sift.run_surf_frame(utils.get_full_image_path(PATH_TO_IMAGE, frm)))
 
 		Z = np.array(Z)
 		Z = Z.reshape(Z.shape[0],1)
