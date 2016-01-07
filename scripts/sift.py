@@ -37,7 +37,45 @@ def run_surf_frame(PATH_TO_IMAGE, n_features = 10):
 	cv2.imshow("frame", img2)
 	return len(kp)
 
-def run_sift_for_demonstration():
+def generate_sift_features():
+	list_of_demonstrations = ["plane_9",]
+	for demonstration in list_of_demonstrations:
+		print "SIFT for ", demonstration
+		PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
+
+		X1 = None
+		X2 = None
+		n_features = 20
+		sift = cv2.SIFT(nfeatures = n_features)
+
+		start, end = utils.get_start_end_annotations(PATH_TO_ANNOTATION)
+		for frm in range(start, end + 1):
+			# if ((frm % 3) == 0):
+				PATH_TO_IMAGE = utils.get_full_image_path(constants.PATH_TO_DATA + constants.NEW_FRAMES_FOLDER + demonstration + "_" + constants.CAMERA + "/", frm)
+
+				print PATH_TO_IMAGE
+				img = cv2.imread(PATH_TO_IMAGE)
+				kp, des = sift.detectAndCompute(img, None)
+				img = cv2.drawKeypoints(img, kp)
+				cv2.imshow('sift',img)
+				cv2.imwrite('../sift_images/' + demonstration + "/" + str(frm) +".jpg",img)
+
+				vector1 = []
+				vector2 = []
+				kp.sort(key = lambda x: x.response, reverse = True)
+				for kp_elem in kp:
+					vector1 += [kp_elem.response, kp_elem.pt[0], kp_elem.pt[1], kp_elem.size, kp_elem.angle]
+					vector2 += [kp_elem.pt[0], kp_elem.pt[1]]
+				try:
+					X1 = utils.safe_concatenate(X1, utils.reshape(np.array(vector1[:n_features * 5])))
+					X2 = utils.safe_concatenate(X2, utils.reshape(np.array(vector2[:n_features * 2])))
+				except ValueError as e:
+					IPython.embed()
+
+		pickle.dump(X1, open("sift_features/SIFT_" + demonstration + "_1.p", "wb"))
+		pickle.dump(X2, open("sift_features/SIFT_" + demonstration + "_2.p", "wb"))
+
+def run_sift_images():
 	list_of_demonstrations = ["Suturing_E001",]
 	for demonstration in list_of_demonstrations:
 		print "SIFT for ", demonstration
@@ -96,7 +134,7 @@ if __name__ == "__main__":
 	# 'Suturing_D001','Suturing_D002', 'Suturing_D003', 'Suturing_D004', 'Suturing_D005',
 	# 'Suturing_C001','Suturing_C002', 'Suturing_C003', 'Suturing_C004', 'Suturing_C005',
 	# 'Suturing_F001','Suturing_F002', 'Suturing_F003', 'Suturing_F004', 'Suturing_F005']
-	run_sift_for_demonstration()
+	generate_sift_features()
 	# j = 0
 	# for demonstration in list_of_demonstrations:
 	# 	X1, X2 = run_sift("/Users/adithyamurali/dev/DeepMilestones/sift_videos/"+ demonstration + ".mp4", j)

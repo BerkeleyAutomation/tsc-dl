@@ -72,8 +72,10 @@ else:
 
 # Surgeme representations
 alphabet_map = {}
+
 for i in range(500):
-	alphabet_map[i] = "A" + str(i) + "_"
+	alphabet_map[i] = "label" + "_" + str(i)
+
 map_surgeme_label = {'G1': 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5, "G6": 6, "G7": 7, "G8": 8, "G9": 9,
 "G10": 10, "G12": 12, "G11": 11, "G13": 13, "G14": 14, "G15": 15, "G16": 16, "G17": 17}
 

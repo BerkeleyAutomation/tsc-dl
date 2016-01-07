@@ -448,7 +448,7 @@ class MilestonesClustering():
 				cp = list_of_cp_key[i]
 				l1_cluster = key
 				l2_cluster = Y[i]
-				milestone = l1_cluster + str(l2_cluster)
+				milestone = l1_cluster + "_" + str(l2_cluster)
 				demonstration = self.map_cp2demonstrations[cp]
 				try:
 					frm = self.map_cp2frm[cp]
@@ -832,6 +832,7 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		dunn3_level_2 += elem[9]
 
 		viz = elem[10]
+
 		for demonstration in viz.keys():
 			utils.dict_insert_list(demonstration, viz[demonstration], list_of_frms)
 

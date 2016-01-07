@@ -80,6 +80,6 @@ if __name__ == "__main__":
 	fe = CNNFeatureExtractor(args.net)
 	layers = constants.NET_PARAMS[args.net][2]
 
-	X = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 3)
+	X = fe.forward_pass(args.PATH_TO_DATA, args.annotations, list_of_layers = layers, sampling_rate = 1)
 	utils.plot_all_layers(X, args.net, args.figure_name, list_of_layers = layers)
 
