@@ -16,8 +16,8 @@ from sklearn import (decomposition, preprocessing, manifold)
 PATH_TO_FIGURE = "../tsne_plots/"
 colormap_name = "coolwarm" # We found this to be the best!
 
-start = 0.10 # Suturing_E001
-end = 0.90 # Suturing_E001
+start = 0.00 # Suturing_E001
+end = 1.0 # Suturing_E001
 
 # start = 0.0 # plane_9
 # end = 1.0 # plane_9
@@ -51,14 +51,16 @@ def plot_raw_image_pixels(data, chpts, demonstration):
 
 	[X_pca, X_tsne] = data
 
+	print "Raw Pixels", X_tsne.shape
+
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
 	annotations = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
 	manual_labels = utils.get_chronological_sequences(annotations)
 
 	plot_scatter_continous(X_pca, "plot_raw_pixels_PCA" + "_" + str(start) + "_" + str(end),
-		colormap_name = colormap_name, changepoints = chpts, manual_labels = manual_labels)
+		colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
 	plot_scatter_continous(X_tsne, "plot_raw_pixels_tSNE" + "_" + str(start) + "_" + str(end),
-		colormap_name = colormap_name, changepoints = chpts, manual_labels = manual_labels)
+		colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
 
 
 def sample_matrix(matrix, sampling_rate = 1):
@@ -126,7 +128,7 @@ def plot_scatter_continous(X, figure_name, title = None, colormap_name = "Accent
 				changepoints_x.append(x_coord)
 				changepoints_y.append(y_coord)
 
-		plt.scatter(np.array(changepoints_x), np.array(changepoints_y), s = 50, color="k", edgecolors = 'None')
+		plt.scatter(np.array(changepoints_x), np.array(changepoints_y), s = 60, marker = "^", color="k", edgecolors = 'None')
 
 	#Plotting manual_labels
 	if manual_labels:
@@ -156,10 +158,16 @@ def plot_VGG(data, chpts, demonstration):
 
 	for layer in list_of_layers:
 		[X_pca, X_tsne, X_grp] = data[layer]
+
+		X_pca = sample_matrix(X_pca, 2)
+		X_tsne = sample_matrix(X_tsne, 2)
+
+		print "VGG", layer, X_tsne.shape
+
 		plot_scatter_continous(X_pca, "plot_VGG_PCA" + layer+ "_" + str(start) + "_"+str(end),
-			colormap_name = colormap_name, changepoints = chpts, manual_labels = manual_labels)
+			colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
 		plot_scatter_continous(X_tsne, "plot_VGG_tSNE" + layer+ "_" + str(start) + "_"+str(end),
-			colormap_name = colormap_name, changepoints = chpts, manual_labels = manual_labels)
+			colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
 
 def plot_AlexNet(data, chpts, demonstration):
 
@@ -171,10 +179,16 @@ def plot_AlexNet(data, chpts, demonstration):
 
 	for layer in list_of_layers:
 		[X_pca, X_tsne, X_grp] = data[layer]
+
+		X_pca = sample_matrix(X_pca, 2)
+		X_tsne = sample_matrix(X_tsne, 2)
+
+		print "AlexNet", layer, X_tsne.shape
+
 		plot_scatter_continous(X_pca, "plot_AlexNet_PCA" + layer+ "_" + str(start)+"_"+str(end),
-			colormap_name = colormap_name, changepoints = chpts, manual_labels = manual_labels)
+			colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
 		plot_scatter_continous(X_tsne, "plot_AlexNet_tSNE" + layer+ "_" + str(start)+"_"+str(end),
-			colormap_name = colormap_name, changepoints = chpts, manual_labels = manual_labels)
+			colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
 
 def generate_SIFT():
 	data = pickle.load(open("sift_features/SIFT_plane_9_1.p", "rb"))
@@ -183,13 +197,31 @@ def generate_SIFT():
 	data_dimred = [X_pca, X_tsne]
 	pickle.dump(data_dimred, open("SIFT_plane_9_dimred.p", "wb"))
 
-def plot_SIFT():
-	data = pickle.load(open("SIFT_plane_9_dimred.p", "rb"))
+# def plot_SIFT():
+# 	data = pickle.load(open("SIFT_plane_9_dimred.p", "rb"))
+# 	[X_pca, X_tsne] = data
+# 	# X_pca = sample_matrix(X_pca, 3)
+# 	# X_tsne = sample_matrix(X_tsne, 3)
+# 	plot_scatter_continous(X_pca, "plot_SIFT_plane_9_PCA_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+# 	plot_scatter_continous(X_tsne, "plot_SIFT_plane_9_tSNE_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+
+def plot_SIFT(data, chpts, demonstration):
+
 	[X_pca, X_tsne] = data
-	# X_pca = sample_matrix(X_pca, 3)
-	# X_tsne = sample_matrix(X_tsne, 3)
-	plot_scatter_continous(X_pca, "plot_SIFT_plane_9_PCA_" + str(start)+"_"+str(end), colormap_name = colormap_name)
-	plot_scatter_continous(X_tsne, "plot_SIFT_plane_9_tSNE_" + str(start)+"_"+str(end), colormap_name = colormap_name)
+	X_pca = sample_matrix(X_pca, 6)
+	X_tsne = sample_matrix(X_tsne, 6)
+
+	print "SIFT", X_tsne.shape
+
+	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
+	annotations = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
+	manual_labels = utils.get_chronological_sequences(annotations)
+
+	plot_scatter_continous(X_pca, "plot_SIFT_PCA" + "_" + str(start) + "_" + str(end),
+		colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
+	plot_scatter_continous(X_tsne, "plot_SIFT_tSNE" + "_" + str(start) + "_" + str(end),
+		colormap_name = colormap_name, changepoints = chpts, manual_labels = None)
+
 
 if __name__ == "__main__":
 
@@ -200,7 +232,7 @@ if __name__ == "__main__":
 	# Suturing_E001
 	data = pickle.load(open("Suturing_E001_VGG_dimred.p", "rb"))
 	chpts = pickle.load(open("Suturing_E001_changepoints_Z1.p", "rb"))
-	jackknife_index = 7
+	jackknife_index = 1
 	demonstration = "Suturing_E001"
 
 	# plane_9
@@ -219,3 +251,7 @@ if __name__ == "__main__":
 	data = pickle.load(open("raw_pixel_Suturing_E001_dimred.p", "rb"))
 
 	plot_raw_image_pixels(data, chpts[jackknife_index], demonstration)
+
+	data = pickle.load(open("Suturing_E001_SIFT_dimred.p", "rb"))
+
+	plot_SIFT(data, chpts[jackknife_index], demonstration)

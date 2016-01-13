@@ -23,7 +23,7 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 
 PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
-class MilestonesClustering():
+class TSCDL_multimodal():
 	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):	
 		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
@@ -492,7 +492,7 @@ class MilestonesClustering():
 		num_demonstrations = len(set(demonstrations_in_cluster))
 		num_total_demonstrations = len(self.list_of_demonstrations)
 		data_representation = num_demonstrations / float(num_total_demonstrations)
-		weighted_data_representation = pruning.weighted_score(list_of_demonstrations, list(set(demonstrations_in_cluster)))
+		weighted_data_representation = pruning.weighted_score(self.list_of_demonstrations, list(set(demonstrations_in_cluster)))
 
 		val = weighted_data_representation if constants.WEIGHTED_PRUNING_MODE else data_representation
 		print str(data_representation), len(list_of_cp_key)
@@ -752,7 +752,7 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
+def post_evaluation_multimodal(metrics, file, filename, list_of_demonstrations, feat_fname):
 
 	mutual_information_1 = []
 	normalized_mutual_information_1 = []
@@ -839,8 +839,6 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 		silhoutte_level_1_weighted.append(elem[11]["level1"])
 		silhoutte_level_2_weighted += elem[12]
 
-	file = open(constants.PATH_TO_CLUSTERING_RESULTS + filename + ".txt", "wb")
-
 	utils.print_and_write_2("precision_1_micro", np.mean(precision_1_micro), np.std(precision_1_micro), file)
 	utils.print_and_write_2("precision_2_micro", np.mean(precision_2_micro), np.std(precision_2_micro), file)
 
@@ -889,7 +887,7 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	list_of_norm_dtw_values = []
 	list_of_lengths = []
 
-	pickle.dump(list_of_frms, open(constants.PATH_TO_CLUSTERING_RESULTS + filename + "_.p", "wb"))
+	data_cache = {}
 
 	for demonstration in list_of_demonstrations:
 		try:
@@ -900,11 +898,22 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 			for i in range(len(list_of_frms_demonstration)):
 				data[i] = [elem[0] for elem in list_of_frms_demonstration[i]]
 
-			dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+			dtw_score, normalized_dtw_score, length, labels_manual_d, colors_manual_d, labels_automatic_d, colors_automatic_d  = broken_barh.plot_broken_barh(demonstration, data,
 				constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + filename + ".jpg", constants.N_COMPONENTS_TIME_ZW)
+
 			list_of_dtw_values.append(dtw_score)
 			list_of_norm_dtw_values.append(normalized_dtw_score)
 			list_of_lengths.append(length)
+
+			# Inserting manual and annotations labels into data struct before dumping as pickle file
+			cache_entry = {}
+			cache_entry['changepoints'] = list_of_frms_demonstration
+			cache_entry['plot_labels_manual'] = labels_manual_d
+			cache_entry['plot_colors_manual'] = colors_manual_d
+			cache_entry['plot_labels_automatic'] = labels_automatic_d
+			cache_entry['plot_colors_automatic'] = colors_automatic_d
+			data_cache[demonstration] = cache_entry
+
 		except:
 			print demonstration
 			continue
@@ -912,13 +921,14 @@ def post_evaluation(metrics, filename, list_of_demonstrations, feat_fname):
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
 	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
 	utils.print_and_write(str(list_of_lengths), file)
-	file.close()
+
+	pickle.dump(data_cache, open(constants.PATH_TO_CLUSTERING_RESULTS + filename + "_.p", "wb"))
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
 	argparser.add_argument("--debug", help = "Debug mode?[y/n]", default = 'n')
 	argparser.add_argument("feat_fname", help = "Pickle file of visual features", default = 4)
-	argparser.add_argument("fname", help = "Pickle file of visual features", default = 4)
+	argparser.add_argument("output_fname", help = "Pickle file of visual features", default = 4)
 	args = argparser.parse_args()
 
 	if args.debug == 'y':
@@ -933,16 +943,12 @@ if __name__ == "__main__":
 	i = 1
 	all_metrics = []
 
-	# for _ in range(4):
-	# 	print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(4) + " ----"
-	# 	mc = MilestonesClustering(DEBUG, list_of_demonstrations, args.feat_fname, args.fname)
-	# 	all_metrics.append(mc.do_everything())
-	# 	i += 1
+	file = open(constants.PATH_TO_CLUSTERING_RESULTS + args.output_fname + ".txt", "wb")
 
 	for elem in combinations:	
 		print "---- k-Fold Cross Validation, Run "+ str(i) + " out of " + str(len(combinations)) + " ----"
-		mc = MilestonesClustering(DEBUG, list(elem), args.feat_fname, args.fname)
+		mc = TSCDL_multimodal(DEBUG, list(elem), args.feat_fname, args.output_fname)
 		all_metrics.append(mc.do_everything())
 		i += 1
 	print "----------- CALCULATING THE ODDS ------------"
-	post_evaluation(all_metrics, args.fname, list_of_demonstrations, args.feat_fname)
+	post_evaluation_multimodal(all_metrics, file, args.output_fname, list_of_demonstrations, args.feat_fname)

@@ -232,6 +232,50 @@ def plot_broken_barh_all(demonstration, data_W, data_Z, data_ZW, save_fname = No
 
 	return dtw_score_W, dtw_score_Z, dtw_score_ZW, dtw_score_W_normalized, dtw_score_Z_normalized, dtw_score_ZW_normalized, length
 
+def preprocess_labels(list_of_labels):
+	processed_list_of_labels = []
+	for elem in list_of_labels:
+		if elem[1] < 4.0:
+			processed_list_of_labels.append((elem[0], elem[1] + 4.0))
+		else:
+			processed_list_of_labels.append(elem)
+	return processed_list_of_labels
+
+def plot_broken_barh_from_pickle(demonstration, output_fname, labels_manual, colors_manual, labels_automatic_W,
+	colors_automatic_W, labels_automatic_Z, colors_automatic_Z, labels_automatic_ZW, colors_automatic_ZW):
+
+	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p"
+	start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
+	length = end - start
+
+	fig, ax = plt.subplots()
+
+	# Plot 1) Manual 2) Time clusters
+	ax.broken_barh(labels_manual, (17, 2), facecolors = colors_manual)
+	ax.broken_barh(preprocess_labels(labels_automatic_W), (13, 2), facecolors = colors_automatic_W)
+	ax.broken_barh(preprocess_labels(labels_automatic_Z), (9, 2), facecolors = colors_automatic_Z)
+	ax.broken_barh(preprocess_labels(labels_automatic_ZW), (5, 2), facecolors = colors_automatic_ZW)
+
+	TASK = constants.TASK_NAME
+	if (TASK in ["lego", "plane"]):
+		end = end + 20
+	elif (TASK in ["000", "010", "011", "100"]):
+		end = end + 10
+	else:
+		end = end + 50
+
+	ticks = get_ticks(labels_manual)
+	ax.set_ylim(3,21)
+	ax.set_xlim(0, end)
+	ax.set_xlabel('Frame number')
+	ax.set_yticks([6, 10, 14, 18])
+	ax.set_yticklabels(['Both (k + z)','Visual (z)','Kinematics (k)', 'Manual'])
+
+	if output_fname:
+		plt.savefig(output_fname)
+	else:
+		plt.show()
+	pass
 
 def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 	"""
@@ -298,19 +342,5 @@ def plot_broken_barh(demonstration, data, save_fname = None, T = 10):
 
 	dtw_score = compute_dtw(time_sequence_1, time_sequence_2)
 	normalized_dtw_score = dtw_score/float(length) * 100
-	return dtw_score, normalized_dtw_score, length
 
-if __name__ == "__main__":
-	#Needle passing examples
-	# demonstration = "Needle_Passing_D001"	
-	# list_of_frms_1 = [3679, 3772, 4465, 2170, 2215, 2233, 3154, 3169, 3889, 3904]
-	# list_of_frms_2 = [3679, 3772, 4465, 3154, 3163, 3889, 3908]
-
-	#Suturing Examples
-	demonstration = "Suturing_E001"
-	list_of_frms_1 = [2596 , 2746, 2950, 1513, 1702, 1783, 1087, 1954, 205, 2227, 2386] #6282_4_PCA
-	list_of_frms_2 = [814, 1513, 205, 265, 289, 673, 778, 2386, 2596, 2746, 2950, 943, 1681, 1954] #5991_4_PCA
-	list_of_frms_3 = [1663, 2227, 3091, 3100, 3301, 1954, 1372, 1513, 673, 211, 265, 289, 784, 808] #4916_4_PCA  
-	list_of_frms_4 = [289, 265, 676, 1084, 1099, 1369, 1501, 1567] #6961_4_PCA
-
-	plot_broken_barh(demonstration, list_of_frms_1, list_of_frms_2, list_of_frms_3, list_of_frms_4)
+	return dtw_score, normalized_dtw_score, length, labels_manual, colors_manual, labels_automatic_0, colors_automatic_0

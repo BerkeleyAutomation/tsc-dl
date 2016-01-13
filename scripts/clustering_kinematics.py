@@ -21,7 +21,7 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 
 PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
-class KinematicsClustering():
+class TSCDL_singlemodal():
 	def __init__(self, DEBUG, list_of_demonstrations, fname, log, vision_mode = False, feat_fname = None):
 		self.list_of_demonstrations = list_of_demonstrations
 
@@ -517,6 +517,8 @@ class KinematicsClustering():
 		# ------ Visualizing changepoints on broken barh ------
 		viz = {}
 
+		IPython.embed()
+
 		for cp in self.list_of_cp:
 			cp_all_data = (self.map_cp2frm[cp], self.map_cp2cluster[cp], self.map_cp2surgemetransitions[cp], self.map_cp2surgemes[cp])
 			utils.dict_insert_list(self.map_cp2demonstrations[cp], cp_all_data, viz)
@@ -563,7 +565,7 @@ def get_list_of_demo_combinations(list_of_demonstrations):
 
 	return demo_combinations
 
-def post_evaluation(metrics, file, fname, vision_mode):
+def post_evaluation_singlemodal(metrics, file, fname, vision_mode, list_of_demonstrations):
 
 	mutual_information_1 = []
 	normalized_mutual_information_1 = []
@@ -639,7 +641,7 @@ def post_evaluation(metrics, file, fname, vision_mode):
 	else:
 		T = constants.N_COMPONENTS_TIME_W
 
-	pickle.dump(list_of_frms, open(constants.PATH_TO_CLUSTERING_RESULTS + fname + "_.p", "wb"))
+	data_cache = {}
 
 	for demonstration in list_of_demonstrations:
 		try:
@@ -650,11 +652,22 @@ def post_evaluation(metrics, file, fname, vision_mode):
 			for i in range(len(list_of_frms_demonstration)):
 				data[i] = [elem[0] for elem in list_of_frms_demonstration[i]]
 
-			dtw_score, normalized_dtw_score, length = broken_barh.plot_broken_barh(demonstration, data,
+			dtw_score, normalized_dtw_score, length, labels_manual_d, colors_manual_d, labels_automatic_d, colors_automatic_d = broken_barh.plot_broken_barh(demonstration, data,
 				constants.PATH_TO_CLUSTERING_RESULTS + demonstration +"_" + fname + ".jpg", T)
+
 			list_of_dtw_values.append(dtw_score)
 			list_of_norm_dtw_values.append(normalized_dtw_score)
 			list_of_lengths.append(length)
+		
+			# Inserting manual and annotations labels into data struct before dumping as pickle file
+			cache_entry = {}
+			cache_entry['changepoints'] = list_of_frms_demonstration
+			cache_entry['plot_labels_manual'] = labels_manual_d
+			cache_entry['plot_colors_manual'] = colors_manual_d
+			cache_entry['plot_labels_automatic'] = labels_automatic_d
+			cache_entry['plot_colors_automatic'] = colors_automatic_d
+			data_cache[demonstration] = cache_entry
+
 		except:
 			print demonstration
 			pass
@@ -662,6 +675,8 @@ def post_evaluation(metrics, file, fname, vision_mode):
 	utils.print_and_write_2("dtw_score", np.mean(list_of_dtw_values), np.std(list_of_dtw_values), file)
 	utils.print_and_write_2("dtw_score_normalized", np.mean(list_of_norm_dtw_values), np.std(list_of_norm_dtw_values), file)
 	utils.print_and_write(str(list_of_lengths), file)
+
+	pickle.dump(data_cache, open(constants.PATH_TO_CLUSTERING_RESULTS + fname + "_.p", "wb"))
 
 if __name__ == "__main__":
 	argparser = argparse.ArgumentParser()
@@ -693,10 +708,10 @@ if __name__ == "__main__":
 		utils.print_and_write("\n----------- Combination #" + str(i) + " -------------\n", log)
 		print "\n----------- Combination #" + str(i) + " -------------\n"
 		print combinations[i]
-		mc = KinematicsClustering(DEBUG, list(combinations[i]), args.fname + str(i), log, vision_mode, feat_fname)
+		mc = TSCDL_singlemodal(DEBUG, list(combinations[i]), args.fname + str(i), log, vision_mode, feat_fname)
 		all_metrics.append(mc.do_everything())
 
 	print "----------- CALCULATING THE ODDS ------------"
-	post_evaluation(all_metrics, log, args.fname, vision_mode)
+	post_evaluation_singlemodal(all_metrics, log, args.fname, vision_mode, list_of_demonstrations)
 
 	log.close()
