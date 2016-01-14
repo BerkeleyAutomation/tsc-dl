@@ -21,7 +21,7 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 
 PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
-class TSCDL_singlemodal():
+class TSCDL_singlemodal(object):
 	def __init__(self, DEBUG, list_of_demonstrations, fname, log, vision_mode = False, feat_fname = None):
 		self.list_of_demonstrations = list_of_demonstrations
 
@@ -142,39 +142,6 @@ class TSCDL_singlemodal():
 				N = utils.safe_concatenate(N, n_t)
 
 			self.data_N[demonstration] = N
-
-	def generate_change_points_1(self):
-		"""
-		Generates changespoints by clustering within demonstration.
-		"""
-		cp_index = 0
-
-		for demonstration in self.list_of_demonstrations:
-
-			print "Changepoints for " + demonstration
-			N = self.data_N[demonstration]
-
-			gmm = mixture.GMM(n_components = self.n_components_cp, n_iter=5000, thresh = 5e-5, covariance_type='full')
-			gmm.fit(N)
-			Y = gmm.predict(N)
-
-			start, end = utils.get_start_end_annotations(constants.PATH_TO_DATA +
-				constants.ANNOTATIONS_FOLDER + demonstration + "_" + constants.CAMERA + ".p")
-	
-			self.save_cluster_metrics(N, Y, 'cpts_' + demonstration)
-
-			for i in range(len(Y) - 1):
-
-				if Y[i] != Y[i + 1]:
-
-					change_pt = N[i][:self.X_dimension]
-					assert change_pt.shape[0] == self.X_dimension
-					self.append_cp_array(utils.reshape(change_pt))
-					self.map_cp2frm[cp_index] = start + i * self.sr
-					self.map_cp2demonstrations[cp_index] = demonstration
-					self.list_of_cp.append(cp_index)
-
-					cp_index += 1
 
 	def generate_change_points_2(self):
 		"""
@@ -516,8 +483,6 @@ class TSCDL_singlemodal():
 
 		# ------ Visualizing changepoints on broken barh ------
 		viz = {}
-
-		IPython.embed()
 
 		for cp in self.list_of_cp:
 			cp_all_data = (self.map_cp2frm[cp], self.map_cp2cluster[cp], self.map_cp2surgemetransitions[cp], self.map_cp2surgemes[cp])

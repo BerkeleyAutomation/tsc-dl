@@ -23,8 +23,8 @@ mutual_info_score, homogeneity_score, completeness_score, recall_score, precisio
 
 PATH_TO_FEATURES = constants.PATH_TO_DATA + constants.PROC_FEATURES_FOLDER
 
-class TSCDL_multimodal():
-	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):	
+class TSCDL_multimodal(object):
+	def __init__(self, DEBUG, list_of_demonstrations, featfile, trialname):
 		self.list_of_demonstrations = list_of_demonstrations
 		self.data_X = {}
 		self.data_W = {}
