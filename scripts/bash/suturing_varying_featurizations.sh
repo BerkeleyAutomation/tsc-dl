@@ -1,51 +1,95 @@
 #!/bin/bash
 
-cd ~/DeepMilestones/scripts
+cd ..
 
-# python clustering.py SIFT_1.p _SIFT_1_v5
-# python clustering.py SIFT_2.p _SIFT_2_v5
+echo "suturing.yaml" > ../config/defaultconfig
 
-# python clustering.py 2_PCA.p _2_PCA_v5
-# python clustering.py 2_CCA.p _2_CCA_v5
-# python clustering.py 2_GRP.p _2_GRP_v5
+echo "[KINEMATICS - W]"
+python tscdl.py W W
 
-# python clustering.py 3_PCA.p _3_PCA_v5
-# python clustering.py 3_CCA.p _3_CCA_v5
-# python clustering.py 3_GRP.p _3_GRP_v5
+echo "[VISUAL - Z] ", SIFT_1.p
+python tscdl.py Z Z_SIFT_1 --visual_feature SIFT_1.p
 
-# python clustering.py 4_PCA.p _4_PCA_v5
-# python clustering.py 4_CCA.p _4_CCA_v5
-# python clustering.py 4_GRP.p _4_GRP_v5
+echo "[VISUAL - Z] ", SIFT_2.p
+python tscdl.py Z Z_SIFT_2 --visual_feature SIFT_2.p
 
-# python clustering.py 5_PCA.p _5_PCA_v5
-# python clustering.py 5_CCA.p _5_CCA_v5
-# python clustering.py 5_GRP.p _5_GRP_v5
+echo "[VISUAL - Z] ", 2_PCA.p
+python tscdl.py Z Z_2_PCA --visual_feature 2_PCA.p
 
-# python clustering.py 7_PCA.p _7_PCA_v5
-# python clustering.py 7_CCA.p _7_CCA_v5
-# python clustering.py 7_GRP.p _7_GRP_v5
+echo "[VISUAL - Z] ", 2_CCA.p
+python tscdl.py Z Z_2_CCA --visual_feature 2_CCA.p
 
-python clustering_kinematics.py _kinclust_v5
+echo "[VISUAL - Z] ", 2_GRP.p
+python tscdl.py Z Z_2_GRP --visual_feature 2_GRP.p
 
-python clustering_kinematics.py _visual_SIFT_1_ --visual SIFT_1.p
-python clustering_kinematics.py _visual_SIFT_2_ --visual SIFT_2.p
+echo "[VISUAL - Z] ", 3_PCA.p
+python tscdl.py Z Z_3_PCA --visual_feature 3_PCA.p
 
-python clustering_kinematics.py _visual_2_PCA_ --visual 2_PCA.p
-python clustering_kinematics.py _visual_2_CCA_ --visual 2_CCA.p
-python clustering_kinematics.py _visual_2_GRP_ --visual 2_GRP.p
+echo "[VISUAL - Z] ", 3_GRP.p
+python tscdl.py Z Z_3_GRP --visual_feature 3_GRP.p
 
-python clustering_kinematics.py _visual_3_PCA_ --visual 3_PCA.p
-python clustering_kinematics.py _visual_3_CCA_ --visual 3_CCA.p
-python clustering_kinematics.py _visual_3_GRP_ --visual 3_GRP.p
+echo "[VISUAL - Z] ", 3_CCA.p
+python tscdl.py Z Z_3_CCA --visual_feature 3_CCA.p
 
-python clustering_kinematics.py _visual_4_PCA_ --visual 4_PCA.p
-python clustering_kinematics.py _visual_4_CCA_ --visual 4_CCA.p
-python clustering_kinematics.py _visual_4_GRP_ --visual 4_GRP.p
+echo "[VISUAL - Z] ", 4_PCA.p
+python tscdl.py Z Z_4_PCA --visual_feature 4_PCA.p
 
-python clustering_kinematics.py _visual_5_PCA_ --visual 5_PCA.p
-python clustering_kinematics.py _visual_5_CCA_ --visual 5_CCA.p
-python clustering_kinematics.py _visual_5_GRP_ --visual 5_GRP.p
+echo "[VISUAL - Z] ", 4_GRP.p
+python tscdl.py Z Z_4_GRP --visual_feature 4_GRP.p
 
-python clustering_kinematics.py _visual_7_PCA_ --visual 7_PCA.p
-python clustering_kinematics.py _visual_7_CCA_ --visual 7_CCA.p
-python clustering_kinematics.py _visual_7_GRP_ --visual 7_GRP.p
+echo "[VISUAL - Z] ", 4_CCA.p
+python tscdl.py Z Z_4_CCA --visual_feature 4_CCA.p
+
+echo "[VISUAL - Z] ", 5_PCA.p
+python tscdl.py Z Z_5_PCA --visual_feature 5_PCA.p
+
+echo "[VISUAL - Z] ", 5_GRP.p
+python tscdl.py Z Z_5_GRP --visual_feature 5_GRP.p
+
+echo "[VISUAL - Z] ", 5_CCA.p
+python tscdl.py Z Z_5_CCA --visual_feature 5_CCA.p
+
+echo "[VISUAL - Z] ", 7_PCA.p
+python tscdl.py Z Z_7_PCA --visual_feature 7_PCA.p
+
+echo "[VISUAL - Z] ", 7_GRP.p
+python tscdl.py Z Z_7_GRP --visual_feature 7_GRP.p
+
+echo "[VISUAL - Z] ", 7_CCA.p
+python tscdl.py Z Z_7_CCA --visual_feature 7_CCA.p
+
+
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_SIFT_1 --visual_feature SIFT_1.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_SIFT_2 --visual_feature SIFT_2.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_2_PCA --visual_feature 2_PCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_2_CCA --visual_feature 2_CCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_2_GRP --visual_feature 2_GRP.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_3_PCA --visual_feature 3_PCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_3_GRP --visual_feature 3_GRP.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_3_CCA --visual_feature 3_CCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_4_PCA --visual_feature 4_PCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_4_GRP --visual_feature 4_GRP.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_4_CCA --visual_feature 4_CCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_5_PCA --visual_feature 5_PCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_5_GRP --visual_feature 5_GRP.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_5_CCA --visual_feature 5_CCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_7_PCA --visual_feature 7_PCA.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_7_GRP --visual_feature 7_GRP.p
+echo "[KINEMATICS+VISUAL - ZW]"
+python tscdl.py ZW ZW_7_CCA --visual_feature 7_CCA.p

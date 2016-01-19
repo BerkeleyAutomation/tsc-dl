@@ -102,6 +102,7 @@ if __name__ == "__main__":
 			labels_ZW = ZW[demonstration]['plot_labels_automatic']
 			colors_ZW = ZW[demonstration]['plot_colors_automatic']
 
+
 			plot_broken_barh_from_pickle(demonstration, args.output_fname + "_" + demonstration, labels_manual, colors_manual,
 				labels_W, colors_W, labels_Z, colors_Z, labels_ZW, colors_ZW)
 
@@ -146,7 +147,5 @@ if __name__ == "__main__":
 		print "----------- CALCULATING THE ODDS ------------"
 		post_evaluation_singlemodal(all_metrics, file, args.output_fname, True, list_of_demonstrations)
 		file.close()
-
-
 	else:
 		print "ERROR: Please specify a valid mode"
