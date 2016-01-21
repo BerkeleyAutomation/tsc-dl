@@ -119,7 +119,7 @@ def plot_VGG(data, demonstration, changepoints = None, plotter = None, labels = 
 
 	# list_of_layers = ['conv5_3', 'conv4_3', 'pool5']
 
-	list_of_layers = ['pool5']
+	list_of_layers = ['conv5_3']
 
 	PATH_TO_ANNOTATION = constants.PATH_TO_DATA + constants.ANNOTATIONS_FOLDER + demonstration + "_" + str(constants.CAMERA) + ".p"
 	annotations = pickle.load(open(PATH_TO_ANNOTATION, "rb"))
@@ -135,8 +135,12 @@ def plot_VGG(data, demonstration, changepoints = None, plotter = None, labels = 
 			plot_scatter_continous(X_pca, "plot_VGG_PCA" + layer+ "_" + str(start) + "_"+str(end),
 				colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
 		if plot_tsne:
-			plot_scatter_continous(X_tsne, "plot_VGG_tSNE" + layer+ "_" + str(start) + "_"+str(end),
-				colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
+			if interactive_mode:
+				plot_scatter_continous(X_tsne, "plot_VGG_tSNE" + layer+ "_" + str(start) + "_"+str(end),
+					colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
+			else:
+				plot_scatter_continous(X_tsne, "plot_VGG_tSNE" + layer+ "_" + str(end_frame),
+						colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
 
 def plot_AlexNet(data, demonstration, changepoints = None, plotter = None, labels = None, end_frame = 1000000, interactive_mode = False, plot_pca = False, plot_tsne = False):
 
@@ -159,10 +163,11 @@ def plot_AlexNet(data, demonstration, changepoints = None, plotter = None, label
 			plot_scatter_continous(X_pca, "plot_AlexNet_PCA" + layer+ "_" + str(start)+"_"+str(end),
 				colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
 		if plot_tsne:
-			# plot_scatter_continous(X_tsne, "plot_AlexNet_tSNE" + layer + "_" + str(start) + "_" + str(end),
-			# 	colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
-			plot_scatter_continous(X_tsne, "plot_AlexNet_tSNE" + layer + "_" + str(end_frame),
-				colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
+			if interactive_mode:
+				plot_scatter_continous(X_tsne, "plot_AlexNet_tSNE" + layer + "_" + str(end_frame),
+					colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
+			else:
+				plot_scatter_continous(X_tsne, "plot_AlexNet_tSNE" + layer + "_" + str(start) + "_" + str(end), colormap_name = colormap_name, changepoints = changepoints, labels = labels, plotter = plotter, end_frame = end_frame, interactive_mode = interactive_mode)
 
 def plot_raw_image_pixels(data, demonstration, changepoints = None, plotter = None, labels = None, end_frame = 1000000, interactive_mode = False, plot_pca = False, plot_tsne = False):
 
@@ -250,6 +255,10 @@ def plot_all():
 	for elem in labels:
 		labels_processed.append((elem[0] - start_d)/6)
 
+	# VGG
+	data = pickle.load(open("pickle_files/Suturing_E001_VGG_dimred.p", "rb"))
+	plot_VGG(data, demonstration, changepoints = None, labels = None, plot_tsne = True)
+
 	# AlexNet
 	data = pickle.load(open("pickle_files/Suturing_E001_AlexNet_dimred.p", "rb"))
 	plot_AlexNet(data, demonstration, changepoints = None, labels = None, plot_tsne = True)
@@ -304,7 +313,7 @@ def plot_interactive():
 		ax2.set_xlim([-0.1, 1.1])
 		ax2.xaxis.set_visible(False)
 		ax2.yaxis.set_visible(False)
-		plot_AlexNet(data, changepoints_processed, demonstration, plotter = ax2, labels = labels_processed, end_frame = (end_frame - start_d)/12, interactive_mode = True)
+		plot_AlexNet(data, demonstration, changepoints = changepoints_processed, plotter = ax2, labels = labels_processed, plot_tsne = True, end_frame = (end_frame - start_d)/12, interactive_mode = True)
 
 if __name__ == "__main__":
 
@@ -312,4 +321,5 @@ if __name__ == "__main__":
 		print "ERROR: Please specify path to pyplot savefig"
 		sys.exit()
 
-	plot_all()
+	# plot_all()
+	plot_interactive()
