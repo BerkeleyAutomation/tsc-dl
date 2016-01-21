@@ -336,7 +336,7 @@ class TSCDL_singlemodal(object):
 
 		for cp in self.list_of_cp:
 			demonstration = self.map_cp2demonstrations[cp]
-			frm = self.map_cp2frm[cp]
+			frm = self.map_cp2frm[cp] + 2 * self.sr
 
 			curr_surgeme = self.map_frm2surgeme[demonstration][frm]
 			self.map_cp2surgemes[cp] = curr_surgeme
@@ -379,11 +379,18 @@ class TSCDL_singlemodal(object):
 		for L1_cluster in self.map_level1_cp.keys():
 			list_of_cp_key = self.map_level1_cp[L1_cluster]
 			for cp in list_of_cp_key:
-				surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
-				surgeme_count[surgeme] += 1
-				curr_dict = table[L1_cluster]
-				curr_dict[surgeme] += 1
-				table[L1_cluster] = curr_dict
+				try:
+					surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
+					if surgeme not in surgeme_count:
+						surgeme_count[surgeme] = 1
+						curr_dict[surgeme] = 1
+					else:
+						surgeme_count[surgeme] += 1
+					curr_dict = table[L1_cluster]
+					curr_dict[surgeme] += 1
+					table[L1_cluster] = curr_dict
+				except KeyError as e:
+					IPython.embed()
 
 		final_clusters = list(set(self.map_level1_cp.keys()) - set(self.pruned_L1_clusters))
 

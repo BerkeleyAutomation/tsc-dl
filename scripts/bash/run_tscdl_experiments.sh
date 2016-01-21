@@ -4,18 +4,15 @@
 
 cd ..
 
-for configfile in "suturing_all.yaml"
+for configfile in "suturing_ED.yaml"
 do
-	echo "[RUNNING EXPERIMENT]" $configfile
-	echo $configfile > ../config/defaultconfig
+    echo "[RUNNING EXPERIMENT]" $configfile
+    echo $configfile > ../config/defaultconfig
 
-	echo "[KINEMATICS - W]" $configfile
-	python clustering_kinematics.py _W_
+    python tscdl.py W _W_last_
 
-	echo "[VISUAL - Z]" $configfile
-	python clustering_kinematics.py _Z_ --visual 5_PCA.p
+    python tscdl.py Z _Z_last_ --visual_feature 5_PCA.p
 
-	echo "[KINEMATICS+VISUAL - ZW]" $configfile
-	python clustering.py 5_PCA.p _ZW_
+    python tscdl.py ZW _ZW_last_ --visual_feature 5_PCA.p
 
 done
