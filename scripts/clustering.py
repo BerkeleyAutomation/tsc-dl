@@ -541,53 +541,6 @@ class TSCDL_multimodal(object):
 
 		self.cp_surgemes = set(self.map_cp2surgemes.values())
 
-
-		# Initialize data structures
-		table = {}
-		for L1_cluster in self.map_level12cp.keys():
-			new_dict = {}
-			for surgeme in self.cp_surgemes:
-				new_dict[surgeme] = 0
-			table[L1_cluster] = new_dict
-
-		surgeme_count = {}
-		for surgeme in self.cp_surgemes:
-			surgeme_count[surgeme] = 0
-
-		for L1_cluster in self.map_level12cp.keys():
-			list_of_cp_key = self.map_level12cp[L1_cluster]
-			for cp in list_of_cp_key:
-				surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
-				surgeme_count[surgeme] += 1
-
-				curr_dict = table[L1_cluster]
-				curr_dict[surgeme] += 1
-				table[L1_cluster] = curr_dict
-
-		final_clusters = list(set(self.map_level12cp.keys()) - set(self.pruned_L1_clusters))
-
-		confusion_matrix = "    "
-		for surgeme in self.cp_surgemes:
-			confusion_matrix = confusion_matrix + str(surgeme) + "     "
-
-		# print confusion_matrix
-		self.file.write('\n\n ---Confusion Matrix--- \n\n')
-		self.file.write(confusion_matrix)
-
-		confusion_matrix = ""
-		for L1_cluster in final_clusters:
-			confusion_matrix = confusion_matrix + "\n" + L1_cluster + "   "
-			for surgeme in self.cp_surgemes:
-				# confusion_matrix += str(float("{0:.2f}".format(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])))) + "   "
-				confusion_matrix += str(round(Decimal(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])), 2)) + "   "
-			confusion_matrix += '\n'
-
-		# print confusion_matrix
-		self.file.write(confusion_matrix)
-		self.file.write("\n\n ---Surgeme Count--- \n\n")
-		self.file.write(repr(surgeme_count))
-		self.file.write("\n\n")
-
 	def prepare_labels(self):
 		labels_pred_1_ = []
 		labels_pred_2_ = []

@@ -364,56 +364,6 @@ class TSCDL_singlemodal(object):
 
 		self.cp_surgemes = set(self.map_cp2surgemes.values())
 
-		# Initialize data structures
-		table = {}
-		for L1_cluster in self.map_level1_cp.keys():
-			new_dict = {}
-			for surgeme in self.cp_surgemes:
-				new_dict[surgeme] = 0
-			table[L1_cluster] = new_dict
-
-		surgeme_count = {}
-		for surgeme in self.cp_surgemes:
-			surgeme_count[surgeme] = 0
-
-		for L1_cluster in self.map_level1_cp.keys():
-			list_of_cp_key = self.map_level1_cp[L1_cluster]
-			for cp in list_of_cp_key:
-				try:
-					surgeme = self.map_frm2surgeme[self.map_cp2demonstrations[cp]][self.map_cp2frm[cp]]
-					if surgeme not in surgeme_count:
-						surgeme_count[surgeme] = 1
-						curr_dict[surgeme] = 1
-					else:
-						surgeme_count[surgeme] += 1
-					curr_dict = table[L1_cluster]
-					curr_dict[surgeme] += 1
-					table[L1_cluster] = curr_dict
-				except KeyError as e:
-					IPython.embed()
-
-		final_clusters = list(set(self.map_level1_cp.keys()) - set(self.pruned_L1_clusters))
-
-		confusion_matrix = "    "
-		for surgeme in self.cp_surgemes:
-			confusion_matrix = confusion_matrix + str(surgeme) + "     "
-
-		utils.print_and_write('\n\n ---Confusion Matrix--- \n\n', self.log)
-		utils.print_and_write(confusion_matrix, self.log)
-
-		confusion_matrix = ""
-		for L1_cluster in final_clusters:
-			confusion_matrix = confusion_matrix + "\n" + L1_cluster + "   "
-			for surgeme in self.cp_surgemes:
-				# confusion_matrix += str(float("{0:.2f}".format(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])))) + "   "
-				confusion_matrix += str(round(Decimal(table[L1_cluster][surgeme] / float(surgeme_count[surgeme])), 2)) + "   "
-			confusion_matrix += '\n'
-
-		utils.print_and_write(confusion_matrix, self.log)
-		utils.print_and_write("\n\n ---Surgeme Count--- \n\n", self.log)
-		utils.print_and_write(repr(surgeme_count), self.log)
-		utils.print_and_write("\n\n", self.log)
-
 	def prepare_labels(self):
 		labels_pred_ = []
 		labels_true_ = []
